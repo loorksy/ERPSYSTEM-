@@ -1,0 +1,83 @@
+<div class="page-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">
+        <i class="fas fa-table sheets-color"></i>
+        <h3>مزامنة Google Sheets</h3>
+      </div>
+      <div class="connection-status" id="sheetsStatusBadge">
+        <span class="status-dot <%= (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.sync_enabled) ? 'connected' : 'disconnected' %>"></span>
+        <span><%= (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.sync_enabled) ? 'مفعل' : 'غير مفعل' %></span>
+      </div>
+    </div>
+
+    <div class="section-body">
+      <!-- Configuration Form -->
+      <div class="config-section">
+        <h4><i class="fas fa-cogs"></i> إعدادات الربط</h4>
+        <form id="sheetsConfigForm" onsubmit="saveSheetsConfig(event)">
+          <div class="form-group">
+            <label for="spreadsheetId">معرّف جدول البيانات (Spreadsheet ID)</label>
+            <input type="text" id="spreadsheetId" name="spreadsheet_id" class="form-control" dir="ltr"
+              placeholder="أدخل معرّف جدول البيانات"
+              value="<%= (typeof sheetsConfig !== 'undefined' && sheetsConfig) ? (sheetsConfig.spreadsheet_id || '') : '' %>">
+            <small class="form-hint">يمكنك إيجاده في رابط الجدول بعد /d/ وقبل /edit</small>
+          </div>
+
+          <div class="form-group">
+            <label for="clientId">Client ID</label>
+            <input type="text" id="clientId" name="client_id" class="form-control" dir="ltr"
+              placeholder="أدخل Client ID من Google Cloud Console">
+          </div>
+
+          <div class="form-group">
+            <label for="clientSecret">Client Secret</label>
+            <input type="password" id="clientSecret" name="client_secret" class="form-control" dir="ltr"
+              placeholder="أدخل Client Secret">
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i>
+              <span>حفظ الإعدادات</span>
+            </button>
+            <% if (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.credentials) { %>
+              <a href="/sheets/auth" class="btn btn-success">
+                <i class="fas fa-link"></i>
+                <span>تفويض الوصول</span>
+              </a>
+            <% } %>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sync Toggle -->
+      <div class="sync-section">
+        <div class="sync-toggle-card">
+          <div class="sync-info">
+            <h4>المزامنة التلقائية</h4>
+            <p>تفعيل أو إيقاف المزامنة التلقائية مع Google Sheets</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="syncToggle" onchange="toggleSync()"
+              <%= (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.sync_enabled) ? 'checked' : '' %>>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="instructions-card">
+        <h4><i class="fas fa-lightbulb"></i> كيفية الإعداد</h4>
+        <ol>
+          <li>اذهب إلى <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+          <li>أنشئ مشروعاً جديداً أو اختر مشروعاً موجوداً</li>
+          <li>فعّل Google Sheets API</li>
+          <li>أنشئ بيانات اعتماد OAuth 2.0</li>
+          <li>أدخل Client ID و Client Secret هنا</li>
+          <li>اضغط على "تفويض الوصول" للربط</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>

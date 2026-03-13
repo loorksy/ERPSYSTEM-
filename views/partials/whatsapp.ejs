@@ -1,0 +1,65 @@
+<div class="page-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">
+        <i class="fab fa-whatsapp whatsapp-color"></i>
+        <h3>ربط واتساب</h3>
+      </div>
+      <div class="connection-status" id="waStatusBadge">
+        <span class="status-dot disconnected"></span>
+        <span id="waStatusText">غير متصل</span>
+      </div>
+    </div>
+
+    <div class="section-body">
+      <div class="whatsapp-container">
+        <!-- QR Code Area -->
+        <div class="qr-section" id="qrSection">
+          <div class="qr-placeholder" id="qrPlaceholder">
+            <i class="fab fa-whatsapp"></i>
+            <p>اضغط على زر الاتصال لبدء ربط واتساب</p>
+            <p class="qr-hint">سيظهر رمز QR هنا لمسحه من تطبيق واتساب</p>
+          </div>
+          <div class="qr-code" id="qrCode" style="display:none;">
+            <img id="qrImage" src="" alt="QR Code">
+            <p>امسح الرمز من تطبيق واتساب</p>
+            <div class="qr-timer">
+              <div class="timer-bar" id="timerBar"></div>
+            </div>
+          </div>
+          <div class="wa-connected" id="waConnected" style="display:none;">
+            <div class="connected-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>تم الربط بنجاح</h3>
+            <p id="connectedPhone"></p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="wa-actions">
+          <button class="btn btn-success btn-block" id="btnConnect" onclick="connectWhatsApp()">
+            <i class="fab fa-whatsapp"></i>
+            <span>بدء الاتصال</span>
+          </button>
+          <button class="btn btn-danger btn-block" id="btnDisconnect" style="display:none;" onclick="disconnectWhatsApp()">
+            <i class="fas fa-unlink"></i>
+            <span>قطع الاتصال</span>
+          </button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions-card">
+          <h4><i class="fas fa-lightbulb"></i> كيفية الربط</h4>
+          <ol>
+            <li>اضغط على زر "بدء الاتصال"</li>
+            <li>افتح واتساب على هاتفك</li>
+            <li>اذهب إلى الإعدادات > الأجهزة المرتبطة</li>
+            <li>اضغط على "ربط جهاز"</li>
+            <li>امسح رمز QR الظاهر على الشاشة</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

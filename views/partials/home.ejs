@@ -1,0 +1,62 @@
+<div class="welcome-section">
+  <div class="welcome-card">
+    <div class="welcome-icon">
+      <i class="fas fa-hand-wave"></i>
+    </div>
+    <div class="welcome-text">
+      <h2>مرحباً، <%= user.displayName %></h2>
+      <p>مرحباً بك في نظام LorkERP للمحاسبة. النظام جاهز لإضافة الأقسام والصفحات حسب احتياجاتك.</p>
+    </div>
+  </div>
+</div>
+
+<div class="quick-status">
+  <div class="status-card">
+    <div class="status-icon whatsapp-color">
+      <i class="fab fa-whatsapp"></i>
+    </div>
+    <div class="status-info">
+      <h4>واتساب</h4>
+      <span class="status-badge status-disconnected" id="homeWhatsappStatus">غير متصل</span>
+    </div>
+    <a href="/whatsapp" class="status-link">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+  </div>
+
+  <div class="status-card">
+    <div class="status-icon sheets-color">
+      <i class="fas fa-table"></i>
+    </div>
+    <div class="status-info">
+      <h4>Google Sheets</h4>
+      <span class="status-badge status-disconnected" id="homeSheetsStatus">غير مفعل</span>
+    </div>
+    <a href="/sheets" class="status-link">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+  </div>
+</div>
+
+<div class="system-info-section">
+  <div class="info-card">
+    <div class="info-header">
+      <i class="fas fa-info-circle"></i>
+      <h3>معلومات النظام</h3>
+    </div>
+    <div class="info-body">
+      <div class="info-row">
+        <span class="info-label">إصدار النظام</span>
+        <span class="info-value">1.0.0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">اسم المستخدم</span>
+        <span class="info-value"><%= user.username %></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">الصلاحية</span>
+        <span class="info-value"><%= user.role === 'admin' ? 'مدير النظام' : 'مستخدم' %></span>
+      </div>
+    </div>
+  </div>
+</div>

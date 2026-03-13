@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>LorkERP - <%= title %></title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dashboard-body">
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <button class="menu-toggle" id="menuToggle" aria-label="القائمة">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="mobile-logo">
+      <i class="fas fa-chart-line"></i>
+      <span>LorkERP</span>
+    </div>
+    <div class="mobile-user" id="mobileUserBtn">
+      <div class="user-avatar-sm">
+        <%= user.displayName.charAt(0) %>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-icon-sm">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="logo-text">
+          <h2>LorkERP</h2>
+          <span>نظام المحاسبة</span>
+        </div>
+      </div>
+      <button class="sidebar-close" id="sidebarClose">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">
+        <%= user.displayName.charAt(0) %>
+      </div>
+      <div class="user-info">
+        <h4><%= user.displayName %></h4>
+        <span><%= user.role === 'admin' ? 'مدير النظام' : 'مستخدم' %></span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li class="nav-section-title">الرئيسية</li>
+        <li>
+          <a href="/dashboard" class="<%= page === 'home' ? 'active' : '' %>">
+            <i class="fas fa-home"></i>
+            <span>لوحة التحكم</span>
+          </a>
+        </li>
+
+        <li class="nav-section-title">الربط والمزامنة</li>
+        <li>
+          <a href="/whatsapp" class="<%= page === 'whatsapp' ? 'active' : '' %>">
+            <i class="fab fa-whatsapp"></i>
+            <span>ربط واتساب</span>
+          </a>
+        </li>
+        <li>
+          <a href="/sheets" class="<%= page === 'sheets' ? 'active' : '' %>">
+            <i class="fas fa-table"></i>
+            <span>Google Sheets</span>
+          </a>
+        </li>
+
+        <li class="nav-section-title">النظام</li>
+        <li>
+          <a href="/settings" class="<%= page === 'settings' ? 'active' : '' %>">
+            <i class="fas fa-cog"></i>
+            <span>الإعدادات</span>
+          </a>
+        </li>
+        <li>
+          <a href="/logout" class="nav-logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>تسجيل الخروج</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p>LorkERP v1.0</p>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" id="mainContent">
+    <div class="content-header">
+      <div class="content-title">
+        <h1><%= title %></h1>
+      </div>
+      <div class="header-actions">
+        <div class="current-date">
+          <i class="fas fa-calendar-alt"></i>
+          <span id="currentDate"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <% if (page === 'home') { %>
+        <%- include('partials/home') %>
+      <% } else if (page === 'whatsapp') { %>
+        <%- include('partials/whatsapp') %>
+      <% } else if (page === 'sheets') { %>
+        <%- include('partials/sheets') %>
+      <% } else if (page === 'settings') { %>
+        <%- include('partials/settings') %>
+      <% } %>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <a href="/dashboard" class="bottom-nav-item <%= page === 'home' ? 'active' : '' %>">
+      <i class="fas fa-home"></i>
+      <span>الرئيسية</span>
+    </a>
+    <a href="/whatsapp" class="bottom-nav-item <%= page === 'whatsapp' ? 'active' : '' %>">
+      <i class="fab fa-whatsapp"></i>
+      <span>واتساب</span>
+    </a>
+    <a href="/sheets" class="bottom-nav-item <%= page === 'sheets' ? 'active' : '' %>">
+      <i class="fas fa-table"></i>
+      <span>الجداول</span>
+    </a>
+    <a href="/settings" class="bottom-nav-item <%= page === 'settings' ? 'active' : '' %>">
+      <i class="fas fa-cog"></i>
+      <span>الإعدادات</span>
+    </a>
+  </nav>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/js/app.js"></script>
+  <% if (page === 'whatsapp') { %>
+    <script src="/js/whatsapp.js"></script>
+  <% } %>
+  <% if (page === 'sheets') { %>
+    <script src="/js/sheets.js"></script>
+  <% } %>
+</body>
+</html>
