@@ -3,10 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initDate();
 });
 
-/* ==========================================
-   Sidebar Toggle
-   ========================================== */
-
 function initSidebar() {
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.getElementById('sidebar');
@@ -15,15 +11,19 @@ function initSidebar() {
 
   if (menuToggle) {
     menuToggle.addEventListener('click', () => {
-      sidebar.classList.add('open');
-      sidebarOverlay.classList.add('active');
+      sidebar.classList.remove('max-lg:translate-x-full');
+      sidebar.classList.add('translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
+      sidebarOverlay.classList.remove('hidden');
+      sidebarOverlay.classList.add('block');
       document.body.style.overflow = 'hidden';
     });
   }
 
   function closeSidebar() {
-    sidebar.classList.remove('open');
-    sidebarOverlay.classList.remove('active');
+    sidebar.classList.add('max-lg:translate-x-full');
+    sidebar.classList.remove('translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
+    sidebarOverlay.classList.add('hidden');
+    sidebarOverlay.classList.remove('block');
     document.body.style.overflow = '';
   }
 
@@ -60,10 +60,6 @@ function initSidebar() {
   });
 }
 
-/* ==========================================
-   Date Display
-   ========================================== */
-
 function initDate() {
   const dateEl = document.getElementById('currentDate');
   if (dateEl) {
@@ -72,10 +68,6 @@ function initDate() {
     dateEl.textContent = now.toLocaleDateString('ar-SA', options);
   }
 }
-
-/* ==========================================
-   Toast Notifications
-   ========================================== */
 
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
@@ -86,7 +78,7 @@ function showToast(message, type = 'success') {
   toast.innerHTML = `
     <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
     <span>${message}</span>
-    <button class="toast-close" onclick="this.parentElement.remove()">
+    <button class="mr-auto text-slate-400 p-1 cursor-pointer" onclick="this.parentElement.remove()">
       <i class="fas fa-times"></i>
     </button>
   `;
@@ -97,10 +89,6 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.remove(), 300);
   }, 4000);
 }
-
-/* ==========================================
-   API Helper
-   ========================================== */
 
 async function apiCall(url, options = {}) {
   try {
@@ -114,10 +102,6 @@ async function apiCall(url, options = {}) {
     return { success: false, message: 'خطأ في الاتصال بالخادم' };
   }
 }
-
-/* ==========================================
-   Settings Functions
-   ========================================== */
 
 async function updateProfile(e) {
   e.preventDefault();

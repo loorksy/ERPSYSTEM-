@@ -1,43 +1,50 @@
-<div class="page-section">
+<div class="max-w-3xl">
   <div class="section-card">
-    <div class="section-header">
-      <div class="section-title">
-        <i class="fab fa-whatsapp whatsapp-color"></i>
-        <h3>ربط واتساب</h3>
+    <!-- Header -->
+    <div class="flex items-center justify-between flex-wrap gap-3 py-5 px-4 md:px-6 border-b border-slate-100">
+      <div class="flex items-center gap-2.5">
+        <i class="fab fa-whatsapp text-xl text-[#25d366]"></i>
+        <h3 class="text-lg font-bold">ربط واتساب</h3>
       </div>
-      <div class="connection-status" id="waStatusBadge">
+      <div class="flex items-center gap-2 py-1.5 px-3.5 rounded-full bg-slate-50 text-sm font-medium" id="waStatusBadge">
         <span class="status-dot disconnected"></span>
         <span id="waStatusText">غير متصل</span>
       </div>
     </div>
 
-    <div class="section-body">
-      <div class="whatsapp-container">
-        <!-- QR Code Area -->
-        <div class="qr-section" id="qrSection">
-          <div class="qr-placeholder" id="qrPlaceholder">
-            <i class="fab fa-whatsapp"></i>
-            <p>اضغط على زر الاتصال لبدء ربط واتساب</p>
-            <p class="qr-hint">سيظهر رمز QR هنا لمسحه من تطبيق واتساب</p>
+    <!-- Body -->
+    <div class="p-4 md:p-6">
+      <div class="text-center">
+        <!-- QR Section -->
+        <div class="py-6" id="qrSection">
+          <!-- Placeholder -->
+          <div class="py-10 px-5 text-slate-500" id="qrPlaceholder">
+            <i class="fab fa-whatsapp text-6xl text-[#25d366] mb-4 opacity-50 block"></i>
+            <p class="mb-2">اضغط على زر الاتصال لبدء ربط واتساب</p>
+            <p class="text-sm text-slate-400">سيظهر رمز QR هنا لمسحه من تطبيق واتساب</p>
           </div>
-          <div class="qr-code" id="qrCode" style="display:none;">
-            <img id="qrImage" src="" alt="QR Code">
-            <p>امسح الرمز من تطبيق واتساب</p>
-            <div class="qr-timer">
-              <div class="timer-bar" id="timerBar"></div>
+
+          <!-- QR Code -->
+          <div class="p-5" id="qrCode" style="display:none;">
+            <img id="qrImage" src="" alt="QR Code" class="w-[260px] h-[260px] md:w-[260px] md:h-[260px] max-sm:w-[200px] max-sm:h-[200px] rounded-xl border-[3px] border-slate-200 p-2 bg-white mx-auto">
+            <p class="mt-4 text-slate-500 text-sm">امسح الرمز من تطبيق واتساب</p>
+            <div class="w-[260px] max-sm:w-[200px] h-1 bg-slate-200 rounded-full mx-auto mt-3 overflow-hidden">
+              <div class="h-full bg-[#25d366] rounded-full w-full animate-[timerCountdown_60s_linear]" id="timerBar"></div>
             </div>
           </div>
-          <div class="wa-connected" id="waConnected" style="display:none;">
-            <div class="connected-icon">
-              <i class="fas fa-check-circle"></i>
+
+          <!-- Connected -->
+          <div class="py-10 px-5" id="waConnected" style="display:none;">
+            <div class="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-check-circle text-4xl text-emerald-500"></i>
             </div>
-            <h3>تم الربط بنجاح</h3>
-            <p id="connectedPhone"></p>
+            <h3 class="text-emerald-500 font-bold text-lg mb-2">تم الربط بنجاح</h3>
+            <p class="text-slate-500" id="connectedPhone"></p>
           </div>
         </div>
 
         <!-- Actions -->
-        <div class="wa-actions">
+        <div class="px-0 md:px-6 pb-2">
           <button class="btn btn-success btn-block" id="btnConnect" onclick="connectWhatsApp()">
             <i class="fab fa-whatsapp"></i>
             <span>بدء الاتصال</span>
@@ -49,14 +56,16 @@
         </div>
 
         <!-- Instructions -->
-        <div class="instructions-card">
-          <h4><i class="fas fa-lightbulb"></i> كيفية الربط</h4>
-          <ol>
-            <li>اضغط على زر "بدء الاتصال"</li>
-            <li>افتح واتساب على هاتفك</li>
-            <li>اذهب إلى الإعدادات > الأجهزة المرتبطة</li>
-            <li>اضغط على "ربط جهاز"</li>
-            <li>امسح رمز QR الظاهر على الشاشة</li>
+        <div class="mt-6 mx-0 md:mx-6 p-5 bg-sky-50 border border-sky-200 rounded-xl text-right">
+          <h4 class="flex items-center gap-2 mb-3 text-sky-700 text-[0.95rem] font-semibold">
+            <i class="fas fa-lightbulb"></i> كيفية الربط
+          </h4>
+          <ol class="pr-6 list-decimal space-y-1">
+            <li class="text-sm text-slate-500 leading-7">اضغط على زر "بدء الاتصال"</li>
+            <li class="text-sm text-slate-500 leading-7">افتح واتساب على هاتفك</li>
+            <li class="text-sm text-slate-500 leading-7">اذهب إلى الإعدادات > الأجهزة المرتبطة</li>
+            <li class="text-sm text-slate-500 leading-7">اضغط على "ربط جهاز"</li>
+            <li class="text-sm text-slate-500 leading-7">امسح رمز QR الظاهر على الشاشة</li>
           </ol>
         </div>
       </div>

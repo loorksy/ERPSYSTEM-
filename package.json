@@ -4,8 +4,11 @@
   "description": "LorkERP - نظام محاسبة متكامل",
   "main": "server.js",
   "scripts": {
+    "css:build": "postcss src/input.css -o public/css/tailwind.css",
+    "css:watch": "postcss src/input.css -o public/css/tailwind.css --watch",
+    "prestart": "npm run css:build",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "npm run css:build && nodemon server.js"
   },
   "keywords": [
     "erp",
@@ -15,6 +18,8 @@
   "author": "LorkERP",
   "license": "ISC",
   "dependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "autoprefixer": "^10.4.27",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.6.0",
     "compression": "^1.7.4",
@@ -26,8 +31,11 @@
     "helmet": "^8.0.0",
     "mime-types": "^3.0.2",
     "multer": "^1.4.5-lts.1",
+    "postcss": "^8.5.8",
+    "postcss-cli": "^11.0.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.0",
+    "tailwindcss": "^4.2.1",
     "whatsapp-web.js": "*"
   },
   "devDependencies": {
