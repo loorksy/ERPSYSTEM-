@@ -42,12 +42,16 @@ function initDate() {
 }
 
 function switchTab(btn, tabId) {
-  const card = btn.closest('.bg-white');
+  const card = document.getElementById('settingsCard') && tabId && tabId.startsWith('settings-')
+    ? document.getElementById('settingsCard')
+    : btn.closest('.bg-white');
+  if (!card) return;
   card.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
   card.querySelectorAll('.tab-btn').forEach(b => {
     b.className = 'tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200';
   });
-  document.getElementById(tabId).classList.remove('hidden');
+  const tabEl = document.getElementById(tabId);
+  if (tabEl) tabEl.classList.remove('hidden');
   btn.className = 'tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-indigo-600 text-white shadow-md';
 }
 

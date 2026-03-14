@@ -69,7 +69,7 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/whatsapp', whatsappRoutes);
 app.use('/sheets', sheetsRoutes);
 app.use('/settings', settingsRoutes);
-app.use('/ai', aiRoutes);
+app.use('/ai', aiRoutes(io));
 app.use('/', pagesRoutes);
 
 app.get('/', (req, res) => {
@@ -89,6 +89,12 @@ app.use((err, req, res, next) => {
 });
 
 handlers.setIO(io);
+
+io.on('connection', (socket) => {
+  socket.on('subscribe_analysis', (jobId) => {
+    if (jobId) socket.join(`analysis:${jobId}`);
+  });
+});
 
 if (waSession.hasExistingSession()) {
   console.log('[LorkERP] Existing WhatsApp session found, auto-connecting...');

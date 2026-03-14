@@ -65,6 +65,21 @@ function initDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS analysis_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      status TEXT DEFAULT 'pending',
+      progress_current INTEGER DEFAULT 0,
+      progress_total INTEGER DEFAULT 0,
+      output_table TEXT,
+      provider TEXT,
+      model TEXT,
+      chunks_count INTEGER DEFAULT 0,
+      error_message TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS google_sheets_config (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       spreadsheet_id TEXT,
