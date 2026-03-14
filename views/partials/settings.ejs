@@ -1,54 +1,97 @@
-<div class="max-w-3xl space-y-6">
-  <!-- Profile -->
-  <div class="section-card">
-    <div class="flex items-center gap-2.5 py-5 px-4 md:px-6 border-b border-slate-100">
-      <i class="fas fa-user-circle text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">الملف الشخصي</h3>
+<div class="max-w-5xl">
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="flex items-center gap-3 py-5 px-6 border-b border-slate-100">
+      <i class="fas fa-cog text-xl text-indigo-600"></i>
+      <h3 class="text-lg font-bold">الإعدادات</h3>
     </div>
-    <div class="p-4 md:p-6">
-      <form id="profileForm" onsubmit="updateProfile(event)">
-        <div class="mb-5">
-          <label for="displayName" class="block mb-2 font-semibold text-sm text-slate-800">الاسم المعروض</label>
-          <input type="text" id="displayName" name="displayName" class="form-control"
-            value="<%= user.displayName %>" required>
-        </div>
-        <div class="flex flex-wrap gap-3 mt-6">
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i>
-            <span>حفظ التغييرات</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+    <div class="p-6 md:p-10">
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-6 flex-wrap">
+        <button onclick="switchTab(this, 'settings-profile')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-indigo-600 text-white shadow-md">الملف الشخصي</button>
+        <button onclick="switchTab(this, 'settings-ai')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200">الذكاء الاصطناعي</button>
+        <button onclick="switchTab(this, 'settings-whatsapp')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200">واتساب</button>
+        <button onclick="switchTab(this, 'settings-sheets')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200">Google Sheets</button>
+      </div>
 
-  <!-- Password -->
-  <div class="section-card">
-    <div class="flex items-center gap-2.5 py-5 px-4 md:px-6 border-b border-slate-100">
-      <i class="fas fa-key text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">تغيير كلمة المرور</h3>
-    </div>
-    <div class="p-4 md:p-6">
-      <form id="passwordForm" onsubmit="changePassword(event)">
-        <div class="mb-5">
-          <label for="currentPassword" class="block mb-2 font-semibold text-sm text-slate-800">كلمة المرور الحالية</label>
-          <input type="password" id="currentPassword" name="currentPassword" class="form-control" required>
+      <!-- Profile Tab -->
+      <div id="settings-profile" class="tab-content">
+        <div class="space-y-8">
+          <!-- Profile Form -->
+          <div>
+            <h4 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-user-circle text-indigo-600"></i> الملف الشخصي</h4>
+            <form id="profileForm" onsubmit="updateProfile(event)">
+              <div class="mb-5">
+                <label for="displayName" class="block mb-2 font-semibold text-sm text-slate-800">الاسم المعروض</label>
+                <input type="text" id="displayName" name="displayName"
+                  class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-[0.95rem] bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400"
+                  value="<%= user.displayName %>" required>
+              </div>
+              <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-[0.95rem] transition-all duration-300 cursor-pointer whitespace-nowrap active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-[0_4px_12px_rgba(79,70,229,0.4)]">
+                <i class="fas fa-save"></i>
+                <span>حفظ التغييرات</span>
+              </button>
+            </form>
+          </div>
+
+          <hr class="border-slate-100">
+
+          <!-- Password Form -->
+          <div>
+            <h4 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-key text-indigo-600"></i> تغيير كلمة المرور</h4>
+            <form id="passwordForm" onsubmit="changePassword(event)">
+              <div class="mb-5">
+                <label for="currentPassword" class="block mb-2 font-semibold text-sm text-slate-800">كلمة المرور الحالية</label>
+                <input type="password" id="currentPassword" name="currentPassword"
+                  class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-[0.95rem] bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400"
+                  required>
+              </div>
+              <div class="mb-5">
+                <label for="newPassword" class="block mb-2 font-semibold text-sm text-slate-800">كلمة المرور الجديدة</label>
+                <input type="password" id="newPassword" name="newPassword"
+                  class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-[0.95rem] bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400"
+                  required minlength="6">
+              </div>
+              <div class="mb-5">
+                <label for="confirmPassword" class="block mb-2 font-semibold text-sm text-slate-800">تأكيد كلمة المرور</label>
+                <input type="password" id="confirmPassword" name="confirmPassword"
+                  class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-[0.95rem] bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400"
+                  required minlength="6">
+              </div>
+              <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-[0.95rem] transition-all duration-300 cursor-pointer whitespace-nowrap active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-[0_4px_12px_rgba(79,70,229,0.4)]">
+                <i class="fas fa-lock"></i>
+                <span>تغيير كلمة المرور</span>
+              </button>
+            </form>
+          </div>
         </div>
-        <div class="mb-5">
-          <label for="newPassword" class="block mb-2 font-semibold text-sm text-slate-800">كلمة المرور الجديدة</label>
-          <input type="password" id="newPassword" name="newPassword" class="form-control" required minlength="6">
+      </div>
+
+      <!-- AI Tab -->
+      <div id="settings-ai" class="tab-content hidden">
+        <div class="flex flex-col items-center justify-center py-16 text-slate-400">
+          <i class="fas fa-brain text-5xl mb-4 opacity-40"></i>
+          <p class="text-lg font-medium">إعدادات الذكاء الاصطناعي</p>
+          <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
         </div>
-        <div class="mb-5">
-          <label for="confirmPassword" class="block mb-2 font-semibold text-sm text-slate-800">تأكيد كلمة المرور</label>
-          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required minlength="6">
+      </div>
+
+      <!-- WhatsApp Tab -->
+      <div id="settings-whatsapp" class="tab-content hidden">
+        <div class="flex flex-col items-center justify-center py-16 text-slate-400">
+          <i class="fab fa-whatsapp text-5xl mb-4 opacity-40"></i>
+          <p class="text-lg font-medium">إعدادات واتساب</p>
+          <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
         </div>
-        <div class="flex flex-wrap gap-3 mt-6">
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-lock"></i>
-            <span>تغيير كلمة المرور</span>
-          </button>
+      </div>
+
+      <!-- Google Sheets Tab -->
+      <div id="settings-sheets" class="tab-content hidden">
+        <div class="flex flex-col items-center justify-center py-16 text-slate-400">
+          <i class="fas fa-table text-5xl mb-4 opacity-40"></i>
+          <p class="text-lg font-medium">إعدادات Google Sheets</p>
+          <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 </div>

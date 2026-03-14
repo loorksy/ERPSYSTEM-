@@ -61,12 +61,14 @@ const dashboardRoutes = require('./routes/dashboard');
 const whatsappRoutes = require('./routes/whatsapp')(io);
 const sheetsRoutes = require('./routes/sheets');
 const settingsRoutes = require('./routes/settings');
+const pagesRoutes = require('./routes/pages');
 
 app.use('/', authRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/whatsapp', whatsappRoutes);
 app.use('/sheets', sheetsRoutes);
 app.use('/settings', settingsRoutes);
+app.use('/', pagesRoutes);
 
 app.get('/', (req, res) => {
   if (req.session.userId) {

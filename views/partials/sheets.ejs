@@ -1,20 +1,17 @@
 <div class="max-w-3xl">
-  <div class="section-card">
-    <!-- Header -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <div class="flex items-center justify-between flex-wrap gap-3 py-5 px-4 md:px-6 border-b border-slate-100">
       <div class="flex items-center gap-2.5">
         <i class="fas fa-table text-xl text-[#0f9d58]"></i>
         <h3 class="text-lg font-bold">مزامنة Google Sheets</h3>
       </div>
       <div class="flex items-center gap-2 py-1.5 px-3.5 rounded-full bg-slate-50 text-sm font-medium" id="sheetsStatusBadge">
-        <span class="status-dot <%= (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.sync_enabled) ? 'connected' : 'disconnected' %>"></span>
+        <span class="w-2 h-2 rounded-full <%= (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.sync_enabled) ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500' %>"></span>
         <span><%= (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.sync_enabled) ? 'مفعل' : 'غير مفعل' %></span>
       </div>
     </div>
 
-    <!-- Body -->
     <div class="p-4 md:p-6">
-      <!-- Config Form -->
       <div class="mb-7">
         <h4 class="flex items-center gap-2 mb-5 text-base font-semibold text-slate-800">
           <i class="fas fa-cogs text-indigo-600"></i> إعدادات الربط
@@ -22,7 +19,8 @@
         <form id="sheetsConfigForm" onsubmit="saveSheetsConfig(event)">
           <div class="mb-5">
             <label for="spreadsheetId" class="block mb-2 font-semibold text-sm text-slate-800">معرّف جدول البيانات (Spreadsheet ID)</label>
-            <input type="text" id="spreadsheetId" name="spreadsheet_id" class="form-control" dir="ltr"
+            <input type="text" id="spreadsheetId" name="spreadsheet_id" dir="ltr"
+              class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-[0.95rem] bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400"
               placeholder="أدخل معرّف جدول البيانات"
               value="<%= (typeof sheetsConfig !== 'undefined' && sheetsConfig) ? (sheetsConfig.spreadsheet_id || '') : '' %>">
             <small class="block mt-1.5 text-xs text-slate-500">يمكنك إيجاده في رابط الجدول بعد /d/ وقبل /edit</small>
@@ -30,23 +28,25 @@
 
           <div class="mb-5">
             <label for="clientId" class="block mb-2 font-semibold text-sm text-slate-800">Client ID</label>
-            <input type="text" id="clientId" name="client_id" class="form-control" dir="ltr"
+            <input type="text" id="clientId" name="client_id" dir="ltr"
+              class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-[0.95rem] bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400"
               placeholder="أدخل Client ID من Google Cloud Console">
           </div>
 
           <div class="mb-5">
             <label for="clientSecret" class="block mb-2 font-semibold text-sm text-slate-800">Client Secret</label>
-            <input type="password" id="clientSecret" name="client_secret" class="form-control" dir="ltr"
+            <input type="password" id="clientSecret" name="client_secret" dir="ltr"
+              class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-[0.95rem] bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400"
               placeholder="أدخل Client Secret">
           </div>
 
           <div class="flex flex-wrap gap-3 mt-6">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-[0.95rem] transition-all duration-300 cursor-pointer whitespace-nowrap active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-[0_4px_12px_rgba(79,70,229,0.4)]">
               <i class="fas fa-save"></i>
               <span>حفظ الإعدادات</span>
             </button>
             <% if (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.credentials) { %>
-              <a href="/sheets/auth" class="btn btn-success">
+              <a href="/sheets/auth" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-[0.95rem] transition-all duration-300 cursor-pointer whitespace-nowrap active:scale-[0.97] bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-[0_4px_12px_rgba(16,185,129,0.4)]">
                 <i class="fas fa-link"></i>
                 <span>تفويض الوصول</span>
               </a>
@@ -55,22 +55,20 @@
         </form>
       </div>
 
-      <!-- Sync Toggle -->
       <div class="mb-6">
         <div class="flex items-center justify-between p-5 bg-slate-50 rounded-xl border border-slate-200">
           <div>
             <h4 class="text-[0.95rem] font-semibold mb-1">المزامنة التلقائية</h4>
             <p class="text-sm text-slate-500">تفعيل أو إيقاف المزامنة التلقائية مع Google Sheets</p>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="syncToggle" onchange="toggleSync()"
+          <label class="relative inline-block w-[52px] h-7 shrink-0">
+            <input type="checkbox" id="syncToggle" onchange="toggleSync()" class="opacity-0 w-0 h-0 peer"
               <%= (typeof sheetsConfig !== 'undefined' && sheetsConfig && sheetsConfig.sync_enabled) ? 'checked' : '' %>>
-            <span class="slider"></span>
+            <span class="absolute cursor-pointer inset-0 bg-slate-200 rounded-full transition-all duration-300 peer-checked:bg-emerald-500 before:content-[''] before:absolute before:h-[22px] before:w-[22px] before:right-[3px] before:bottom-[3px] before:bg-white before:rounded-full before:transition-all before:duration-300 before:shadow-sm peer-checked:before:-translate-x-6"></span>
           </label>
         </div>
       </div>
 
-      <!-- Instructions -->
       <div class="p-5 bg-sky-50 border border-sky-200 rounded-xl text-right">
         <h4 class="flex items-center gap-2 mb-3 text-sky-700 text-[0.95rem] font-semibold">
           <i class="fas fa-lightbulb"></i> كيفية الإعداد

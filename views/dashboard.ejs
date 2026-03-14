@@ -14,7 +14,7 @@
 <body class="min-h-screen bg-slate-100 font-[Tajawal] text-slate-800">
 
   <!-- Mobile Header -->
-  <header class="hidden lg:hidden fixed top-0 left-0 right-0 h-[60px] bg-white border-b border-slate-200 px-4 items-center justify-between z-[1000] shadow-sm max-lg:flex" id="mobileHeader">
+  <header class="hidden lg:hidden fixed top-0 left-0 right-0 h-[60px] bg-white border-b border-slate-200 px-4 items-center justify-between z-[1000] shadow-sm max-lg:flex">
     <button class="w-[42px] h-[42px] flex items-center justify-center rounded-xl text-slate-800 text-xl active:bg-slate-50" id="menuToggle" aria-label="القائمة">
       <i class="fas fa-bars"></i>
     </button>
@@ -34,6 +34,7 @@
 
   <!-- Sidebar -->
   <aside class="fixed top-0 right-0 w-[260px] h-screen bg-[#1a1a2e] z-[1001] flex flex-col transition-all duration-300 overflow-y-auto overflow-x-hidden max-lg:translate-x-full" id="sidebar">
+    <!-- Logo -->
     <div class="p-5 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-indigo-400 rounded-xl flex items-center justify-center shrink-0">
@@ -49,6 +50,7 @@
       </button>
     </div>
 
+    <!-- User -->
     <div class="py-4 px-5 mx-3 bg-white/[0.08] rounded-xl flex items-center gap-3">
       <div class="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-600 to-cyan-500 text-white flex items-center justify-center font-bold text-lg shrink-0">
         <%= user.displayName.charAt(0) %>
@@ -59,39 +61,98 @@
       </div>
     </div>
 
+    <!-- Navigation -->
     <nav class="flex-1 py-4">
       <ul class="px-3">
         <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">الرئيسية</li>
         <li>
-          <a href="/dashboard" class="sidebar-link <%= page === 'home' ? 'active' : '' %>">
-            <i class="fas fa-home w-5 text-center"></i>
+          <a href="/dashboard" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'home' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-home w-5 text-center <%= page === 'home' ? 'text-indigo-400' : '' %>"></i>
             <span>لوحة التحكم</span>
           </a>
         </li>
-
-        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">الربط والمزامنة</li>
         <li>
-          <a href="/whatsapp" class="sidebar-link <%= page === 'whatsapp' ? 'active' : '' %>">
-            <i class="fab fa-whatsapp w-5 text-center"></i>
-            <span>ربط واتساب</span>
+          <a href="/sheet" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'sheet' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-file-spreadsheet w-5 text-center <%= page === 'sheet' ? 'text-indigo-400' : '' %>"></i>
+            <span>Sheet</span>
+          </a>
+        </li>
+
+        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">العمليات</li>
+        <li>
+          <a href="/payroll" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'payroll' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-money-check-alt w-5 text-center <%= page === 'payroll' ? 'text-indigo-400' : '' %>"></i>
+            <span>تدقيق الرواتب</span>
           </a>
         </li>
         <li>
-          <a href="/sheets" class="sidebar-link <%= page === 'sheets' ? 'active' : '' %>">
-            <i class="fas fa-table w-5 text-center"></i>
-            <span>Google Sheets</span>
+          <a href="/clients" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'clients' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-users w-5 text-center <%= page === 'clients' ? 'text-indigo-400' : '' %>"></i>
+            <span>بيانات العملاء</span>
+          </a>
+        </li>
+        <li>
+          <a href="/messages" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'messages' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-envelope-open-text w-5 text-center <%= page === 'messages' ? 'text-indigo-400' : '' %>"></i>
+            <span>ترتيب الرسائل</span>
+          </a>
+        </li>
+        <li>
+          <a href="/approvals" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'approvals' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-clipboard-check w-5 text-center <%= page === 'approvals' ? 'text-indigo-400' : '' %>"></i>
+            <span>الاعتمادات</span>
+          </a>
+        </li>
+
+        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">الوكالات والتحويل</li>
+        <li>
+          <a href="/sub-agencies" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'sub-agencies' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-code-branch w-5 text-center <%= page === 'sub-agencies' ? 'text-indigo-400' : '' %>"></i>
+            <span>الوكالات الفرعية</span>
+          </a>
+        </li>
+        <li>
+          <a href="/main-agency" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'main-agency' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-building w-5 text-center <%= page === 'main-agency' ? 'text-indigo-400' : '' %>"></i>
+            <span>الوكالة الرئيسية</span>
+          </a>
+        </li>
+        <li>
+          <a href="/transfer-companies" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'transfer-companies' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-exchange-alt w-5 text-center <%= page === 'transfer-companies' ? 'text-indigo-400' : '' %>"></i>
+            <span>شركات التحويل</span>
+          </a>
+        </li>
+        <li>
+          <a href="/shipping" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'shipping' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-truck w-5 text-center <%= page === 'shipping' ? 'text-indigo-400' : '' %>"></i>
+            <span>الشحن</span>
+          </a>
+        </li>
+
+        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">واتساب والعملاء</li>
+        <li>
+          <a href="/wa-bot" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'wa-bot' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-robot w-5 text-center <%= page === 'wa-bot' ? 'text-indigo-400' : '' %>"></i>
+            <span>بوت واتساب</span>
+          </a>
+        </li>
+        <li>
+          <a href="/client-portal" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'client-portal' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-headset w-5 text-center <%= page === 'client-portal' ? 'text-indigo-400' : '' %>"></i>
+            <span>واجهة العملاء</span>
           </a>
         </li>
 
         <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">النظام</li>
         <li>
-          <a href="/settings" class="sidebar-link <%= page === 'settings' ? 'active' : '' %>">
-            <i class="fas fa-cog w-5 text-center"></i>
+          <a href="/settings" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'settings' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-cog w-5 text-center <%= page === 'settings' ? 'text-indigo-400' : '' %>"></i>
             <span>الإعدادات</span>
           </a>
         </li>
         <li>
-          <a href="/logout" class="sidebar-link !text-red-400 hover:!bg-red-400/10">
+          <a href="/logout" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 text-red-400 hover:bg-red-400/10">
             <i class="fas fa-sign-out-alt w-5 text-center"></i>
             <span>تسجيل الخروج</span>
           </a>
@@ -107,26 +168,44 @@
   <!-- Main Content -->
   <main class="lg:mr-[260px] min-h-screen transition-all duration-300 max-lg:pt-[60px] max-lg:pb-[65px]" id="mainContent">
     <div class="bg-white py-5 px-4 lg:px-8 border-b border-slate-200 flex items-center justify-between sticky top-0 z-[100] max-lg:relative max-lg:top-auto">
-      <div>
-        <h1 class="text-xl lg:text-2xl font-bold text-slate-800"><%= title %></h1>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="hidden md:flex items-center gap-2 text-slate-500 text-sm">
-          <i class="fas fa-calendar-alt"></i>
-          <span id="currentDate"></span>
-        </div>
+      <h1 class="text-xl lg:text-2xl font-bold text-slate-800"><%= title %></h1>
+      <div class="hidden md:flex items-center gap-2 text-slate-500 text-sm">
+        <i class="fas fa-calendar-alt"></i>
+        <span id="currentDate"></span>
       </div>
     </div>
 
     <div class="p-4 lg:p-8 2xl:px-12">
       <% if (page === 'home') { %>
         <%- include('partials/home') %>
+      <% } else if (page === 'sheet') { %>
+        <%- include('partials/sheet') %>
+      <% } else if (page === 'payroll') { %>
+        <%- include('partials/payroll') %>
+      <% } else if (page === 'clients') { %>
+        <%- include('partials/clients') %>
+      <% } else if (page === 'messages') { %>
+        <%- include('partials/messages') %>
+      <% } else if (page === 'approvals') { %>
+        <%- include('partials/approvals') %>
+      <% } else if (page === 'sub-agencies') { %>
+        <%- include('partials/sub-agencies') %>
+      <% } else if (page === 'main-agency') { %>
+        <%- include('partials/main-agency') %>
+      <% } else if (page === 'transfer-companies') { %>
+        <%- include('partials/transfer-companies') %>
+      <% } else if (page === 'shipping') { %>
+        <%- include('partials/shipping') %>
+      <% } else if (page === 'wa-bot') { %>
+        <%- include('partials/wa-bot') %>
+      <% } else if (page === 'client-portal') { %>
+        <%- include('partials/client-portal') %>
+      <% } else if (page === 'settings') { %>
+        <%- include('partials/settings') %>
       <% } else if (page === 'whatsapp') { %>
         <%- include('partials/whatsapp') %>
       <% } else if (page === 'sheets') { %>
         <%- include('partials/sheets') %>
-      <% } else if (page === 'settings') { %>
-        <%- include('partials/settings') %>
       <% } %>
     </div>
   </main>
@@ -136,30 +215,34 @@
 
   <!-- Mobile Bottom Nav -->
   <nav class="hidden max-lg:flex fixed bottom-0 left-0 right-0 h-[65px] bg-white border-t border-slate-200 justify-around items-center z-[999] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom,0)]">
-    <a href="/dashboard" class="flex flex-col items-center gap-1 text-[0.7rem] font-medium py-2 px-3 rounded-xl transition-all duration-300 <%= page === 'home' ? 'text-indigo-600' : 'text-slate-400' %> active:bg-indigo-600/10">
-      <i class="fas fa-home text-xl"></i>
+    <a href="/dashboard" class="flex flex-col items-center gap-1 text-[0.65rem] font-medium py-2 px-1.5 rounded-lg transition-all duration-300 <%= page === 'home' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-home text-lg"></i>
       <span>الرئيسية</span>
     </a>
-    <a href="/whatsapp" class="flex flex-col items-center gap-1 text-[0.7rem] font-medium py-2 px-3 rounded-xl transition-all duration-300 <%= page === 'whatsapp' ? 'text-indigo-600' : 'text-slate-400' %> active:bg-indigo-600/10">
-      <i class="fab fa-whatsapp text-xl"></i>
-      <span>واتساب</span>
+    <a href="/sheet" class="flex flex-col items-center gap-1 text-[0.65rem] font-medium py-2 px-1.5 rounded-lg transition-all duration-300 <%= page === 'sheet' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-file-spreadsheet text-lg"></i>
+      <span>Sheet</span>
     </a>
-    <a href="/sheets" class="flex flex-col items-center gap-1 text-[0.7rem] font-medium py-2 px-3 rounded-xl transition-all duration-300 <%= page === 'sheets' ? 'text-indigo-600' : 'text-slate-400' %> active:bg-indigo-600/10">
-      <i class="fas fa-table text-xl"></i>
-      <span>الجداول</span>
+    <a href="/clients" class="flex flex-col items-center gap-1 text-[0.65rem] font-medium py-2 px-1.5 rounded-lg transition-all duration-300 <%= page === 'clients' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-users text-lg"></i>
+      <span>العملاء</span>
     </a>
-    <a href="/settings" class="flex flex-col items-center gap-1 text-[0.7rem] font-medium py-2 px-3 rounded-xl transition-all duration-300 <%= page === 'settings' ? 'text-indigo-600' : 'text-slate-400' %> active:bg-indigo-600/10">
-      <i class="fas fa-cog text-xl"></i>
+    <a href="/wa-bot" class="flex flex-col items-center gap-1 text-[0.65rem] font-medium py-2 px-1.5 rounded-lg transition-all duration-300 <%= page === 'wa-bot' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-robot text-lg"></i>
+      <span>البوت</span>
+    </a>
+    <a href="/settings" class="flex flex-col items-center gap-1 text-[0.65rem] font-medium py-2 px-1.5 rounded-lg transition-all duration-300 <%= page === 'settings' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-cog text-lg"></i>
       <span>الإعدادات</span>
     </a>
   </nav>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
   <script src="/js/app.js"></script>
-  <% if (page === 'whatsapp') { %>
+  <% if (page === 'whatsapp' || page === 'wa-bot') { %>
     <script src="/js/whatsapp.js"></script>
   <% } %>
-  <% if (page === 'sheets') { %>
+  <% if (page === 'sheets' || page === 'sheet') { %>
     <script src="/js/sheets.js"></script>
   <% } %>
 </body>
