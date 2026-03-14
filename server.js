@@ -36,8 +36,8 @@ app.use(helmet({
   },
 }));
 app.use(compression());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
@@ -62,12 +62,14 @@ const whatsappRoutes = require('./routes/whatsapp')(io);
 const sheetsRoutes = require('./routes/sheets');
 const settingsRoutes = require('./routes/settings');
 const pagesRoutes = require('./routes/pages');
+const aiRoutes = require('./routes/ai');
 
 app.use('/', authRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/whatsapp', whatsappRoutes);
 app.use('/sheets', sheetsRoutes);
 app.use('/settings', settingsRoutes);
+app.use('/ai', aiRoutes);
 app.use('/', pagesRoutes);
 
 app.get('/', (req, res) => {

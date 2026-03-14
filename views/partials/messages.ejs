@@ -1,15 +1,241 @@
-<div class="max-w-5xl" dir="rtl">
+<div class="max-w-6xl">
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="flex items-center gap-3 py-5 px-6 border-b border-slate-100">
-      <i class="fas fa-envelope-open-text text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">ترتيب الرسائل</h3>
+    <div class="flex items-center justify-between flex-wrap gap-3 py-5 px-6 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-envelope-open-text text-xl text-indigo-600"></i>
+        <h3 class="text-lg font-bold">ترتيب الرسائل</h3>
+      </div>
+      <div class="flex items-center gap-2" id="aiProviderInfo">
+        <span class="text-xs text-slate-400" id="activeProviderLabel"></span>
+      </div>
     </div>
-    <div class="p-6 md:p-10">
-      <div class="flex flex-col items-center justify-center py-16 text-slate-400">
-        <i class="fas fa-envelope-open-text text-5xl mb-4 opacity-40"></i>
-        <p class="text-lg font-medium">سيتم إضافة محتوى ترتيب الرسائل هنا</p>
-        <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
+
+    <div class="p-4 md:p-6">
+      <!-- Input Section -->
+      <div class="mb-6">
+        <label class="block mb-2 font-semibold text-sm text-slate-800">
+          <i class="fab fa-whatsapp text-[#25d366] ml-1"></i>
+          الصق رسائل واتساب هنا
+        </label>
+        <textarea id="messagesInput" dir="auto" rows="10" placeholder="الصق رسائل واتساب هنا للتحليل والاستخراج..."
+          class="w-full py-4 px-5 border-2 border-slate-200 rounded-xl text-sm bg-slate-50 text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400 resize-y leading-7"></textarea>
+        <div class="flex items-center justify-between mt-2">
+          <span class="text-xs text-slate-400" id="charCount">0 حرف</span>
+          <span class="text-xs text-slate-400" id="chunkEstimate"></span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <button onclick="startAnalysis()" id="analyzeBtn"
+          class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-[0.95rem] transition-all duration-300 cursor-pointer whitespace-nowrap active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-[0_4px_12px_rgba(79,70,229,0.4)]">
+          <i class="fas fa-wand-magic-sparkles"></i>
+          <span>تحليل واستخراج</span>
+        </button>
+        <button onclick="clearAll()" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-[0.95rem] transition-all duration-300 cursor-pointer whitespace-nowrap active:scale-[0.97] bg-slate-100 text-slate-600 hover:bg-slate-200">
+          <i class="fas fa-eraser"></i>
+          <span>مسح</span>
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div class="mb-6 hidden" id="progressSection">
+        <div class="p-5 bg-indigo-50 border border-indigo-200 rounded-xl">
+          <div class="flex items-center gap-3 mb-3">
+            <i class="fas fa-spinner fa-spin text-indigo-600"></i>
+            <span class="font-semibold text-sm text-indigo-700" id="progressText">جاري التحليل...</span>
+          </div>
+          <div class="w-full h-2 bg-indigo-200 rounded-full overflow-hidden">
+            <div class="h-full bg-indigo-600 rounded-full transition-all duration-500" id="progressBar"></div>
+          </div>
+          <p class="text-xs text-indigo-500 mt-2" id="progressDetail"></p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="hidden" id="resultsSection">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h4 class="font-bold text-slate-800 flex items-center gap-2">
+            <i class="fas fa-table text-indigo-600"></i> النتائج
+          </h4>
+          <div class="flex gap-2">
+            <button onclick="copyResults()" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs transition-all duration-300 cursor-pointer active:scale-[0.97] bg-emerald-500 text-white hover:bg-emerald-600">
+              <i class="fas fa-copy"></i> نسخ الجدول
+            </button>
+            <button onclick="copyAsCSV()" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs transition-all duration-300 cursor-pointer active:scale-[0.97] bg-sky-500 text-white hover:bg-sky-600">
+              <i class="fas fa-file-csv"></i> نسخ CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+            <p class="text-lg font-bold text-indigo-600" id="rowCount">0</p>
+            <p class="text-xs text-slate-500">صف</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+            <p class="text-lg font-bold text-indigo-600" id="chunkCount">0</p>
+            <p class="text-xs text-slate-500">أجزاء</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+            <p class="text-lg font-bold text-indigo-600" id="usedModel">-</p>
+            <p class="text-xs text-slate-500">الموديل</p>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="overflow-x-auto border border-slate-200 rounded-xl" id="tableContainer">
+        </div>
+
+        <!-- Raw Markdown -->
+        <details class="mt-4">
+          <summary class="text-sm text-slate-500 cursor-pointer hover:text-indigo-600 font-medium">
+            <i class="fas fa-code ml-1"></i> عرض Markdown الخام
+          </summary>
+          <pre id="rawMarkdown" dir="ltr" class="mt-2 p-4 bg-slate-900 text-slate-200 rounded-xl text-xs overflow-x-auto leading-6 max-h-[400px] overflow-y-auto"></pre>
+        </details>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+const messagesInput = document.getElementById('messagesInput');
+const charCount = document.getElementById('charCount');
+const chunkEstimate = document.getElementById('chunkEstimate');
+
+messagesInput.addEventListener('input', () => {
+  const len = messagesInput.value.length;
+  charCount.textContent = len.toLocaleString('ar-SA') + ' حرف';
+  const chunks = Math.ceil(len / 12000);
+  chunkEstimate.textContent = len > 12000 ? `سيتم تقسيمه إلى ${chunks} أجزاء` : '';
+});
+
+async function startAnalysis() {
+  const text = messagesInput.value.trim();
+  if (!text || text.length < 10) {
+    showToast('الرجاء إدخال رسائل كافية للتحليل', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('analyzeBtn');
+  const progress = document.getElementById('progressSection');
+  const results = document.getElementById('resultsSection');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>جاري التحليل...</span>';
+  progress.classList.remove('hidden');
+  results.classList.add('hidden');
+
+  const chunks = Math.ceil(text.length / 12000);
+  document.getElementById('progressDetail').textContent = `حجم النص: ${text.length.toLocaleString()} حرف${chunks > 1 ? ` — ${chunks} أجزاء` : ''}`;
+  document.getElementById('progressBar').style.width = '10%';
+
+  try {
+    const res = await fetch('/ai/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+
+    document.getElementById('progressBar').style.width = '100%';
+
+    if (!data.success) {
+      showToast(data.message, 'error');
+      progress.classList.add('hidden');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i><span>تحليل واستخراج</span>';
+      return;
+    }
+
+    renderResults(data);
+    showToast('تم التحليل بنجاح', 'success');
+  } catch (err) {
+    showToast('خطأ في الاتصال بالخادم', 'error');
+  }
+
+  setTimeout(() => progress.classList.add('hidden'), 500);
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i><span>تحليل واستخراج</span>';
+}
+
+function renderResults(data) {
+  const results = document.getElementById('resultsSection');
+  results.classList.remove('hidden');
+
+  document.getElementById('rawMarkdown').textContent = data.table;
+  document.getElementById('chunkCount').textContent = data.chunks;
+  document.getElementById('usedModel').textContent = data.model?.split('/').pop()?.split('-').slice(0, 2).join('-') || data.model;
+
+  const lines = data.table.split('\n').filter(l => l.trim().startsWith('|'));
+  const rows = Math.max(0, lines.length - 2);
+  document.getElementById('rowCount').textContent = rows;
+
+  if (lines.length >= 2) {
+    const headers = lines[0].split('|').filter(c => c.trim()).map(c => c.trim());
+    const dataRows = lines.slice(2);
+
+    let html = '<table class="w-full text-sm">';
+    html += '<thead><tr class="bg-indigo-600 text-white">';
+    headers.forEach(h => { html += `<th class="py-3 px-4 text-right font-semibold whitespace-nowrap">${h}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    dataRows.forEach((row, i) => {
+      const cells = row.split('|').filter(c => c.trim() !== '' || c === '');
+      const cleanCells = row.split('|');
+      cleanCells.shift();
+      if (cleanCells[cleanCells.length - 1]?.trim() === '') cleanCells.pop();
+
+      const bg = i % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+      html += `<tr class="${bg} hover:bg-indigo-50 transition-colors border-b border-slate-100">`;
+      cleanCells.forEach(c => { html += `<td class="py-3 px-4 text-right whitespace-nowrap">${c.trim()}</td>`; });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('tableContainer').innerHTML = html;
+  }
+}
+
+function copyResults() {
+  const md = document.getElementById('rawMarkdown').textContent;
+  navigator.clipboard.writeText(md).then(() => showToast('تم نسخ الجدول', 'success'));
+}
+
+function copyAsCSV() {
+  const md = document.getElementById('rawMarkdown').textContent;
+  const lines = md.split('\n').filter(l => l.trim().startsWith('|'));
+  const csv = lines.filter((_, i) => i !== 1).map(l => {
+    const cells = l.split('|');
+    cells.shift();
+    if (cells[cells.length - 1]?.trim() === '') cells.pop();
+    return cells.map(c => `"${c.trim().replace(/"/g, '""')}"`).join(',');
+  }).join('\n');
+  const bom = '\uFEFF';
+  navigator.clipboard.writeText(bom + csv).then(() => showToast('تم نسخ CSV (جاهز لـ Excel)', 'success'));
+}
+
+function clearAll() {
+  messagesInput.value = '';
+  charCount.textContent = '0 حرف';
+  chunkEstimate.textContent = '';
+  document.getElementById('resultsSection').classList.add('hidden');
+  document.getElementById('progressSection').classList.add('hidden');
+}
+
+(async function loadAIInfo() {
+  try {
+    const res = await fetch('/ai/status');
+    const data = await res.json();
+    const label = document.getElementById('activeProviderLabel');
+    if (data.openai?.selectedModel) {
+      label.innerHTML = '<span class="py-1 px-3 rounded-full bg-emerald-50 text-emerald-600 font-medium">OpenAI: ' + data.openai.selectedModel + '</span>';
+    } else if (data.gemini?.selectedModel) {
+      label.innerHTML = '<span class="py-1 px-3 rounded-full bg-blue-50 text-blue-600 font-medium">Gemini: ' + data.gemini.selectedModel + '</span>';
+    } else {
+      label.innerHTML = '<a href="/settings" class="py-1 px-3 rounded-full bg-amber-50 text-amber-600 font-medium text-xs hover:bg-amber-100">⚠ لم يتم إعداد AI — اذهب للإعدادات</a>';
+    }
+  } catch {}
+})();
+</script>

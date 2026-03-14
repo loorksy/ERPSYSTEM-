@@ -45,6 +45,26 @@ function initDatabase() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS ai_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      provider TEXT NOT NULL,
+      api_key_encrypted TEXT NOT NULL,
+      selected_model TEXT,
+      models_cache TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS message_analyses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      input_text TEXT,
+      output_table TEXT,
+      provider TEXT,
+      model TEXT,
+      chunks_count INTEGER DEFAULT 1,
+      status TEXT DEFAULT 'completed',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS google_sheets_config (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       spreadsheet_id TEXT,
