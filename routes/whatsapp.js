@@ -1,122 +1,114 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { requireAuth } = require('../middleware/auth');
-const { getDb } = require('../db/database');
+const whatsappService = require('../services/whatsappService');
 
-module.exports = function(io) {
-  let whatsappClient = null;
-  let whatsappStatus = 'disconnected';
-  let currentQR = null;
+const uploadDir = path.join(__dirname, '..', 'uploads', 'whatsapp');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const upload = multer({
+  dest: uploadDir,
+  limits: { fileSize: 16 * 1024 * 1024 },
+});
+
+module.exports = function (io) {
 
   router.get('/', requireAuth, (req, res) => {
+    const status = whatsappService.getStatus();
     res.render('dashboard', {
       title: 'ربط واتساب',
       page: 'whatsapp',
       user: req.session.user,
-      whatsappStatus
+      whatsappStatus: status.status,
     });
   });
 
   router.get('/status', requireAuth, (req, res) => {
+    res.json(whatsappService.getStatus());
+  });
+
+  router.get('/qr', requireAuth, (req, res) => {
+    const status = whatsappService.getStatus();
     res.json({
-      status: whatsappStatus,
-      qr: currentQR
+      success: !!status.qr,
+      qr: status.qr,
+      status: status.status,
     });
   });
 
   router.post('/connect', requireAuth, async (req, res) => {
     try {
-      if (whatsappStatus === 'connected') {
-        return res.json({ success: false, message: 'واتساب متصل بالفعل' });
-      }
-
-      whatsappStatus = 'connecting';
-      io.emit('whatsapp-status', { status: 'connecting' });
-
-      const { Client, LocalAuth } = require('whatsapp-web.js');
-
-      whatsappClient = new Client({
-        authStrategy: new LocalAuth({ dataPath: './whatsapp-session' }),
-        puppeteer: {
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        }
-      });
-
-      whatsappClient.on('qr', (qr) => {
-        const QRCode = require('qrcode');
-        QRCode.toDataURL(qr, (err, url) => {
-          if (!err) {
-            currentQR = url;
-            io.emit('whatsapp-qr', { qr: url });
-          }
-        });
-      });
-
-      whatsappClient.on('ready', () => {
-        whatsappStatus = 'connected';
-        currentQR = null;
-        const info = whatsappClient.info;
-        io.emit('whatsapp-status', {
-          status: 'connected',
-          phone: info?.wid?.user || 'غير معروف'
-        });
-
-        const db = getDb();
-        db.prepare(`
-          INSERT OR REPLACE INTO whatsapp_sessions (id, phone_number, status, connected_at, updated_at)
-          VALUES (1, ?, 'connected', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        `).run(info?.wid?.user || '');
-      });
-
-      whatsappClient.on('disconnected', () => {
-        whatsappStatus = 'disconnected';
-        currentQR = null;
-        whatsappClient = null;
-        io.emit('whatsapp-status', { status: 'disconnected' });
-      });
-
-      whatsappClient.on('auth_failure', () => {
-        whatsappStatus = 'auth_failed';
-        currentQR = null;
-        io.emit('whatsapp-status', { status: 'auth_failed' });
-      });
-
-      await whatsappClient.initialize();
-      res.json({ success: true, message: 'جاري الاتصال...' });
-    } catch (error) {
-      console.error('WhatsApp connection error:', error);
-      whatsappStatus = 'error';
-      res.json({ success: false, message: 'حدث خطأ أثناء الاتصال' });
+      const result = await whatsappService.connect(io);
+      res.json(result);
+    } catch (err) {
+      res.json({ success: false, message: err.message });
     }
   });
 
   router.post('/disconnect', requireAuth, async (req, res) => {
     try {
-      if (whatsappClient) {
-        await whatsappClient.destroy();
-        whatsappClient = null;
-      }
-      whatsappStatus = 'disconnected';
-      currentQR = null;
+      const result = await whatsappService.disconnect();
       io.emit('whatsapp-status', { status: 'disconnected' });
-      res.json({ success: true, message: 'تم قطع الاتصال' });
-    } catch (error) {
-      res.json({ success: false, message: 'حدث خطأ أثناء قطع الاتصال' });
+      res.json(result);
+    } catch (err) {
+      res.json({ success: false, message: err.message });
+    }
+  });
+
+  router.post('/restart', requireAuth, async (req, res) => {
+    try {
+      const result = await whatsappService.restart(io);
+      res.json(result);
+    } catch (err) {
+      res.json({ success: false, message: err.message });
     }
   });
 
   router.post('/send', requireAuth, async (req, res) => {
     try {
-      if (!whatsappClient || whatsappStatus !== 'connected') {
-        return res.json({ success: false, message: 'واتساب غير متصل' });
-      }
       const { phone, message } = req.body;
-      const chatId = phone.includes('@c.us') ? phone : `${phone}@c.us`;
-      await whatsappClient.sendMessage(chatId, message);
-      res.json({ success: true, message: 'تم إرسال الرسالة بنجاح' });
-    } catch (error) {
-      res.json({ success: false, message: 'فشل إرسال الرسالة' });
+      if (!phone || !message) {
+        return res.json({ success: false, message: 'رقم الهاتف والرسالة مطلوبان' });
+      }
+      const result = await whatsappService.sendMessage(phone, message);
+      res.json(result);
+    } catch (err) {
+      res.json({ success: false, message: err.message });
+    }
+  });
+
+  router.post('/send-image', requireAuth, upload.single('image'), async (req, res) => {
+    try {
+      const { phone, caption } = req.body;
+      if (!phone || !req.file) {
+        return res.json({ success: false, message: 'رقم الهاتف والصورة مطلوبان' });
+      }
+      const result = await whatsappService.sendImage(phone, req.file.path, caption || '');
+      try { fs.unlinkSync(req.file.path); } catch {}
+      res.json(result);
+    } catch (err) {
+      if (req.file) try { fs.unlinkSync(req.file.path); } catch {}
+      res.json({ success: false, message: err.message });
+    }
+  });
+
+  router.post('/send-file', requireAuth, upload.single('file'), async (req, res) => {
+    try {
+      const { phone, caption } = req.body;
+      if (!phone || !req.file) {
+        return res.json({ success: false, message: 'رقم الهاتف والملف مطلوبان' });
+      }
+      const result = await whatsappService.sendFile(phone, req.file.path, caption || '');
+      try { fs.unlinkSync(req.file.path); } catch {}
+      res.json(result);
+    } catch (err) {
+      if (req.file) try { fs.unlinkSync(req.file.path); } catch {}
+      res.json({ success: false, message: err.message });
     }
   });
 

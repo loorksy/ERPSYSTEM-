@@ -5,7 +5,14 @@ socket.on('whatsapp-qr', (data) => {
 });
 
 socket.on('whatsapp-status', (data) => {
-  updateWhatsAppUI(data.status, data.phone);
+  updateWhatsAppUI(data.status, data.phone, data);
+});
+
+socket.on('whatsapp-loading', (data) => {
+  const waStatusText = document.getElementById('waStatusText');
+  if (waStatusText && data.percent) {
+    waStatusText.textContent = `جاري التحميل ${data.percent}%`;
+  }
 });
 
 async function connectWhatsApp() {
@@ -22,8 +29,17 @@ async function connectWhatsApp() {
 }
 
 async function disconnectWhatsApp() {
+  const btn = document.getElementById('btnDisconnect');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>جاري قطع الاتصال...</span>';
+  }
   const result = await apiCall('/whatsapp/disconnect', { method: 'POST' });
   showToast(result.message, result.success ? 'success' : 'error');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-unlink"></i><span>قطع الاتصال</span>';
+  }
 }
 
 function showQRCode(qrDataUrl) {
@@ -40,7 +56,7 @@ function showQRCode(qrDataUrl) {
   updateStatusBadge('connecting', 'جاري الربط...');
 }
 
-function updateWhatsAppUI(status, phone) {
+function updateWhatsAppUI(status, phone, extra) {
   const placeholder = document.getElementById('qrPlaceholder');
   const qrCode = document.getElementById('qrCode');
   const waConnected = document.getElementById('waConnected');
@@ -55,7 +71,11 @@ function updateWhatsAppUI(status, phone) {
       if (waConnected) waConnected.style.display = 'block';
       if (connectedPhone) connectedPhone.textContent = phone ? `الرقم: ${phone}` : '';
       if (btnConnect) btnConnect.style.display = 'none';
-      if (btnDisconnect) btnDisconnect.style.display = 'flex';
+      if (btnDisconnect) {
+        btnDisconnect.style.display = 'flex';
+        btnDisconnect.disabled = false;
+        btnDisconnect.innerHTML = '<i class="fas fa-unlink"></i><span>قطع الاتصال</span>';
+      }
       updateStatusBadge('connected', 'متصل');
       showToast('تم ربط واتساب بنجاح', 'success');
       break;
@@ -73,15 +93,34 @@ function updateWhatsAppUI(status, phone) {
       updateStatusBadge('disconnected', 'غير متصل');
       break;
 
+    case 'connecting':
+      updateStatusBadge('connecting', 'جاري الاتصال...');
+      break;
+
+    case 'reconnecting':
+      if (placeholder) placeholder.style.display = 'none';
+      if (qrCode) qrCode.style.display = 'none';
+      if (waConnected) waConnected.style.display = 'none';
+      if (btnConnect) btnConnect.style.display = 'none';
+      if (btnDisconnect) btnDisconnect.style.display = 'none';
+      const attempt = extra?.attempt || '?';
+      const max = extra?.maxAttempts || '?';
+      updateStatusBadge('connecting', `إعادة الاتصال (${attempt}/${max})`);
+      showToast(`محاولة إعادة الاتصال ${attempt}/${max}`, 'error');
+      break;
+
     case 'auth_failed':
       if (placeholder) placeholder.style.display = 'block';
       if (qrCode) qrCode.style.display = 'none';
+      if (waConnected) waConnected.style.display = 'none';
       if (btnConnect) {
+        btnConnect.style.display = 'flex';
         btnConnect.disabled = false;
         btnConnect.innerHTML = '<i class="fab fa-whatsapp"></i><span>إعادة المحاولة</span>';
       }
+      if (btnDisconnect) btnDisconnect.style.display = 'none';
       updateStatusBadge('disconnected', 'فشل المصادقة');
-      showToast('فشل مصادقة واتساب', 'error');
+      showToast('فشل مصادقة واتساب، يرجى إعادة المحاولة', 'error');
       break;
   }
 }
@@ -91,23 +130,19 @@ function updateStatusBadge(status, text) {
   if (!badge) return;
   const dot = badge.querySelector('.status-dot');
   const label = document.getElementById('waStatusText');
-  if (dot) {
-    dot.className = 'status-dot ' + status;
-  }
-  if (label) {
-    label.textContent = text;
-  }
+  if (dot) dot.className = 'status-dot ' + status;
+  if (label) label.textContent = text;
 }
 
 (async function checkInitialStatus() {
   try {
     const result = await apiCall('/whatsapp/status');
     if (result.status === 'connected') {
-      updateWhatsAppUI('connected');
+      updateWhatsAppUI('connected', result.phone);
     } else if (result.qr) {
       showQRCode(result.qr);
     }
   } catch (e) {
-    // Silently handle
+    console.error('[WhatsApp UI] Status check error:', e);
   }
 })();

@@ -8,6 +8,9 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const { initDatabase } = require('./db/database');
+const handlers = require('./whatsapp/handlers');
+const whatsappService = require('./services/whatsappService');
+const waSession = require('./whatsapp/session');
 
 const app = express();
 const server = http.createServer(app);
@@ -44,8 +47,8 @@ app.use(session({
   cookie: {
     secure: false,
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
-  }
+    maxAge: 24 * 60 * 60 * 1000,
+  },
 }));
 
 app.use((req, res, next) => {
@@ -81,8 +84,22 @@ app.use((err, req, res, next) => {
   res.status(500).render('error', { title: 'خطأ في الخادم', error: err.message });
 });
 
+handlers.setIO(io);
+
+if (waSession.hasExistingSession()) {
+  console.log('[LorkERP] Existing WhatsApp session found, auto-connecting...');
+  setTimeout(() => {
+    whatsappService.connect(io).then(result => {
+      console.log('[LorkERP] Auto-connect result:', result.message);
+    }).catch(err => {
+      console.error('[LorkERP] Auto-connect failed:', err.message);
+    });
+  }, 3000);
+}
+
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`LorkERP is running on http://0.0.0.0:${PORT}`);
+  console.log(`[LorkERP] Server running on http://0.0.0.0:${PORT}`);
+  console.log(`[LorkERP] WhatsApp module initialized`);
 });
 
 module.exports = { app, server, io };

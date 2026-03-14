@@ -6,3 +6,4 @@ db/*.db-wal
 whatsapp-session/
 .wwebjs_auth/
 .wwebjs_cache/
+uploads/
