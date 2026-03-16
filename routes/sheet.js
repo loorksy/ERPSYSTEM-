@@ -23,15 +23,8 @@ async function readSheetFromGoogle(spreadsheetId, sheetName, credentials, token)
   if (!oauth2Client) throw new Error('بيانات الاعتماد غير متوفرة');
   oauth2Client.setCredentials(typeof token === 'string' ? JSON.parse(token) : token);
   const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
-  const meta = await sheets.spreadsheets.get({ spreadsheetId });
-  const firstSheetTitle = meta.data.sheets && meta.data.sheets[0] ? meta.data.sheets[0].properties.title : 'Sheet1';
-  const title = sheetName && String(sheetName).trim() ? String(sheetName).trim() : firstSheetTitle;
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `'${title}'!A:ZZ`
-  });
-  const rows = (res.data.values || []);
-  return rows;
+  const result = await fetchSheetWithFallback(sheets, spreadsheetId, sheetName && String(sheetName).trim() ? String(sheetName).trim() : null);
+  return result.values;
 }
 
 const uploadsDir = path.join(__dirname, '../uploads/temp');
@@ -140,19 +133,239 @@ router.get('/cycles', requireAuth, (req, res) => {
   }
 });
 
-/** إنشاء دورة مالية (اسم + بيانات الإدارة + الوكيل) */
+/** بنية دورة مالية (عدد الأعمدة + مراجع Google لملء قوائم الأعمدة من الأوراق الفعلية) */
+router.get('/cycles/:id/structure', requireAuth, (req, res) => {
+  try {
+    const db = getDb();
+    const row = db.prepare(
+      'SELECT id, name, management_data, agent_data, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name FROM financial_cycles WHERE id = ? AND user_id = ?'
+    ).get(req.params.id, req.session.userId);
+    if (!row) return res.json({ success: false, message: 'الدورة غير موجودة' });
+    const mgmt = row.management_data ? JSON.parse(row.management_data) : [];
+    const agent = row.agent_data ? JSON.parse(row.agent_data) : [];
+    const managementColumns = Math.max(26, mgmt[0] ? mgmt[0].length : 26);
+    const agentColumns = Math.max(26, agent[0] ? agent[0].length : 26);
+    res.json({
+      success: true,
+      managementColumns,
+      agentColumns,
+      managementSpreadsheetId: row.management_spreadsheet_id ? String(row.management_spreadsheet_id).trim() : null,
+      managementSheetName: row.management_sheet_name ? String(row.management_sheet_name).trim() : null,
+      agentSpreadsheetId: row.agent_spreadsheet_id ? String(row.agent_spreadsheet_id).trim() : null,
+      agentSheetName: row.agent_sheet_name ? String(row.agent_sheet_name).trim() : null
+    });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+/** جلب ورقة كاملة على دفعات (لتجنب حد الـ API والوقت عند الملفات الكبيرة +20 ألف صف) */
+const SHEET_BATCH_ROWS = 5000;
+const SHEET_MAX_ROWS = 150000;
+
+async function fetchSheetValuesBatched(sheets, spreadsheetId, title) {
+  const allRows = [];
+  let startRow = 1;
+  while (startRow <= SHEET_MAX_ROWS) {
+    const endRow = startRow + SHEET_BATCH_ROWS - 1;
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${title}'!A${startRow}:ZZ${endRow}`
+    });
+    const batch = res.data.values || [];
+    if (batch.length === 0) break;
+    allRows.push(...batch);
+    if (batch.length < SHEET_BATCH_ROWS) break;
+    startRow = endRow + 1;
+  }
+  return allRows;
+}
+
+/** جلب بيانات ورقة من جدول Google مع استبدال ورقة بديلة إن فشل الاسم أو كانت فارغة.
+ *  excludeSheetTitle: إن وُجد (نفس الملف للوكيل بعد الإدارة) نستبعد هذه الورقة من المحاولة. */
+async function fetchSheetWithFallback(sheets, spreadsheetId, preferredSheetName, excludeSheetTitle) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheetList = meta.data.sheets || [];
+  const titles = sheetList.map(s => (s.properties && s.properties.title) || '').filter(Boolean);
+  if (!titles.length) return { values: [], sheetTitleUsed: null };
+
+  const preferred = preferredSheetName && String(preferredSheetName).trim();
+  const exclude = excludeSheetTitle && String(excludeSheetTitle).trim();
+  const toTry = [];
+  if (preferred && preferred !== exclude) toTry.push(preferred);
+  for (const t of titles) {
+    if (t && t !== exclude && !toTry.includes(t)) toTry.push(t);
+  }
+  if (!toTry.length && titles[0]) toTry.push(titles[0]);
+
+  let best = { values: [], sheetTitleUsed: null };
+  for (const title of toTry) {
+    try {
+      const values = await fetchSheetValuesBatched(sheets, spreadsheetId, title);
+      if (values.length > best.values.length) best = { values, sheetTitleUsed: title };
+      if (values.length > 0 && preferred && title === preferred) return { values, sheetTitleUsed: title };
+    } catch (_) { /* جرب الورقة التالية */ }
+  }
+  if (best.values.length > 0) return best;
+  if (toTry[0]) {
+    try {
+      const values = await fetchSheetValuesBatched(sheets, spreadsheetId, toTry[0]);
+      return { values, sheetTitleUsed: toTry[0] };
+    } catch (_) {}
+  }
+  return { values: [], sheetTitleUsed: toTry[0] || null };
+}
+
+/** مزامنة جداول الدورة المالية من Google (جلب أحدث بيانات الإدارة والوكيل) */
+router.post('/cycles/:id/sync', requireAuth, async (req, res) => {
+  try {
+    const cycleId = req.params.id;
+    const db = getDb();
+    const cycle = db.prepare(
+      'SELECT id, name, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name FROM financial_cycles WHERE id = ? AND user_id = ?'
+    ).get(cycleId, req.session.userId);
+    if (!cycle) return res.json({ success: false, message: 'الدورة غير موجودة' });
+
+    const mgmtSsId = cycle.management_spreadsheet_id ? String(cycle.management_spreadsheet_id).trim() : null;
+    const agentSsId = cycle.agent_spreadsheet_id ? String(cycle.agent_spreadsheet_id).trim() : null;
+    if (!mgmtSsId || !agentSsId) {
+      return res.json({
+        success: false,
+        message: 'هذه الدورة غير مرتبطة بجداول Google. أنشئ دورة جديدة من قسم Sheet باستخدام «استيراد من Google» ثم احفظها لتفعيل المزامنة.'
+      });
+    }
+
+    const config = db.prepare('SELECT token, credentials FROM google_sheets_config WHERE id = 1').get();
+    if (!config?.token) return res.json({ success: false, message: 'لم يتم تسجيل الدخول بـ Google' });
+    const credentials = config.credentials ? JSON.parse(config.credentials) : null;
+    const oauth2Client = getOAuth2Client(credentials);
+    if (!oauth2Client) return res.json({ success: false, message: 'بيانات الاعتماد غير متوفرة' });
+    oauth2Client.setCredentials(JSON.parse(config.token));
+    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+
+    const mgmtSheetName = cycle.management_sheet_name ? String(cycle.management_sheet_name).trim() : null;
+    const agentSheetName = cycle.agent_sheet_name ? String(cycle.agent_sheet_name).trim() : null;
+
+    const mgmtResult = await fetchSheetWithFallback(sheets, mgmtSsId, mgmtSheetName, null);
+    const agentResult = await fetchSheetWithFallback(sheets, agentSsId, agentSheetName, mgmtSsId === agentSsId ? mgmtResult.sheetTitleUsed : null);
+
+    const managementRows = mgmtResult.values;
+    const agentRows = agentResult.values;
+
+    db.prepare(
+      'UPDATE financial_cycles SET management_data = ?, agent_data = ?, management_sheet_name = ?, agent_sheet_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?'
+    ).run(
+      JSON.stringify(managementRows),
+      JSON.stringify(agentRows),
+      mgmtResult.sheetTitleUsed || mgmtSheetName,
+      agentResult.sheetTitleUsed || agentSheetName,
+      cycleId,
+      req.session.userId
+    );
+
+    let detail = 'الإدارة: ' + managementRows.length + ' صف';
+    if (mgmtResult.sheetTitleUsed) detail += " (ورقة \"" + mgmtResult.sheetTitleUsed + "\")";
+    detail += '، الوكيل: ' + agentRows.length + ' صف';
+    if (agentResult.sheetTitleUsed) detail += " (ورقة \"" + agentResult.sheetTitleUsed + "\")";
+
+    res.json({
+      success: true,
+      message: 'تمت مزامنة جداول الدورة من Google',
+      managementRows: managementRows.length,
+      agentRows: agentRows.length,
+      managementSheetUsed: mgmtResult.sheetTitleUsed,
+      agentSheetUsed: agentResult.sheetTitleUsed,
+      detail
+    });
+  } catch (e) {
+    console.error('Cycle sync error', e);
+    res.json({ success: false, message: e.message || 'فشلت مزامنة الدورة من Google' });
+  }
+});
+
+/** أعمدة ورقة في جدول Google (أحرف الأعمدة + صف العناوين إن وُجد) لمزامنة قوائم اختيار الأعمدة */
+router.get('/spreadsheet-columns', requireAuth, async (req, res) => {
+  try {
+    const { spreadsheetId, sheetName } = req.query;
+    if (!spreadsheetId) return res.json({ success: false, message: 'معرّف الجدول مطلوب' });
+    const db = getDb();
+    const config = db.prepare('SELECT token, credentials FROM google_sheets_config WHERE id = 1').get();
+    if (!config?.token) return res.json({ success: false, message: 'لم يتم تسجيل الدخول بـ Google' });
+    const credentials = config.credentials ? JSON.parse(config.credentials) : null;
+    const oauth2Client = getOAuth2Client(credentials);
+    if (!oauth2Client) return res.json({ success: false, message: 'بيانات الاعتماد غير متوفرة' });
+    oauth2Client.setCredentials(typeof config.token === 'string' ? JSON.parse(config.token) : config.token);
+    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+    const meta = await sheets.spreadsheets.get({ spreadsheetId });
+    const sheetsList = meta.data.sheets || [];
+    const firstSheet = sheetsList[0];
+    const title = (sheetName && String(sheetName).trim()) ? String(sheetName).trim() : (firstSheet ? firstSheet.properties.title : 'Sheet1');
+    const data = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${title}'!A1:ZZ1`
+    });
+    const headerRow = (data.data.values && data.data.values[0]) ? data.data.values[0] : [];
+    const maxCol = Math.max(26, headerRow.length);
+    const columns = [];
+    for (let i = 0; i < maxCol; i++) {
+      columns.push({ letter: columnIndexToLetter(i), index: i, header: headerRow[i] != null ? String(headerRow[i]).trim() : '' });
+    }
+    res.json({ success: true, columns, sheetTitle: title });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل جلب الأعمدة' });
+  }
+});
+
+function columnIndexToLetter(idx) {
+  let s = '';
+  let n = idx + 1;
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s || 'A';
+}
+
+function columnLetterToIndex(letter) {
+  if (letter == null || letter === '') return null;
+  const s = String(letter).trim().toUpperCase();
+  let idx = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i) - 65;
+    if (c < 0 || c > 25) return null;
+    idx = idx * 26 + (c + 1);
+  }
+  return idx - 1;
+}
+
+/** إنشاء دورة مالية (اسم + بيانات الإدارة + الوكيل + مراجع Google إن وُجدت) */
 router.post('/cycles', requireAuth, (req, res) => {
   try {
-    const { name, managementData, agentData } = req.body;
+    const {
+      name,
+      managementData,
+      agentData,
+      managementSpreadsheetId,
+      managementSheetName,
+      agentSpreadsheetId,
+      agentSheetName
+    } = req.body;
     if (!name || !String(name).trim()) {
       return res.json({ success: false, message: 'أدخل اسم الدورة' });
     }
     const db = getDb();
     const managementJson = managementData != null ? JSON.stringify(managementData) : null;
     const agentJson = agentData != null ? JSON.stringify(agentData) : null;
+    const mgmtSs = managementSpreadsheetId ? String(managementSpreadsheetId).trim() : null;
+    const mgmtSn = managementSheetName ? String(managementSheetName).trim() : null;
+    const agentSs = agentSpreadsheetId ? String(agentSpreadsheetId).trim() : null;
+    const agentSn = agentSheetName ? String(agentSheetName).trim() : null;
     const result = db.prepare(
-      'INSERT INTO financial_cycles (user_id, name, management_data, agent_data) VALUES (?, ?, ?, ?)'
-    ).run(req.session.userId, String(name).trim(), managementJson, agentJson);
+      `INSERT INTO financial_cycles (user_id, name, management_data, agent_data,
+       management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(req.session.userId, String(name).trim(), managementJson, agentJson, mgmtSs, mgmtSn, agentSs, agentSn);
     const id = result.lastInsertRowid != null ? result.lastInsertRowid : null;
     res.json({ success: true, id, message: 'تم حفظ الدورة المالية' });
   } catch (e) {
@@ -218,6 +431,644 @@ router.post('/upload', requireAuth, (req, res) => {
       res.json({ success: false, message: e.message || 'فشل قراءة الملفات' });
     }
   });
+});
+
+/** تحويل لون hex إلى RGB (0–1) لـ Google Sheets */
+function hexToRgb(hex) {
+  const h = String(hex).replace(/^#/, '');
+  if (h.length !== 6) return { red: 1, green: 1, blue: 1 };
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  return { red: r, green: g, blue: b };
+}
+
+/** اسم ورقة آمن (Google يمنع : * ? / \) */
+function safeSheetTitle(title) {
+  return String(title || 'Sheet').replace(/[:*?/\\]/g, '_').slice(0, 100) || 'Sheet';
+}
+
+/** استخراج sheetId من metadata حسب اسم الورقة (أو أول ورقة إن لم يُذكر الاسم). إن وُجد اسم ولم يُطابق أي ورقة يُرجع null. */
+function getSheetIdByTitle(meta, title) {
+  if (!meta?.data?.sheets?.length) return null;
+  if (title && String(title).trim()) {
+    const t = String(title).trim();
+    const s = meta.data.sheets.find(sh => (sh.properties?.title || '') === t);
+    return s ? s.properties.sheetId : null;
+  }
+  return meta.data.sheets[0].properties.sheetId;
+}
+
+/** جلب إعدادات التدقيق */
+router.get('/payroll-settings', requireAuth, (req, res) => {
+  try {
+    const db = getDb();
+    const row = db.prepare('SELECT discount_rate, agent_color, management_color FROM payroll_settings WHERE user_id = ?').get(req.session.userId);
+    res.json({
+      success: true,
+      discountRate: row ? row.discount_rate : 0,
+      agentColor: row ? (row.agent_color || '#3b82f6') : '#3b82f6',
+      managementColor: row ? (row.management_color || '#10b981') : '#10b981'
+    });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+/** حفظ إعدادات التدقيق */
+router.post('/payroll-settings', requireAuth, (req, res) => {
+  try {
+    const { discountRate, agentColor, managementColor } = req.body;
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO payroll_settings (user_id, discount_rate, agent_color, management_color, updated_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET discount_rate = ?, agent_color = ?, management_color = ?, updated_at = CURRENT_TIMESTAMP
+    `).run(
+      req.session.userId,
+      Number(discountRate) || 0,
+      String(agentColor || '#3b82f6').slice(0, 20),
+      String(managementColor || '#10b981').slice(0, 20),
+      Number(discountRate) || 0,
+      String(agentColor || '#3b82f6').slice(0, 20),
+      String(managementColor || '#10b981').slice(0, 20)
+    );
+    res.json({ success: true, message: 'تم حفظ إعدادات التدقيق' });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+/** تنفيذ تدقيق الرواتب */
+router.post('/payroll-execute', requireAuth, async (req, res) => {
+  try {
+    const {
+      cycleId,
+      spreadsheetId,
+      discountRate: bodyDiscountRate,
+      agentColor,
+      managementColor,
+      userInfoSheetName,
+      userInfoUserIdCol,
+      userInfoTitleCol,
+      userInfoSalaryCol,
+      userInfoStatusCol,
+      cycleMgmtUserIdCol,
+      cycleAgentUserIdCol,
+      cycleAgentSalaryCol
+    } = req.body;
+    if (!cycleId || !spreadsheetId) {
+      return res.json({ success: false, message: 'اختر الدورة المالية وجدول البيانات' });
+    }
+    const db = getDb();
+    const payrollSettingsRow = db.prepare('SELECT discount_rate FROM payroll_settings WHERE user_id = ?').get(req.session.userId);
+    const discountRatePct = Number(bodyDiscountRate) ?? Number(payrollSettingsRow?.discount_rate) ?? 0;
+    const discountMultiplier = Math.max(0, Math.min(1, 1 - discountRatePct / 100));
+
+    const cycle = db.prepare(
+      'SELECT name, management_data, agent_data, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name FROM financial_cycles WHERE id = ? AND user_id = ?'
+    ).get(cycleId, req.session.userId);
+    if (!cycle) return res.json({ success: false, message: 'الدورة المالية غير موجودة' });
+
+    let managementRows = cycle.management_data ? JSON.parse(cycle.management_data) : [];
+    let agentRows = cycle.agent_data ? JSON.parse(cycle.agent_data) : [];
+    const mgmtSsId = cycle.management_spreadsheet_id ? String(cycle.management_spreadsheet_id).trim() : null;
+    const mgmtSheetName = cycle.management_sheet_name ? String(cycle.management_sheet_name).trim() : null;
+    const agentSsId = cycle.agent_spreadsheet_id ? String(cycle.agent_spreadsheet_id).trim() : null;
+    const agentSheetNameCycle = cycle.agent_sheet_name ? String(cycle.agent_sheet_name).trim() : null;
+
+    const config = db.prepare('SELECT token, credentials FROM google_sheets_config WHERE id = 1').get();
+    if (!config?.token) return res.json({ success: false, message: 'لم يتم تسجيل الدخول بـ Google' });
+    const credentials = config.credentials ? JSON.parse(config.credentials) : null;
+    const oauth2Client = getOAuth2Client(credentials);
+    if (!oauth2Client) return res.json({ success: false, message: 'بيانات الاعتماد غير متوفرة' });
+    oauth2Client.setCredentials(JSON.parse(config.token));
+    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+
+    let cycleSynced = false;
+    /** مزامنة جداول الدورة من Google إن كانت الدورة مرتبطة بجداول في حساب المستخدم */
+    if (mgmtSsId && agentSsId) {
+      try {
+        const mgmtResult = await fetchSheetWithFallback(sheets, mgmtSsId, mgmtSheetName, null);
+        const agentResult = await fetchSheetWithFallback(sheets, agentSsId, agentSheetNameCycle, mgmtSsId === agentSsId ? mgmtResult.sheetTitleUsed : null);
+        managementRows = mgmtResult.values;
+        agentRows = agentResult.values;
+        db.prepare(
+          'UPDATE financial_cycles SET management_data = ?, agent_data = ?, management_sheet_name = ?, agent_sheet_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?'
+        ).run(
+          JSON.stringify(managementRows),
+          JSON.stringify(agentRows),
+          mgmtResult.sheetTitleUsed || mgmtSheetName,
+          agentResult.sheetTitleUsed || agentSheetNameCycle,
+          cycleId,
+          req.session.userId
+        );
+        cycleSynced = true;
+      } catch (syncErr) {
+        console.error('Cycle sync from Google failed', syncErr);
+        /* نتابع بالبيانات المحفوظة إن فشلت المزامنة */
+      }
+    }
+
+    const meta = await sheets.spreadsheets.get({ spreadsheetId });
+    const firstSheet = meta.data.sheets && meta.data.sheets[0];
+    const mainSheetTitle = (userInfoSheetName && String(userInfoSheetName).trim()) ? String(userInfoSheetName).trim() : (firstSheet ? firstSheet.properties.title : 'Sheet1');
+    const mainSheetId = firstSheet ? firstSheet.properties.sheetId : 0;
+
+    const mainData = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${mainSheetTitle}'!A:ZZ`
+    });
+    const allRows = (mainData.data.values || []);
+    const COL_C = columnLetterToIndex(userInfoUserIdCol) ?? 2;
+    const COL_D = columnLetterToIndex(userInfoTitleCol) ?? 3;
+    const COL_L = columnLetterToIndex(userInfoSalaryCol) ?? 11;
+    /** تحويل كل أشكال الأرقام (عربي ٠–٩، فارسي ۰–۹) إلى إنجليزية وإزالة الأحرف غير المرئية */
+    function normalizeForNumber(str) {
+      if (str == null) return '';
+      let out = String(str).replace(/[\u200B-\u200D\u2060\uFEFF\u200E\u200F\u202A-\u202E]/g, '').trim();
+      const arabic = '٠١٢٣٤٥٦٧٨٩';
+      const persian = '۰۱۲۳۴۵۶۷۸۹';
+      const western = '0123456789';
+      for (let i = 0; i < 10; i++) {
+        out = out.replace(new RegExp(arabic[i], 'g'), western[i]).replace(new RegExp(persian[i], 'g'), western[i]);
+      }
+      return out.replace(/[,،\u066C\s]/g, '');
+    }
+    /** صف العناوين في جدول معلومات المستخدمين: نعتبر الصف الأول عنواناً إذا عمود رقم المستخدم لا يشبه رقماً */
+    function isHeaderRowMain(row) {
+      const c = normalizeForNumber(row[COL_C]);
+      const n = parseFloat(c);
+      return c === '' || isNaN(n) || !isFinite(n);
+    }
+    const dataStart = allRows.length > 0 && isHeaderRowMain(allRows[0]) ? 1 : 0;
+    const dataRows = allRows.slice(dataStart);
+
+    const cycleMgmtCol = columnLetterToIndex(cycleMgmtUserIdCol) ?? 0;
+    const cycleAgentCol = columnLetterToIndex(cycleAgentUserIdCol) ?? 0;
+    const cycleAgentSalaryColIdx = columnLetterToIndex(cycleAgentSalaryCol) ?? 3;
+
+    /** تطبيع رقم المستخدم للمقارنة: توحيد كل الأرقام والنصوص إلى شكل واحد */
+    function normalizeUserId(val) {
+      const s = normalizeForNumber(val);
+      if (!s) return '';
+      const num = parseFloat(s);
+      if (!isNaN(num) && isFinite(num)) return String(Math.floor(num));
+      return s;
+    }
+    /** تخطي صف العناوين في جداول الدورة: الخلية في العمود المحدد يجب أن تشبه رقماً */
+    function isHeaderRow(row, colIndex) {
+      const col = colIndex ?? 0;
+      const first = normalizeForNumber(row[col] != null ? row[col] : '');
+      if (!first) return true;
+      const n = parseFloat(first);
+      return isNaN(n) || !isFinite(n);
+    }
+
+    const agentRowsList = Array.isArray(agentRows) ? agentRows : [];
+    const agentHeaderRows = agentRowsList.length > 0 && isHeaderRow(agentRowsList[0], cycleAgentCol) ? 1 : 0;
+    const agentDataRows = agentRowsList.length > 0 && isHeaderRow(agentRowsList[0], cycleAgentCol) ? agentRowsList.slice(1) : agentRowsList;
+    const agentByUserId = {};
+    agentDataRows.forEach((row, idx) => {
+      const id = normalizeUserId(row[cycleAgentCol]);
+      if (!id) return;
+      if (!agentByUserId[id]) agentByUserId[id] = [];
+      agentByUserId[id].push({ row, idx, sheetRowIndex: agentHeaderRows + idx });
+    });
+    const mgmtRowsList = Array.isArray(managementRows) ? managementRows : [];
+    const mgmtHeaderRows = mgmtRowsList.length > 0 && isHeaderRow(mgmtRowsList[0], cycleMgmtCol) ? 1 : 0;
+    const mgmtDataRows = mgmtRowsList.length > 0 && isHeaderRow(mgmtRowsList[0], cycleMgmtCol) ? mgmtRowsList.slice(1) : mgmtRowsList;
+    const mgmtByUserId = {};
+    mgmtDataRows.forEach((row, idx) => {
+      const id = normalizeUserId(row[cycleMgmtCol]);
+      if (id) mgmtByUserId[id] = { row, sheetRowIndex: mgmtHeaderRows + idx };
+    });
+
+    const agentColorVal = agentColor || '#3b82f6';
+    const mgmtColorVal = managementColor || '#10b981';
+
+    let cycleMgmtSsId = mgmtSsId;
+    let cycleAgentSsId = agentSsId;
+    let cycleMgmtSheetName = mgmtSheetName;
+    let cycleAgentSheetName = agentSheetNameCycle;
+
+    const results = [];
+    const byTitle = {};
+
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      const userId = normalizeUserId(row[COL_C]);
+      const title = (row[COL_D] != null ? String(row[COL_D]) : '').trim() || `صف_${i + 1}`;
+      const agentMatches = userId ? (agentByUserId[userId] || []) : [];
+      const mgmtEntry = userId ? mgmtByUserId[userId] : null;
+      const mgmtRow = mgmtEntry ? mgmtEntry.row : null;
+      const inAgent = agentMatches.length > 0;
+      const inMgmt = !!mgmtRow;
+
+      /** المنطق: موجود في الوكيل+الإدارة → سحب وكالة (أو راتبين)، الراتب من جدول الوكيل مع خصم؛ إدارة فقط → سحب إدارة، راتب = 0 */
+      let type = 'غير موجود';
+      let salaryValue = '';
+      let statusLabel = '';
+      if (inAgent && inMgmt) {
+        type = agentMatches.length > 1 ? 'سحب وكالة - راتبيين' : 'سحب وكالة';
+        const rawSalaries = agentMatches.map(m => {
+          const v = m.row[cycleAgentSalaryColIdx];
+          const n = parseFloat(normalizeForNumber(v != null ? v : ''));
+          return isNaN(n) || !isFinite(n) ? 0 : n;
+        });
+        const sumRaw = rawSalaries.reduce((a, b) => a + b, 0);
+        /* نسبة الخصم: الراتب النهائي = المجموع × (1 - نسبة الخصم/100)، مثال 100 و 7% → 93 */
+        const afterDiscount = Math.round(sumRaw * discountMultiplier * 100) / 100;
+        salaryValue = afterDiscount;
+        statusLabel = agentMatches.length > 1 ? 'سحب وكيل راتبين' : 'سحب وكيل';
+      } else if (inMgmt) {
+        type = 'سحب إدارة';
+        salaryValue = 0; /* سحب إدارة: نكتب 0 ولا نترك الخلية فارغة */
+        statusLabel = 'سحب ادارة';
+      }
+
+      results.push({
+        userId,
+        title,
+        type,
+        managementRow: mgmtRow,
+        mgmtSheetRowIndex: mgmtEntry ? mgmtEntry.sheetRowIndex : null,
+        agentSheetRowIndices: agentMatches.map(m => m.sheetRowIndex),
+        salaryValue,
+        statusLabel,
+        rowIndex: dataStart + i + 1
+      });
+
+      if ((type.startsWith('سحب وكالة') || type === 'سحب إدارة') && mgmtRow) {
+        if (!byTitle[title]) byTitle[title] = [];
+        byTitle[title].push({
+          managementRow: mgmtRow,
+          color: type.startsWith('سحب وكالة') ? agentColorVal : mgmtColorVal
+        });
+      }
+    }
+
+    /** التأكد من وجود جدول الإدارة (لصق الصفوف فيه لاحقاً) */
+    if (!cycleMgmtSsId || !cycleAgentSsId) {
+      const cycleName = (cycle.name || 'دورة').trim();
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const createRes = await sheets.spreadsheets.create({
+        requestBody: {
+          properties: { title: `دورة ${cycleName} - ${dateStr}` },
+          sheets: [
+            { properties: { title: 'الإدارة' } },
+            { properties: { title: 'الوكيل' } }
+          ]
+        }
+      });
+      const newSpreadsheetId = createRes.data.spreadsheetId;
+      if (!newSpreadsheetId) throw new Error('فشل إنشاء جدول الدورة في Google');
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: newSpreadsheetId,
+        range: "'الإدارة'!A1",
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: managementRows }
+      });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: newSpreadsheetId,
+        range: "'الوكيل'!A1",
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: agentRows }
+      });
+      db.prepare(
+        `UPDATE financial_cycles SET management_spreadsheet_id = ?, management_sheet_name = 'الإدارة',
+         agent_spreadsheet_id = ?, agent_sheet_name = 'الوكيل' WHERE id = ? AND user_id = ?`
+      ).run(newSpreadsheetId, newSpreadsheetId, cycleId, req.session.userId);
+      cycleMgmtSsId = newSpreadsheetId;
+      cycleAgentSsId = newSpreadsheetId;
+      cycleMgmtSheetName = 'الإدارة';
+      cycleAgentSheetName = agentSheetNameCycle;
+    }
+
+    const titleToSheetName = {};
+    const usedNames = new Set();
+    for (const title of Object.keys(byTitle)) {
+      let st = safeSheetTitle(title);
+      while (usedNames.has(st)) st = st + '_' + usedNames.size;
+      usedNames.add(st);
+      titleToSheetName[title] = st;
+    }
+    const sheetNamesOrdered = Object.values(titleToSheetName);
+    const sheetIdByName = {};
+    /** أوراق موجودة مسبقاً في ملف الإدارة (لصق إلحاقي إن وُجدت) */
+    let existingMgmtSheetTitles = [];
+    if (cycleMgmtSsId && sheetNamesOrdered.length > 0) {
+      try {
+        const metaMgmtForSheets = await sheets.spreadsheets.get({ spreadsheetId: cycleMgmtSsId });
+        existingMgmtSheetTitles = (metaMgmtForSheets.data.sheets || []).map(s => (s.properties?.title || ''));
+        sheetNamesOrdered.forEach(st => {
+          const found = metaMgmtForSheets.data.sheets?.find(sh => (sh.properties?.title || '') === st);
+          if (found?.properties?.sheetId != null) sheetIdByName[st] = found.properties.sheetId;
+        });
+      } catch (err) {
+        throw new Error('لا يمكن الوصول إلى جدول الإدارة (الدورة). تأكد أن الدورة مرتبطة بجدول في حساب Google المرتبط بالتطبيق: ' + (err.message || ''));
+      }
+    }
+    const toCreate = sheetNamesOrdered.filter(st => !existingMgmtSheetTitles.includes(st));
+    const addSheetRequests = toCreate.map(st => ({
+      addSheet: { properties: { title: st } }
+    }));
+    /** إنشاء أوراق الهدف داخل ملف الإدارة فقط للتي لا وجود لها (اسم الورقة من عمود D) */
+    if (addSheetRequests.length > 0 && cycleMgmtSsId) {
+      const batchRes = await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: cycleMgmtSsId,
+        requestBody: { requests: addSheetRequests }
+      });
+      const replies = batchRes.data.replies || [];
+      replies.forEach((rep, idx) => {
+        if (rep.addSheet && rep.addSheet.properties) {
+          sheetIdByName[toCreate[idx]] = rep.addSheet.properties.sheetId;
+        }
+      });
+    }
+
+    /** نسخ الصفوف ولصقها في أوراق جدول الإدارة (حسب اسم الورقة من عمود D) مع التلوين — مع حماية من التكرار: لا نلصق صفاً سبق تدقيقه أو لُصق يدوياً */
+    for (const title of Object.keys(byTitle)) {
+      const sheetName = titleToSheetName[title];
+      const items = byTitle[title];
+      if (items.length === 0 || !cycleMgmtSsId) continue;
+      const sheetExisted = existingMgmtSheetTitles.includes(sheetName);
+
+      /** أرقام المستخدمين الموجودة مسبقاً في الورقة (من تشغيل سابق أو لصق يدوي) — نتجاهلهم ولا نلصقهم مرة ثانية */
+      let existingInSheetIds = new Set();
+      if (sheetExisted) {
+        try {
+          const curr = await sheets.spreadsheets.values.get({
+            spreadsheetId: cycleMgmtSsId,
+            range: `'${sheetName}'!A:ZZ`
+          });
+          const sheetRows = curr.data.values || [];
+          sheetRows.forEach((row, idx) => {
+            if (idx === 0 && row && isHeaderRow(row, cycleMgmtCol)) return; /* صف عناوين */
+            const cell = row[cycleMgmtCol];
+            const id = normalizeUserId(cell);
+            if (id) existingInSheetIds.add(id);
+          });
+        } catch (_) {}
+      }
+
+      /** نلصق فقط الصفوف التي رقم المستخدم فيها غير موجود في الورقة بعد */
+      const itemsToPaste = items.filter(it => {
+        const id = normalizeUserId(it.managementRow[cycleMgmtCol]);
+        return id && !existingInSheetIds.has(id);
+      });
+      if (itemsToPaste.length === 0) continue;
+
+      const values = itemsToPaste.map(it => it.managementRow);
+      try {
+        if (sheetExisted) {
+          /** ورقة موجودة: إلحاق الصفوف الجديدة فقط في نهاية الورقة */
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: cycleMgmtSsId,
+            range: `'${sheetName}'!A:ZZ`,
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            requestBody: { values }
+          });
+        } else {
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: cycleMgmtSsId,
+            range: `'${sheetName}'!A1`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values }
+          });
+        }
+      } catch (pasteErr) {
+        throw new Error('فشل نسخ الصفوف إلى ورقة «' + sheetName + '» في جدول الإدارة: ' + (pasteErr.message || ''));
+      }
+      const sheetId = sheetIdByName[sheetName];
+      if (sheetId != null) {
+        /** تلوين الصفوف الملصوقة فقط */
+        let startRow = 0;
+        if (sheetExisted) {
+          try {
+            const curr = await sheets.spreadsheets.values.get({
+              spreadsheetId: cycleMgmtSsId,
+              range: `'${sheetName}'!A:ZZ`
+            });
+            const rowCount = (curr.data.values || []).length;
+            startRow = Math.max(0, rowCount - values.length);
+          } catch (_) {}
+        }
+        const formatReqs = values.map((_, idx) => {
+          const rgb = hexToRgb(itemsToPaste[idx].color);
+          return {
+            repeatCell: {
+              range: {
+                sheetId,
+                startRowIndex: startRow + idx,
+                endRowIndex: startRow + idx + 1,
+                startColumnIndex: 0,
+                endColumnIndex: 200
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: rgb
+                }
+              },
+              fields: 'userEnteredFormat.backgroundColor'
+            }
+          };
+        });
+        try {
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: cycleMgmtSsId,
+            requestBody: { requests: formatReqs }
+          });
+        } catch (colorErr) {
+          throw new Error('فشل تلوين الصفوف في ورقة «' + sheetName + '»: ' + (colorErr.message || ''));
+        }
+      }
+    }
+
+    /* عمود الراتب وعمود الحالة المحاذي في جدول معلومات المستخدمين (مثلاً L و M) */
+    const salaryColLetter = (userInfoSalaryCol && String(userInfoSalaryCol).trim()) ? String(userInfoSalaryCol).trim().toUpperCase() : 'L';
+    const salaryColIdx = columnLetterToIndex(salaryColLetter) ?? 11;
+    const statusColLetter = (userInfoStatusCol && String(userInfoStatusCol).trim())
+      ? String(userInfoStatusCol).trim().toUpperCase()
+      : columnIndexToLetter(salaryColIdx + 1);
+    const minRow = dataStart + 1;
+    const maxRow = dataStart + dataRows.length;
+    const byRowSalary = {};
+    const byRowStatus = {};
+    results.forEach(r => {
+      if (r.type.startsWith('سحب وكالة') || r.type === 'سحب إدارة') {
+        byRowSalary[r.rowIndex] = r.salaryValue === '' ? '' : r.salaryValue; /* سحب إدارة = 0 */
+        byRowStatus[r.rowIndex] = r.statusLabel || ''; /* سحب وكيل / سحب وكيل راتبين / سحب ادارة */
+      } else if (r.type === 'غير موجود') {
+        byRowSalary[r.rowIndex] = 0;
+        byRowStatus[r.rowIndex] = 'غير موجود';
+      }
+    });
+    const salaryValues = [];
+    const statusValues = [];
+    for (let r = minRow; r <= maxRow; r++) {
+      salaryValues.push([byRowSalary[r] !== undefined ? byRowSalary[r] : '']);
+      statusValues.push([byRowStatus[r] !== undefined ? byRowStatus[r] : '']);
+    }
+    if (salaryValues.length > 0) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `'${mainSheetTitle}'!${salaryColLetter}${minRow}:${salaryColLetter}${maxRow}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: salaryValues }
+      });
+    }
+    if (statusValues.length > 0) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `'${mainSheetTitle}'!${statusColLetter}${minRow}:${statusColLetter}${maxRow}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: statusValues }
+      });
+    }
+
+    /** تطبيق التلوين على جداول الدورة في Google (ورقة الإدارة وورقة الوكيل) — فهارس الصفوف 0-based في الـ API */
+    const mgmtColorByRow = {};
+    const agentColorByRow = {};
+    for (const r of results) {
+      if (r.type.startsWith('سحب وكالة') && r.mgmtSheetRowIndex != null) {
+        mgmtColorByRow[r.mgmtSheetRowIndex] = agentColorVal;
+      } else if (r.type === 'سحب إدارة' && r.mgmtSheetRowIndex != null) {
+        mgmtColorByRow[r.mgmtSheetRowIndex] = mgmtColorVal;
+      }
+      if (r.type.startsWith('سحب وكالة') && r.agentSheetRowIndices?.length) {
+        for (const rowIdx of r.agentSheetRowIndices) {
+          agentColorByRow[rowIdx] = agentColorVal;
+        }
+      }
+    }
+
+    /** تلوين الصفوف الأصلية في ورقة الإدارة الرئيسية (مثلاً «الإدارة») */
+    if (cycleMgmtSsId && Object.keys(mgmtColorByRow).length > 0) {
+      const metaMgmt = await sheets.spreadsheets.get({ spreadsheetId: cycleMgmtSsId });
+      const mgmtSheetId = getSheetIdByTitle(metaMgmt, cycleMgmtSheetName);
+      if (mgmtSheetId != null) {
+        const mgmtReqs = Object.entries(mgmtColorByRow).map(([rowIdx, color]) => ({
+          repeatCell: {
+            range: {
+              sheetId: mgmtSheetId,
+              startRowIndex: Number(rowIdx),
+              endRowIndex: Number(rowIdx) + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 200
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: hexToRgb(color)
+              }
+            },
+            fields: 'userEnteredFormat.backgroundColor'
+          }
+        }));
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: cycleMgmtSsId,
+          requestBody: { requests: mgmtReqs }
+        });
+      }
+    }
+
+    if (cycleAgentSsId) {
+      const metaAgent = await sheets.spreadsheets.get({ spreadsheetId: cycleAgentSsId });
+      const agentSheetId = getSheetIdByTitle(metaAgent, cycleAgentSheetName);
+      const agentReqs = Object.entries(agentColorByRow).map(([rowIdx, color]) => ({
+        repeatCell: {
+          range: {
+            sheetId: agentSheetId,
+            startRowIndex: Number(rowIdx),
+            endRowIndex: Number(rowIdx) + 1,
+            startColumnIndex: 0,
+            endColumnIndex: 200
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: hexToRgb(color)
+            }
+          },
+          fields: 'userEnteredFormat.backgroundColor'
+        }
+      }));
+      if (agentReqs.length > 0) {
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: cycleAgentSsId,
+          requestBody: { requests: agentReqs }
+        });
+      }
+    }
+
+    const summary = {
+      total: results.length,
+      agent: results.filter(r => r.type.startsWith('سحب وكالة')).length,
+      management: results.filter(r => r.type === 'سحب إدارة').length,
+      notFound: results.filter(r => r.type === 'غير موجود').length
+    };
+    const appliedCount = summary.agent + summary.management;
+    let message = 'تم تنفيذ التدقيق';
+    if (summary.total === 0) {
+      message = 'لم تُقرأ أي صفوف من جدول معلومات المستخدمين. تحقق من أن الورقة الأولى تحتوي بيانات وأن عمود C (رقم المستخدم) و D (اسم الورقة) مملوءان.';
+    } else if (appliedCount === 0) {
+      message = 'لم يُطابق أي صف (0 سحب وكالة، 0 سحب إدارة). يُقارن رقم المستخدم من عمود معلومات المستخدمين مع عمودي الإدارة والوكيل. تحقق من تطابق الأرقام أو من اختيار الأعمدة الصحيحة (انظر العينة أدناه).';
+    }
+
+    /** عند عدم وجود تطابق: إرجاع عينة من الأرقام + إحصائيات تشخيصية */
+    let sampleUserIds = [];
+    let sampleMgmtIds = [];
+    let sampleAgentIds = [];
+    let diagnostic = null;
+    if (appliedCount === 0 && summary.total > 0) {
+      const seen = new Set();
+      for (const r of dataRows) {
+        const id = normalizeUserId(r[COL_C]);
+        if (id && !seen.has(id)) { seen.add(id); sampleUserIds.push(id); if (sampleUserIds.length >= 12) break; }
+      }
+      seen.clear();
+      for (const row of mgmtDataRows) {
+        const id = normalizeUserId(row[cycleMgmtCol]);
+        if (id && !seen.has(id)) { seen.add(id); sampleMgmtIds.push(id); if (sampleMgmtIds.length >= 12) break; }
+      }
+      seen.clear();
+      for (const row of agentDataRows) {
+        const id = normalizeUserId(row[cycleAgentCol]);
+        if (id && !seen.has(id)) { seen.add(id); sampleAgentIds.push(id); if (sampleAgentIds.length >= 12) break; }
+      }
+      const mgmtUnique = Object.keys(mgmtByUserId).length;
+      const agentUnique = Object.keys(agentByUserId).length;
+      const sampleCheck = sampleUserIds.slice(0, 5).map(uid => ({
+        userId: uid,
+        inMgmt: !!mgmtByUserId[uid],
+        inAgent: !!agentByUserId[uid]
+      }));
+      diagnostic = {
+        managementUniqueCount: mgmtUnique,
+        agentUniqueCount: agentUnique,
+        userInfoUniqueCount: [...new Set(results.map(r => r.userId).filter(Boolean))].length,
+        sampleCheck
+      };
+    }
+
+    const spreadsheetUrl = meta.data.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+    res.json({
+      success: true,
+      message,
+      summary,
+      spreadsheetUrl,
+      applied: appliedCount > 0,
+      cycleSynced,
+      results: results.map(r => ({ userId: r.userId, title: r.title, type: r.type })),
+      sampleUserIds: sampleUserIds.length ? sampleUserIds : undefined,
+      sampleMgmtIds: sampleMgmtIds.length ? sampleMgmtIds : undefined,
+      sampleAgentIds: sampleAgentIds.length ? sampleAgentIds : undefined,
+      diagnostic
+    });
+  } catch (e) {
+    console.error('payroll-execute error', e);
+    res.json({ success: false, message: e.message || 'فشل تنفيذ التدقيق' });
+  }
 });
 
 module.exports = router;

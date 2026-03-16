@@ -172,7 +172,19 @@ async function initDatabase() {
       name TEXT NOT NULL,
       management_data TEXT,
       agent_data TEXT,
+      management_spreadsheet_id TEXT,
+      management_sheet_name TEXT,
+      agent_spreadsheet_id TEXT,
+      agent_sheet_name TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS payroll_settings (
+      user_id INTEGER PRIMARY KEY,
+      discount_rate REAL DEFAULT 0,
+      agent_color TEXT DEFAULT '#3b82f6',
+      management_color TEXT DEFAULT '#10b981',
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -182,6 +194,10 @@ async function initDatabase() {
     innerDb.run('ALTER TABLE analysis_jobs ADD COLUMN exported_to_sheets INTEGER DEFAULT 0');
     saveDb();
   } catch (_) {}
+  try { innerDb.run('ALTER TABLE financial_cycles ADD COLUMN management_spreadsheet_id TEXT'); saveDb(); } catch (_) {}
+  try { innerDb.run('ALTER TABLE financial_cycles ADD COLUMN management_sheet_name TEXT'); saveDb(); } catch (_) {}
+  try { innerDb.run('ALTER TABLE financial_cycles ADD COLUMN agent_spreadsheet_id TEXT'); saveDb(); } catch (_) {}
+  try { innerDb.run('ALTER TABLE financial_cycles ADD COLUMN agent_sheet_name TEXT'); saveDb(); } catch (_) {}
 
   const adminUser = wrapStmt('SELECT * FROM users WHERE username = ?').get(process.env.ADMIN_USERNAME || 'admin');
   if (!adminUser || !adminUser.username) {

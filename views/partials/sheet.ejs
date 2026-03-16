@@ -271,7 +271,11 @@ async function saveCycle() {
       body: JSON.stringify({
         name: name,
         managementData: currentManagementRows,
-        agentData: currentAgentRows
+        agentData: currentAgentRows,
+        managementSpreadsheetId: document.getElementById('mgmtSpreadsheetId')?.value || undefined,
+        managementSheetName: document.getElementById('mgmtSheetName')?.value || undefined,
+        agentSpreadsheetId: document.getElementById('agentSpreadsheetId')?.value || undefined,
+        agentSheetName: document.getElementById('agentSheetName')?.value || undefined
       })
     });
     var data = await res.json();

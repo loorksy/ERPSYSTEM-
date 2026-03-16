@@ -7,3 +7,4 @@ whatsapp-session/
 .wwebjs_auth/
 .wwebjs_cache/
 uploads/
+sessions/

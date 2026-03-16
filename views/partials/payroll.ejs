@@ -18,7 +18,7 @@
         مزامنة الدورة المالية
       </h3>
       <p class="text-sm text-slate-600 mb-4">اختر الدورة المالية التي تحتوي على جداول الإدارة والوكيل (يتم جلبها من قسم Sheet).</p>
-      <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+      <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
         <div class="flex-1 min-w-0">
           <label for="payrollCycleSelect" class="block mb-2 font-semibold text-sm text-slate-700">الدورة المالية</label>
           <select id="payrollCycleSelect" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
@@ -35,15 +35,16 @@
 
   <!-- 2. حاوية الخيارات (تظهر بعد اختيار الدورة) -->
   <section id="payrollOptionsSection" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hidden">
-    <div class="p-4 sm:p-6">
+    <div class="p-4 sm:p-6 space-y-6">
       <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
         <i class="fas fa-cogs text-emerald-600"></i>
         خيارات التدقيق
       </h3>
-      <p class="text-sm text-slate-600 mb-4">اختر جدول البيانات من حساب Google ثم نفّذ التدقيق.</p>
+      <p class="text-sm text-slate-600">اختر جدول <strong>معلومات المستخدمين</strong> من حساب Google، حدد الأعمدة ثم نفّذ التدقيق.</p>
+
       <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
         <div class="flex-1 min-w-0 sm:min-w-[200px]">
-          <label for="payrollSpreadsheetSelect" class="block mb-2 font-semibold text-sm text-slate-700">جدول البيانات (Google Sheets)</label>
+          <label for="payrollSpreadsheetSelect" class="block mb-2 font-semibold text-sm text-slate-700">معلومات المستخدمين (جدول البيانات)</label>
           <select id="payrollSpreadsheetSelect" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
             <option value="">— جاري التحميل... —</option>
           </select>
@@ -51,6 +52,69 @@
         <button type="button" id="payrollExecuteBtn" onclick="payrollExecute()" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] transition-all shrink-0">
           <i class="fas fa-play"></i> تنفيذ
         </button>
+      </div>
+
+      <!-- أعمدة الدورة المالية (مزامنة مع أوراق الإدارة والوكيل عند تحميل الدورة) -->
+      <div id="payrollCycleColumnsBlock" class="pt-4 border-t border-slate-200">
+        <p class="text-sm font-semibold text-slate-700 mb-2">أعمدة الدورة المالية (الإدارة والوكيل)</p>
+        <p class="text-xs text-slate-500 mb-2">تُزامَن بيانات الإدارة والوكيل من Google تلقائياً عند تحميل الدورة. للدورات المرتبطة بجداول Google تُحمّل قوائم الأعمدة من الأوراق الفعلية.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="payrollCycleMgmtUserIdCol" class="block mb-1 font-medium text-xs text-slate-600">عمود رقم المستخدم - الإدارة</label>
+            <select id="payrollCycleMgmtUserIdCol" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="A">A</option>
+            </select>
+          </div>
+          <div>
+            <label for="payrollCycleAgentUserIdCol" class="block mb-1 font-medium text-xs text-slate-600">عمود رقم المستخدم - الوكيل</label>
+            <select id="payrollCycleAgentUserIdCol" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="A">A</option>
+            </select>
+          </div>
+          <div>
+            <label for="payrollCycleAgentSalaryCol" class="block mb-1 font-medium text-xs text-slate-600">عمود الراتب - الوكيل</label>
+            <select id="payrollCycleAgentSalaryCol" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="D">D</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ورقة وأعمدة جدول معلومات المستخدمين (مزامنة عند اختيار الجدول) -->
+      <div id="payrollUserInfoColumnsBlock" class="pt-4 border-t border-slate-200">
+        <p class="text-sm font-semibold text-slate-700 mb-2">ورقة وأعمدة جدول معلومات المستخدمين (مزامنة مع الجدول المختار)</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div>
+            <label for="payrollUserInfoSheetSelect" class="block mb-1 font-medium text-xs text-slate-600">الورقة</label>
+            <select id="payrollUserInfoSheetSelect" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="">أول ورقة</option>
+            </select>
+          </div>
+          <div>
+            <label for="payrollUserInfoUserIdCol" class="block mb-1 font-medium text-xs text-slate-600">عمود رقم المستخدم</label>
+            <select id="payrollUserInfoUserIdCol" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="C">C</option>
+            </select>
+          </div>
+          <div>
+            <label for="payrollUserInfoTitleCol" class="block mb-1 font-medium text-xs text-slate-600">عمود اسم الورقة</label>
+            <select id="payrollUserInfoTitleCol" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="D">D</option>
+            </select>
+          </div>
+          <div>
+            <label for="payrollUserInfoSalaryCol" class="block mb-1 font-medium text-xs text-slate-600">عمود كتابة الراتب</label>
+            <select id="payrollUserInfoSalaryCol" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="L">L</option>
+            </select>
+          </div>
+          <div>
+            <label for="payrollUserInfoStatusCol" class="block mb-1 font-medium text-xs text-slate-600">عمود كتابة الحالة (محاذي)</label>
+            <select id="payrollUserInfoStatusCol" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-800">
+              <option value="">تلقائي (العمود التالي)</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -168,7 +232,18 @@ async function payrollLoadCycles() {
   }
 }
 
-function payrollLoadCycle() {
+function columnLetter(i) {
+    var s = '';
+    var n = i + 1;
+    while (n > 0) {
+      var r = (n - 1) % 26;
+      s = String.fromCharCode(65 + r) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s || 'A';
+  }
+
+  async function payrollLoadCycle() {
   var sel = document.getElementById('payrollCycleSelect');
   var optionsSection = document.getElementById('payrollOptionsSection');
   if (!sel || !sel.value) {
@@ -177,7 +252,64 @@ function payrollLoadCycle() {
   }
   if (optionsSection) optionsSection.classList.remove('hidden');
   payrollLoadSpreadsheetsList();
-  if (typeof showToast === 'function') showToast('تم تحميل الدورة. اختر جدول البيانات ثم انقر تنفيذ.', 'success');
+  var cycleId = sel.value;
+  var btn = document.getElementById('payrollLoadCycleBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل والمزامنة...'; }
+  try {
+    var syncRes = await fetch('/api/sheet/cycles/' + cycleId + '/sync', { method: 'POST' });
+    var syncData = await syncRes.json();
+    if (syncData.success && syncData.detail && typeof showToast === 'function') {
+      showToast(syncData.message + ' — ' + syncData.detail, 'success');
+    } else if (!syncData.success && syncData.message && syncData.message.indexOf('غير مرتبطة') === -1) {
+      if (typeof showToast === 'function') showToast(syncData.message, 'warning');
+    }
+    await payrollLoadCycleColumns(cycleId);
+  } catch (_) {}
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> تحميل الدورة'; }
+  if (typeof showToast === 'function') showToast('تم تحميل الدورة. اختر جدول البيانات وحدد الأعمدة ثم انقر تنفيذ.', 'success');
+}
+
+  async function payrollLoadCycleColumns(cycleId) {
+  if (!cycleId) return;
+  var res = await fetch('/api/sheet/cycles/' + cycleId + '/structure');
+  var data = await res.json();
+  if (!data.success) return;
+  var mgmtSel = document.getElementById('payrollCycleMgmtUserIdCol');
+  var agentSel = document.getElementById('payrollCycleAgentUserIdCol');
+  var salarySel = document.getElementById('payrollCycleAgentSalaryCol');
+  var mgmtCols = data.managementColumns || 26;
+  var agentCols = data.agentColumns || 26;
+  var maxCols = Math.max(mgmtCols, agentCols, 26);
+  var fallbackOpts = '';
+  for (var i = 0; i < maxCols; i++) fallbackOpts += '<option value="' + columnLetter(i) + '">' + columnLetter(i) + '</option>';
+  if (mgmtSel) { mgmtSel.innerHTML = fallbackOpts; mgmtSel.value = 'A'; }
+  if (agentSel) { agentSel.innerHTML = fallbackOpts; agentSel.value = 'A'; }
+  if (salarySel) { salarySel.innerHTML = fallbackOpts; salarySel.value = 'D'; }
+  var fillFromColumns = function(sel, columns, defaultLetter) {
+    if (!sel || !columns || !columns.length) return;
+    var opts = columns.map(function(c) {
+      var label = c.header ? (c.letter + ' - ' + c.header) : c.letter;
+      return '<option value="' + c.letter + '">' + label + '</option>';
+    }).join('');
+    sel.innerHTML = opts;
+    if (columns.some(function(c) { return c.letter === defaultLetter; })) sel.value = defaultLetter;
+    else if (columns[0]) sel.value = columns[0].letter;
+  };
+  if (data.managementSpreadsheetId) {
+    var mgmtColRes = await fetch('/api/sheet/spreadsheet-columns?spreadsheetId=' + encodeURIComponent(data.managementSpreadsheetId) + (data.managementSheetName ? '&sheetName=' + encodeURIComponent(data.managementSheetName) : ''));
+    var mgmtColData = await mgmtColRes.json();
+    if (mgmtColData.success && mgmtColData.columns && mgmtColData.columns.length) {
+      fillFromColumns(mgmtSel, mgmtColData.columns, 'A');
+    }
+  }
+  if (data.agentSpreadsheetId) {
+    var agentColRes = await fetch('/api/sheet/spreadsheet-columns?spreadsheetId=' + encodeURIComponent(data.agentSpreadsheetId) + (data.agentSheetName ? '&sheetName=' + encodeURIComponent(data.agentSheetName) : ''));
+    var agentColData = await agentColRes.json();
+    if (agentColData.success && agentColData.columns && agentColData.columns.length) {
+      fillFromColumns(agentSel, agentColData.columns, 'A');
+      fillFromColumns(salarySel, agentColData.columns, 'D');
+    }
+  }
 }
 
 async function payrollLoadSpreadsheetsList() {
@@ -200,24 +332,199 @@ async function payrollLoadSpreadsheetsList() {
   }
 }
 
-function payrollExecute() {
+  async function payrollLoadUserInfoSheetsAndColumns(spreadsheetId, sheetName) {
+    var sheetSel = document.getElementById('payrollUserInfoSheetSelect');
+    var userIdCol = document.getElementById('payrollUserInfoUserIdCol');
+    var titleCol = document.getElementById('payrollUserInfoTitleCol');
+    var salaryCol = document.getElementById('payrollUserInfoSalaryCol');
+    var statusCol = document.getElementById('payrollUserInfoStatusCol');
+    if (!spreadsheetId || !userIdCol || !titleCol || !salaryCol) return;
+    if (sheetSel) sheetSel.innerHTML = '<option value="">أول ورقة</option>';
+    if (statusCol) statusCol.innerHTML = '<option value="">تلقائي (العمود التالي)</option>';
+    try {
+      var sheetsRes = await fetch('/api/sheet/spreadsheet-sheets?spreadsheetId=' + encodeURIComponent(spreadsheetId));
+      var sheetsData = await sheetsRes.json();
+      if (sheetsData.success && sheetsData.sheets && sheetsData.sheets.length) {
+        if (sheetSel) {
+          sheetSel.innerHTML = '<option value="">أول ورقة</option>' + sheetsData.sheets.map(function(s) {
+            return '<option value="' + (s.title || '').replace(/"/g, '&quot;') + '">' + (s.title || s.id) + '</option>';
+          }).join('');
+        }
+      }
+      var colRes = await fetch('/api/sheet/spreadsheet-columns?spreadsheetId=' + encodeURIComponent(spreadsheetId) + (sheetName ? '&sheetName=' + encodeURIComponent(sheetName) : ''));
+      var colData = await colRes.json();
+      if (colData.success && colData.columns && colData.columns.length) {
+        var opts = colData.columns.map(function(c) {
+          var label = c.header ? (c.letter + ' - ' + c.header) : c.letter;
+          return '<option value="' + c.letter + '">' + label + '</option>';
+        }).join('');
+        userIdCol.innerHTML = opts;
+        titleCol.innerHTML = opts;
+        salaryCol.innerHTML = opts;
+        if (statusCol) statusCol.innerHTML = '<option value="">تلقائي (العمود التالي)</option>' + opts;
+        if (colData.columns.some(function(c) { return c.letter === 'C'; })) userIdCol.value = 'C';
+        if (colData.columns.some(function(c) { return c.letter === 'D'; })) titleCol.value = 'D';
+        if (colData.columns.some(function(c) { return c.letter === 'L'; })) salaryCol.value = 'L';
+      }
+    } catch (_) {}
+  }
+
+  (function initPayrollSpreadsheetChange() {
+    var sel = document.getElementById('payrollSpreadsheetSelect');
+    var sheetSel = document.getElementById('payrollUserInfoSheetSelect');
+    if (sel) sel.addEventListener('change', function() {
+      var id = (sel.value || '').trim();
+      if (id) payrollLoadUserInfoSheetsAndColumns(id, null);
+    });
+    if (sheetSel) sheetSel.addEventListener('change', function() {
+      var ssId = (document.getElementById('payrollSpreadsheetSelect').value || '').trim();
+      if (ssId) payrollLoadUserInfoSheetsAndColumns(ssId, sheetSel.value || null);
+    });
+  })();
+
+async function payrollExecute() {
+  var cycleId = document.getElementById('payrollCycleSelect').value;
   var spreadsheetId = (document.getElementById('payrollSpreadsheetSelect').value || '').trim();
-  if (!spreadsheetId) {
-    if (typeof showToast === 'function') showToast('اختر جدول البيانات أولاً', 'error');
+  if (!cycleId || !spreadsheetId) {
+    if (typeof showToast === 'function') showToast('اختر الدورة المالية وجدول البيانات أولاً', 'error');
     return;
   }
-  if (typeof showToast === 'function') showToast('سيتم تنفيذ منطق التدقيق لاحقاً.', 'success');
-  document.getElementById('payrollResultsSection').classList.remove('hidden');
+  var btn = document.getElementById('payrollExecuteBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التنفيذ...';
+  var discountRate = document.getElementById('payrollDiscountRate').value;
+  var agentColor = document.getElementById('payrollAgentColor').value;
+  var managementColor = document.getElementById('payrollMgmtColor').value;
+  var userInfoSheetName = (document.getElementById('payrollUserInfoSheetSelect') && document.getElementById('payrollUserInfoSheetSelect').value) || '';
+  var userInfoUserIdCol = (document.getElementById('payrollUserInfoUserIdCol') && document.getElementById('payrollUserInfoUserIdCol').value) || 'C';
+  var userInfoTitleCol = (document.getElementById('payrollUserInfoTitleCol') && document.getElementById('payrollUserInfoTitleCol').value) || 'D';
+  var userInfoSalaryCol = (document.getElementById('payrollUserInfoSalaryCol') && document.getElementById('payrollUserInfoSalaryCol').value) || 'L';
+  var userInfoStatusCol = (document.getElementById('payrollUserInfoStatusCol') && document.getElementById('payrollUserInfoStatusCol').value) || '';
+  var cycleMgmtUserIdCol = (document.getElementById('payrollCycleMgmtUserIdCol') && document.getElementById('payrollCycleMgmtUserIdCol').value) || 'A';
+  var cycleAgentUserIdCol = (document.getElementById('payrollCycleAgentUserIdCol') && document.getElementById('payrollCycleAgentUserIdCol').value) || 'A';
+  var cycleAgentSalaryCol = (document.getElementById('payrollCycleAgentSalaryCol') && document.getElementById('payrollCycleAgentSalaryCol').value) || 'D';
+  try {
+    var res = await fetch('/api/sheet/payroll-execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cycleId: Number(cycleId),
+        spreadsheetId: spreadsheetId,
+        discountRate: Number(discountRate) || 0,
+        agentColor: agentColor || '#3b82f6',
+        managementColor: managementColor || '#10b981',
+        userInfoSheetName: userInfoSheetName || undefined,
+        userInfoUserIdCol: userInfoUserIdCol,
+        userInfoTitleCol: userInfoTitleCol,
+        userInfoSalaryCol: userInfoSalaryCol,
+        userInfoStatusCol: userInfoStatusCol || undefined,
+        cycleMgmtUserIdCol: cycleMgmtUserIdCol,
+        cycleAgentUserIdCol: cycleAgentUserIdCol,
+        cycleAgentSalaryCol: cycleAgentSalaryCol
+      })
+    });
+    var data = await res.json();
+    if (data.success) {
+      var s = data.summary || {};
+      var msg = data.message || 'تم تنفيذ التدقيق';
+      if (data.cycleSynced) msg = 'تمت مزامنة جداول الدورة من Google ثم ' + msg;
+      var html = '<p class="font-semibold ' + (data.applied ? 'text-emerald-700' : 'text-amber-700') + ' mb-2">' + msg + '</p>';
+      html += '<ul class="space-y-1 text-slate-600 mb-3">';
+      html += '<li>إجمالي الصفوف: <strong>' + (s.total || 0) + '</strong></li>';
+      html += '<li>سحب وكالة: <strong>' + (s.agent || 0) + '</strong></li>';
+      html += '<li>سحب إدارة: <strong>' + (s.management || 0) + '</strong></li>';
+      html += '<li>غير موجود: <strong>' + (s.notFound || 0) + '</strong></li></ul>';
+      if (data.diagnostic) {
+        var d = data.diagnostic;
+        html += '<div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm space-y-2">';
+        html += '<p class="font-semibold text-amber-800">تشخيص عند عدم التطابق:</p>';
+        html += '<ul class="text-slate-700 space-y-1">';
+        html += '<li>عدد الأرقام الفريدة في <strong>جدول معلومات المستخدمين</strong>: ' + (d.userInfoUniqueCount != null ? d.userInfoUniqueCount : '—') + '</li>';
+        html += '<li>عدد الأرقام الفريدة في <strong>جدول الإدارة</strong> (الدورة): ' + (d.managementUniqueCount != null ? d.managementUniqueCount : '—') + '</li>';
+        html += '<li>عدد الأرقام الفريدة في <strong>جدول الوكيل</strong> (الدورة): ' + (d.agentUniqueCount != null ? d.agentUniqueCount : '—') + '</li>';
+        html += '</ul>';
+        if (d.managementUniqueCount === 0 && d.agentUniqueCount === 0) {
+          html += '<p class="text-amber-700 font-medium mt-2">عمودا الإدارة والوكيل لا يقرآن أرقاماً — غيّر «عمود رقم المستخدم - الإدارة» و«عمود رقم المستخدم - الوكيل» إلى العمود الذي فيه رقم المستخدم فعلياً (B, C, D...).</p>';
+        } else if (d.managementUniqueCount === 0) {
+          html += '<p class="text-amber-700 font-medium mt-2"><strong>المشكلة من جدول الإدارة:</strong> لم يُقرأ أي رقم من ورقة الإدارة (العدد 0). غيّر «عمود رقم المستخدم - الإدارة» إلى العمود الذي فيه رقم المستخدم فعلياً في ورقة الإدارة (جرّب B ثم C ثم D…). الوكيل يقرأ بشكل صحيح.</p>';
+        } else if (d.agentUniqueCount === 0) {
+          html += '<p class="text-amber-700 font-medium mt-2"><strong>المشكلة من جدول الوكيل:</strong> لم يُقرأ أي رقم من ورقة الوكيل. غيّر «عمود رقم المستخدم - الوكيل» إلى العمود الصحيح (B, C, D…).</p>';
+        }
+        if (d.sampleCheck && d.sampleCheck.length) {
+          html += '<p class="font-medium text-slate-700 mt-2">تحقق من أول 5 أرقام من جدول المستخدمين:</p><ul class="space-y-0.5">';
+          d.sampleCheck.forEach(function(sc) {
+            html += '<li><code>' + sc.userId + '</code>: في الإدارة ' + (sc.inMgmt ? 'نعم' : 'لا') + '، في الوكيل ' + (sc.inAgent ? 'نعم' : 'لا') + '</li>';
+          });
+          html += '</ul>';
+        }
+        html += '</div>';
+      }
+      if (data.sampleUserIds && data.sampleUserIds.length) {
+        html += '<div class="mt-3 p-3 bg-slate-50 rounded-xl text-sm space-y-2">';
+        html += '<p class="font-medium text-slate-700">عينة أرقام للمقارنة (للمراجعة عند عدم التطابق):</p>';
+        html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول معلومات المستخدمين:</span> <code class="bg-white px-1 rounded">' + (data.sampleUserIds.slice(0, 10).join(', ')) + (data.sampleUserIds.length > 10 ? '...' : '') + '</code></p>';
+        if (data.sampleMgmtIds && data.sampleMgmtIds.length) {
+          html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول الإدارة (الدورة):</span> <code class="bg-white px-1 rounded">' + (data.sampleMgmtIds.slice(0, 10).join(', ')) + (data.sampleMgmtIds.length > 10 ? '...' : '') + '</code></p>';
+        }
+        if (data.sampleAgentIds && data.sampleAgentIds.length) {
+          html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول الوكيل (الدورة):</span> <code class="bg-white px-1 rounded">' + (data.sampleAgentIds.slice(0, 10).join(', ')) + (data.sampleAgentIds.length > 10 ? '...' : '') + '</code></p>';
+        }
+        html += '</div>';
+      }
+      if (data.spreadsheetUrl) {
+        html += '<p class="text-sm mt-3"><a href="' + data.spreadsheetUrl + '" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">فتح جدول معلومات المستخدمين في Google ←</a></p>';
+      }
+      document.getElementById('payrollResultsContent').innerHTML = html;
+      document.getElementById('payrollResultsSection').classList.remove('hidden');
+      if (typeof showToast === 'function') showToast(msg, data.applied ? 'success' : 'warning');
+    } else {
+      if (typeof showToast === 'function') showToast(data.message || 'فشل التنفيذ', 'error');
+    }
+  } catch (_) {
+    if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-play"></i> تنفيذ';
 }
 
-function payrollSaveSettings() {
-  var discount = document.getElementById('payrollDiscountRate').value;
+async function payrollSaveSettings() {
+  var discountRate = document.getElementById('payrollDiscountRate').value;
   var agentColor = document.getElementById('payrollAgentColor').value;
-  var mgmtColor = document.getElementById('payrollMgmtColor').value;
-  if (typeof showToast === 'function') showToast('تم حفظ الإعدادات (سيتم ربطها بالخادم لاحقاً)', 'success');
+  var managementColor = document.getElementById('payrollMgmtColor').value;
+  try {
+    var res = await fetch('/api/sheet/payroll-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        discountRate: Number(discountRate) || 0,
+        agentColor: agentColor || '#3b82f6',
+        managementColor: managementColor || '#10b981'
+      })
+    });
+    var data = await res.json();
+    if (typeof showToast === 'function') showToast(data.message || (data.success ? 'تم حفظ الإعدادات' : 'فشل'), data.success ? 'success' : 'error');
+  } catch (_) {
+    if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+  }
+}
+
+async function payrollLoadSettings() {
+  try {
+    var res = await fetch('/api/sheet/payroll-settings');
+    var data = await res.json();
+    if (!data.success) return;
+    document.getElementById('payrollDiscountRate').value = data.discountRate != null ? data.discountRate : 0;
+    var ac = data.agentColor || '#3b82f6';
+    var mc = data.managementColor || '#10b981';
+    document.getElementById('payrollAgentColor').value = ac;
+    document.getElementById('payrollAgentColorText').value = ac;
+    document.getElementById('payrollMgmtColor').value = mc;
+    document.getElementById('payrollMgmtColorText').value = mc;
+  } catch (_) {}
 }
 
 (function initPayrollPage() {
   payrollLoadCycles();
+  payrollLoadSettings();
 })();
 </script>
