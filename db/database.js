@@ -215,6 +215,64 @@ async function initDatabase() {
       PRIMARY KEY (user_id, cycle_id, member_user_id)
     );
 
+    -- قسم الشحن: المعتمدون
+    CREATE TABLE IF NOT EXISTS shipping_approved (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- قسم الشحن والوكالات: الوكالات الفرعية (نسبة الوكالة + رصيد)
+    CREATE TABLE IF NOT EXISTS shipping_sub_agencies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      commission_percent REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- معاملات الوكالات: مكافآت، خصومات، أرباح، مستحقات
+    CREATE TABLE IF NOT EXISTS sub_agency_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sub_agency_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      amount REAL NOT NULL,
+      notes TEXT,
+      cycle_id INTEGER,
+      shipping_transaction_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sub_agency_id) REFERENCES shipping_sub_agencies(id)
+    );
+
+    -- قسم الشحن: شركات الشراء
+    CREATE TABLE IF NOT EXISTS shipping_companies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- قسم الشحن: عمليات البيع والشراء
+    CREATE TABLE IF NOT EXISTS shipping_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      item_type TEXT NOT NULL,
+      quantity REAL NOT NULL,
+      unit_price REAL NOT NULL,
+      total REAL NOT NULL,
+      payment_method TEXT NOT NULL,
+      status TEXT DEFAULT 'completed',
+      buyer_type TEXT,
+      buyer_user_id TEXT,
+      buyer_approved_id INTEGER,
+      buyer_sub_agency_id INTEGER,
+      salary_deduction_user_id TEXT,
+      purchase_source TEXT,
+      purchase_company_id INTEGER,
+      purchase_company_name TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
   `);
   saveDb();
 
@@ -226,6 +284,8 @@ async function initDatabase() {
   try { innerDb.run('ALTER TABLE financial_cycles ADD COLUMN management_sheet_name TEXT'); saveDb(); } catch (_) {}
   try { innerDb.run('ALTER TABLE financial_cycles ADD COLUMN agent_spreadsheet_id TEXT'); saveDb(); } catch (_) {}
   try { innerDb.run('ALTER TABLE financial_cycles ADD COLUMN agent_sheet_name TEXT'); saveDb(); } catch (_) {}
+  try { innerDb.run('ALTER TABLE shipping_sub_agencies ADD COLUMN commission_percent REAL DEFAULT 0'); saveDb(); } catch (_) {}
+  try { innerDb.run('ALTER TABLE shipping_sub_agencies ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP'); saveDb(); } catch (_) {}
 
   const adminUser = wrapStmt('SELECT * FROM users WHERE username = ?').get(process.env.ADMIN_USERNAME || 'admin');
   if (!adminUser || !adminUser.username) {

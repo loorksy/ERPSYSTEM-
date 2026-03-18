@@ -8,17 +8,64 @@ const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const net = require('net');
 const { Server } = require('socket.io');
 const { initDatabase } = require('./db/database');
 const { startBackgroundSync } = require('./services/cycleSyncWorker');
 
+const PORT = parseInt(process.env.PORT || 3000, 10);
+const LOCK_FILE = path.join(__dirname, '.server.lock');
+
+/** منع تشغيل أكثر من نسخة واحدة على نفس المنفذ */
+function ensureSingleInstance() {
+  if (fs.existsSync(LOCK_FILE)) {
+    try {
+      const content = fs.readFileSync(LOCK_FILE, 'utf8').trim();
+      const [oldPid, oldPort] = content.split(':');
+      if (oldPort && parseInt(oldPort, 10) === PORT) {
+        try {
+          process.kill(parseInt(oldPid, 10), 0);
+          console.error(`[LorkERP] نسخة أخرى تعمل بالفعل (PID: ${oldPid}) على المنفذ ${PORT}. أوقفها أولاً.`);
+          process.exit(1);
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+  try {
+    fs.writeFileSync(LOCK_FILE, `${process.pid}:${PORT}`, 'utf8');
+  } catch (e) {
+    console.error('[LorkERP] فشل إنشاء ملف القفل:', e.message);
+    process.exit(1);
+  }
+  function removeLock() {
+    try {
+      if (fs.existsSync(LOCK_FILE)) {
+        const c = fs.readFileSync(LOCK_FILE, 'utf8').trim();
+        if (c.startsWith(process.pid + ':')) fs.unlinkSync(LOCK_FILE);
+      }
+    } catch (_) {}
+  }
+  process.on('exit', removeLock);
+  process.on('SIGTERM', () => { removeLock(); });
+  process.on('SIGINT', () => { removeLock(); });
+}
+
+/** التحقق من أن المنفذ غير مستخدم قبل البدء */
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const s = net.createServer();
+    s.once('error', () => resolve(true));
+    s.once('listening', () => {
+      s.close();
+      resolve(false);
+    });
+    s.listen(port, '127.0.0.1');
+  });
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
-const portfinder = require('portfinder');
-const BASE_PORT = parseInt(process.env.PORT || 3000, 10);
-portfinder.setBasePort(BASE_PORT);
 
 /** مدة بقاء الجلسة: 7 أيام (بالمللي ثانية للـ cookie وبالثواني لـ session store) */
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -80,6 +127,8 @@ const sheetRoutes = require('./routes/sheet');
 const settingsRoutes = require('./routes/settings');
 const pagesRoutes = require('./routes/pages');
 const searchRoutes = require('./routes/search');
+const shippingRoutes = require('./routes/shipping');
+const subAgenciesRoutes = require('./routes/subAgencies');
 const aiRoutes = require('./routes/ai');
 
 app.use('/', authRoutes);
@@ -88,6 +137,8 @@ app.use('/sheets', sheetsRoutes);
 app.use('/api/sheet', sheetRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/shipping', shippingRoutes);
+app.use('/api/sub-agencies', subAgenciesRoutes);
 app.use('/ai', aiRoutes(io));
 app.use('/', pagesRoutes);
 
@@ -133,21 +184,24 @@ function gracefulShutdown() {
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
-// معالجة أخطاء الخادم (غير EADDRINUSE - يتم التعامل معه عبر portfinder)
 server.on('error', (err) => {
-  if (err && err.code !== 'EADDRINUSE') {
-    console.error('[LorkERP] Server error:', err);
+  if (err && err.code === 'EADDRINUSE') {
+    console.error(`[LorkERP] المنفذ ${PORT} مشغول. أوقف العملية الأخرى أولاً: taskkill /PID <رقم_العملية> /F`);
+    process.exit(1);
   }
+  console.error('[LorkERP] Server error:', err);
 });
 
 initDatabase()
-  .then(() => portfinder.getPortPromise())
-  .then((port) => {
-    server.listen(port, '0.0.0.0', () => {
-      if (port !== BASE_PORT) {
-        console.log(`[LorkERP] المنفذ ${BASE_PORT} مشغول، تم استخدام المنفذ ${port} بدلاً منه`);
-      }
-      console.log(`[LorkERP] Server running on http://0.0.0.0:${port}`);
+  .then(async () => {
+    ensureSingleInstance();
+    const inUse = await isPortInUse(PORT);
+    if (inUse) {
+      console.error(`[LorkERP] المنفذ ${PORT} مشغول. أوقف العملية الأخرى أولاً: taskkill /F /PID <رقم_العملية>`);
+      process.exit(1);
+    }
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`[LorkERP] Server running on http://0.0.0.0:${PORT}`);
       try {
         startBackgroundSync(60000, 5);
         console.log('[LorkERP] Payroll cycle background sync started');

@@ -1,15 +1,189 @@
-<div class="max-w-5xl" dir="rtl">
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="flex items-center gap-3 py-5 px-6 border-b border-slate-100">
-      <i class="fas fa-code-branch text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">الوكالات الفرعية</h3>
+<div class="sub-agencies-page" dir="rtl">
+  <!-- قائمة الوكالات -->
+  <div id="subAgenciesList">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-slate-800">الوكالات الفرعية</h2>
+      <button type="button" onclick="subAgenciesOpenAddModal()" class="btn-add">
+        <i class="fas fa-plus ml-2"></i>
+        إضافة وكالة
+      </button>
     </div>
-    <div class="p-6 md:p-10">
-      <div class="flex flex-col items-center justify-center py-16 text-slate-400">
-        <i class="fas fa-code-branch text-5xl mb-4 opacity-40"></i>
-        <p class="text-lg font-medium">سيتم إضافة محتوى الوكالات الفرعية هنا</p>
-        <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
+    <div id="subAgenciesCards" class="agencies-grid">
+      <p class="text-slate-400 col-span-full text-center py-12">جاري التحميل...</p>
+    </div>
+  </div>
+
+  <!-- لوحة تحكم الوكالة -->
+  <div id="subAgencyDashboard" class="hidden">
+    <div class="mb-8 flex items-center gap-4">
+      <button type="button" onclick="subAgenciesBackToList()" class="btn-back">
+        <i class="fas fa-arrow-right"></i>
+      </button>
+      <h2 id="subAgencyDashboardTitle" class="text-2xl font-bold text-slate-800">لوحة الوكالة</h2>
+    </div>
+
+    <div class="mb-8">
+      <label class="block text-sm font-medium text-slate-600 mb-2">الدورة المالية</label>
+      <select id="subAgencyCycleSelect" class="input-select" onchange="subAgenciesLoadDashboard()">
+        <option value="">-- اختر الدورة --</option>
+      </select>
+    </div>
+
+    <div class="dashboard-cards">
+      <div class="dash-card dash-card-profit">
+        <p class="dash-card-label">ربح الوكالة</p>
+        <p id="subAgencyProfit" class="dash-card-value">0</p>
       </div>
+      <div class="dash-card dash-card-users" onclick="subAgenciesShowUsers()">
+        <p class="dash-card-label">المستخدمين</p>
+        <p id="subAgencyUsersCount" class="dash-card-value">0</p>
+      </div>
+      <div class="dash-card dash-card-percent">
+        <p class="dash-card-label">نسبة الوكالة</p>
+        <div class="flex items-center gap-2">
+          <input type="number" id="subAgencyPercentInput" step="0.1" min="0" max="100" class="input-percent" onchange="subAgenciesUpdatePercent()">
+          <span class="text-amber-700 font-bold">%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-8">
+      <button type="button" onclick="subAgenciesOpenRewardModal()" class="btn-reward">
+        <i class="fas fa-gift ml-2"></i>
+        إضافة مكافأة
+      </button>
+    </div>
+
+    <section class="tx-section">
+      <h5 class="tx-section-title">سجل المعاملات</h5>
+      <div class="tx-filters">
+        <select id="subAgencyTxTypeFilter" class="input-filter" onchange="subAgenciesLoadTransactions()">
+          <option value="">كل الأنواع</option>
+          <option value="profit">ربح</option>
+          <option value="reward">مكافأة</option>
+          <option value="deduction">خصم</option>
+          <option value="due">مستحقات</option>
+        </select>
+        <input type="date" id="subAgencyTxFrom" class="input-filter">
+        <input type="date" id="subAgencyTxTo" class="input-filter">
+        <button type="button" onclick="subAgenciesLoadTransactions()" class="btn-filter">تطبيق</button>
+      </div>
+      <div id="subAgencyTxList" class="tx-list">
+        <p class="text-slate-400 text-center py-8">جاري التحميل...</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- نافذة إضافة وكالة -->
+<div id="subAgencyAddModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h4>إضافة وكالة</h4>
+      <button type="button" onclick="subAgenciesCloseAddModal()" class="modal-close"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="subAgencyAddForm" class="modal-form">
+      <div class="form-group">
+        <label>اسم الوكالة</label>
+        <input type="text" id="subAgencyAddName" required placeholder="اسم الوكالة">
+      </div>
+      <div class="form-group">
+        <label>نسبة الوكالة (%)</label>
+        <input type="number" id="subAgencyAddPercent" step="0.1" min="0" max="100" value="0" placeholder="0">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-submit">حفظ</button>
+        <button type="button" onclick="subAgenciesCloseAddModal()" class="btn-cancel">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة مكافأة -->
+<div id="subAgencyRewardModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h4>إضافة مكافأة</h4>
+      <button type="button" onclick="subAgenciesCloseRewardModal()" class="modal-close"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="subAgencyRewardForm" class="modal-form">
+      <div class="form-group">
+        <label>مبلغ المكافأة</label>
+        <input type="number" id="subAgencyRewardAmount" step="0.01" min="0.01" required>
+      </div>
+      <div class="form-group">
+        <label>ملاحظة</label>
+        <textarea id="subAgencyRewardNotes" rows="2" placeholder="اختياري"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-submit btn-submit-green">إضافة</button>
+        <button type="button" onclick="subAgenciesCloseRewardModal()" class="btn-cancel">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة قائمة المستخدمين -->
+<div id="subAgencyUsersModal" class="modal-overlay hidden">
+  <div class="modal-box modal-box-tall">
+    <div class="modal-header">
+      <h4>المستخدمين التابعين للوكالة</h4>
+      <button type="button" onclick="subAgenciesCloseUsersModal()" class="modal-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="subAgencyUsersList" class="modal-body">
+      <p class="text-slate-400 text-center py-8">جاري التحميل...</p>
     </div>
   </div>
 </div>
+
+<style>
+.sub-agencies-page { max-width: 56rem; }
+.agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+.btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
+.btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+.btn-back { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.btn-back:hover { background: #e2e8f0; color: #475569; }
+.input-select { max-width: 16rem; padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+.dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.dash-card { padding: 1.25rem; border-radius: 1rem; transition: transform 0.2s; }
+.dash-card-users { cursor: pointer; }
+.dash-card-users:hover { transform: scale(1.02); }
+.dash-card-profit { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; }
+.dash-card-users { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #3730a3; }
+.dash-card-percent { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #b45309; }
+.dash-card-label { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; opacity: 0.9; }
+.dash-card-value { font-size: 1.5rem; font-weight: 700; }
+.input-percent { width: 5rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem; border: 1px solid #fcd34d; font-weight: 700; color: #b45309; }
+.btn-reward { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #059669, #10b981); color: white; transition: all 0.2s; }
+.btn-reward:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); }
+.tx-section { padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
+.tx-section-title { font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 1rem; }
+.tx-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.input-filter { padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; font-size: 0.875rem; }
+.btn-filter { padding: 0.5rem 1rem; border-radius: 0.5rem; background: #4f46e5; color: white; font-size: 0.875rem; font-weight: 500; }
+.tx-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.modal-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal-overlay.hidden { display: none; }
+.modal-overlay:not(.hidden) { display: flex; }
+.modal-box { background: white; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 28rem; width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-box-tall { max-height: 80vh; display: flex; flex-direction: column; }
+.modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.modal-header h4 { font-size: 1.125rem; font-weight: 700; color: #1e293b; }
+.modal-close { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; color: #94a3b8; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.modal-close:hover { background: #f1f5f9; color: #64748b; }
+.modal-form { padding: 1.5rem; }
+.modal-body { padding: 1rem; overflow-y: auto; flex: 1; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
+.form-group input, .form-group textarea { width: 100%; padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+.form-actions { display: flex; gap: 0.75rem; padding-top: 0.5rem; }
+.btn-submit { flex: 1; padding: 0.75rem; border-radius: 0.75rem; font-weight: 600; background: #4f46e5; color: white; }
+.btn-submit-green { background: #059669; }
+.btn-cancel { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569; }
+.agency-card { padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s; border: none; }
+.agency-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15); }
+.agency-card h5 { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+.agency-card .agency-meta { font-size: 0.8125rem; opacity: 0.9; margin-bottom: 0.25rem; }
+.agency-card .agency-balance { font-size: 0.875rem; font-weight: 600; }
+.tx-item { padding: 1rem; border-radius: 0.75rem; background: #f8fafc; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; }
+</style>

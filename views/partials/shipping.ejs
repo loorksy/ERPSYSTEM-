@@ -2,26 +2,254 @@
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <div class="flex items-center gap-3 py-5 px-6 border-b border-slate-100">
       <i class="fas fa-truck text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">الشحن</h3>
+      <h3 class="text-lg font-bold">قسم الشحن</h3>
     </div>
     <div class="p-6 md:p-10">
+      <!-- عرض الرصيد -->
+      <div class="mb-8 p-5 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
+        <h4 class="text-sm font-bold text-amber-800 mb-3 flex items-center gap-2">
+          <i class="fas fa-wallet"></i>
+          عرض الرصيد
+        </h4>
+        <div class="flex flex-wrap gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-600 text-sm">رصيد الذهب:</span>
+            <span id="shippingGoldBalance" class="font-bold text-amber-600 text-lg">0</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-600 text-sm">رصيد الكرستال:</span>
+            <span id="shippingCrystalBalance" class="font-bold text-indigo-600 text-lg">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- أزرار بيع / شراء / السجل -->
+      <div class="flex gap-3 mb-8 flex-wrap">
+        <button type="button" onclick="shippingOpenSellModal()" class="px-5 py-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition-all">
+          <i class="fas fa-hand-holding-usd ml-2"></i>
+          بيع
+        </button>
+        <button type="button" onclick="shippingOpenBuyModal()" class="px-5 py-3 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-md transition-all">
+          <i class="fas fa-shopping-cart ml-2"></i>
+          شراء
+        </button>
+        <button type="button" onclick="shippingOpenRecordModal()" class="px-5 py-3 rounded-xl text-sm font-semibold bg-slate-600 text-white hover:bg-slate-700 shadow-md transition-all">
+          <i class="fas fa-history ml-2"></i>
+          السجل
+        </button>
+      </div>
+
+      <!-- تبويب الباقات (placeholder) -->
       <div class="flex gap-2 mb-6 flex-wrap">
         <button onclick="switchTab(this, 'shipping-main')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-indigo-600 text-white shadow-md">الشحن</button>
         <button onclick="switchTab(this, 'shipping-packages')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200">الباقات</button>
       </div>
       <div id="shipping-main" class="tab-content">
-        <div class="flex flex-col items-center justify-center py-16 text-slate-400">
-          <i class="fas fa-truck text-5xl mb-4 opacity-40"></i>
-          <p class="text-lg font-medium">سيتم إضافة محتوى الشحن هنا</p>
-          <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
-        </div>
+        <p class="text-slate-500 text-sm">استخدم أزرار البيع والشراء أعلاه لإدارة عمليات الشحن.</p>
       </div>
       <div id="shipping-packages" class="tab-content hidden">
         <div class="flex flex-col items-center justify-center py-16 text-slate-400">
-          <i class="fas fa-truck text-5xl mb-4 opacity-40"></i>
+          <i class="fas fa-box text-5xl mb-4 opacity-40"></i>
           <p class="text-lg font-medium">سيتم إضافة محتوى الباقات هنا</p>
-          <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة بيع -->
+<div id="shippingSellModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div class="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+      <h4 class="text-lg font-bold text-slate-800">نموذج بيع</h4>
+      <button type="button" onclick="shippingCloseSellModal()" class="w-10 h-10 rounded-xl text-slate-400 hover:bg-slate-100 flex items-center justify-center">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form id="shippingSellForm" class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">نوع المشتري</label>
+        <select id="sellBuyerType" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" onchange="shippingSellBuyerTypeChange()">
+          <option value="user">مستخدم</option>
+          <option value="approved">معتمد</option>
+          <option value="sub_agent">وكيل فرعي</option>
+        </select>
+      </div>
+
+      <!-- مستخدم -->
+      <div id="sellUserFields" class="space-y-3">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">رقم المستخدم</label>
+          <input type="text" id="sellUserNumber" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" placeholder="رقم المستخدم">
+        </div>
+      </div>
+
+      <!-- معتمد -->
+      <div id="sellApprovedFields" class="hidden space-y-3">
+        <div class="flex gap-2">
+          <select id="sellApprovedId" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="">-- اختر المعتمد --</option>
+          </select>
+          <button type="button" onclick="shippingQuickAdd('approved', 'sellApprovedId', 'اسم المعتمد')" class="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm" title="إضافة معتمد">+</button>
+        </div>
+      </div>
+
+      <!-- وكيل فرعي -->
+      <div id="sellSubAgentFields" class="hidden space-y-3">
+        <div class="flex gap-2">
+          <select id="sellSubAgencyId" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="">-- اختر الوكالة --</option>
+          </select>
+          <button type="button" onclick="shippingQuickAdd('sub-agencies', 'sellSubAgencyId', 'اسم الوكالة')" class="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm" title="إضافة وكالة">+</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">نوع الشحن</label>
+        <select id="sellItemType" name="itemType" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+          <option value="gold">ذهب</option>
+          <option value="crystal">كرستال</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">الكمية</label>
+          <input type="number" id="sellQuantity" name="quantity" step="0.01" min="0.01" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">سعر البيع</label>
+          <input type="number" id="sellUnitPrice" name="unitPrice" step="0.01" min="0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">طريقة الدفع</label>
+        <select id="sellPaymentMethod" name="paymentMethod" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" onchange="shippingSellPaymentChange()" required>
+          <option value="cash">كاش</option>
+          <option value="debt">دين</option>
+          <option value="salary_deduction" id="sellSalaryOpt">خصم من راتب</option>
+          <option value="agency_deduction" id="sellAgencyOpt" class="hidden">خصم من نسبة الوكالة</option>
+        </select>
+      </div>
+
+      <div id="sellSalaryFields" class="hidden space-y-3">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">اختيار مستخدم (للخصم)</label>
+          <select id="sellSalaryUserId" class="w-full px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="">-- اختر المستخدم --</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">ملاحظات</label>
+        <textarea id="sellNotes" name="notes" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" placeholder="اختياري"></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="flex-1 py-3 rounded-xl font-semibold bg-emerald-600 text-white hover:bg-emerald-700">تسجيل البيع</button>
+        <button type="button" onclick="shippingCloseSellModal()" class="px-5 py-3 rounded-xl font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة شراء -->
+<div id="shippingBuyModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div class="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+      <h4 class="text-lg font-bold text-slate-800">نموذج شراء</h4>
+      <button type="button" onclick="shippingCloseBuyModal()" class="w-10 h-10 rounded-xl text-slate-400 hover:bg-slate-100 flex items-center justify-center">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form id="shippingBuyForm" class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">مصدر الشراء</label>
+        <select id="buyPurchaseSource" name="purchaseSource" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" onchange="shippingBuySourceChange()" required>
+          <option value="administration">الإدارة</option>
+          <option value="company">شركة</option>
+        </select>
+      </div>
+
+      <div id="buyCompanyFields" class="hidden space-y-2">
+        <div class="flex gap-2">
+          <select id="buyCompanyId" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="">-- اختر الشركة --</option>
+          </select>
+          <button type="button" onclick="shippingQuickAdd('companies', 'buyCompanyId', 'اسم الشركة')" class="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm" title="إضافة شركة">+</button>
+        </div>
+        <input type="text" id="buyCompanyName" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" placeholder="أو اكتب اسم شركة جديدة">
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">نوع الشراء</label>
+        <select id="buyItemType" name="itemType" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+          <option value="gold">ذهب</option>
+          <option value="crystal">كرستال</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">الكمية</label>
+          <input type="number" id="buyQuantity" name="quantity" step="0.01" min="0.01" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">السعر</label>
+          <input type="number" id="buyUnitPrice" name="unitPrice" step="0.01" min="0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">طريقة الدفع</label>
+        <select id="buyPaymentMethod" name="paymentMethod" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+          <option value="cash">كاش</option>
+          <option value="debt">دين</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">ملاحظات</label>
+        <textarea id="buyNotes" name="notes" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" placeholder="اختياري"></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="flex-1 py-3 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700">تسجيل الشراء</button>
+        <button type="button" onclick="shippingCloseBuyModal()" class="px-5 py-3 rounded-xl font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة السجل -->
+<div id="shippingRecordModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex-shrink-0 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h4 class="text-lg font-bold text-slate-800">سجل عمليات الشحن</h4>
+      <button type="button" onclick="shippingCloseRecordModal()" class="w-10 h-10 rounded-xl text-slate-400 hover:bg-slate-100 flex items-center justify-center">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-4 border-b border-slate-100 flex flex-wrap gap-2">
+      <select id="recordFilterType" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+        <option value="">كل الأنواع</option>
+        <option value="sell">بيع</option>
+        <option value="buy">شراء</option>
+      </select>
+      <select id="recordFilterStatus" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+        <option value="">كل الحالات</option>
+        <option value="completed">مكتملة</option>
+        <option value="debt">دين</option>
+      </select>
+      <input type="date" id="recordFilterFrom" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+      <input type="date" id="recordFilterTo" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+      <button type="button" onclick="shippingLoadRecord()" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">تطبيق</button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4">
+      <div id="shippingRecordList" class="space-y-2">
+        <p class="text-slate-400 text-center py-8">جاري التحميل...</p>
       </div>
     </div>
   </div>

@@ -41,8 +41,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7",
-    "portfinder": "^1.0.38"
+    "nodemon": "^3.1.7"
   },
   "nodemonConfig": {
     "delay": "2500",
