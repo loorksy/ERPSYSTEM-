@@ -125,10 +125,125 @@ router.get('/spreadsheet-sheets', requireAuth, async (req, res) => {
 router.get('/cycles', requireAuth, async (req, res) => {
   try {
     const db = getDb();
-    const rows = (await db.query('SELECT id, name, created_at FROM financial_cycles WHERE user_id = $1 ORDER BY created_at DESC', [req.session.userId])).rows;
+    const rows = (await db.query(
+      'SELECT id, name, created_at, updated_at, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name FROM financial_cycles WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.session.userId]
+    )).rows;
     res.json({ success: true, cycles: rows });
   } catch (e) {
     res.json({ success: false, message: e.message });
+  }
+});
+
+/** جلب دورة واحدة (للتعديل) */
+router.get('/cycles/:id', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const row = (await db.query(
+      'SELECT id, name, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name, created_at, updated_at FROM financial_cycles WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.session.userId]
+    )).rows[0];
+    if (!row) return res.json({ success: false, message: 'الدورة غير موجودة' });
+    res.json({ success: true, cycle: row });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+/** تحديث دورة مالية */
+router.put('/cycles/:id', requireAuth, async (req, res) => {
+  try {
+    const cycleId = req.params.id;
+    const {
+      name,
+      managementData,
+      agentData,
+      managementSpreadsheetId,
+      managementSheetName,
+      agentSpreadsheetId,
+      agentSheetName
+    } = req.body;
+    if (!req.session?.userId) {
+      return res.status(401).json({ success: false, message: 'انتهت الجلسة. سجّل دخولك مجدداً.' });
+    }
+    const db = getDb();
+    const existing = (await db.query('SELECT id FROM financial_cycles WHERE id = $1 AND user_id = $2', [cycleId, req.session.userId])).rows[0];
+    if (!existing) return res.json({ success: false, message: 'الدورة غير موجودة' });
+
+    const mgmtSs = managementSpreadsheetId ? String(managementSpreadsheetId).trim() : null;
+    const mgmtSn = managementSheetName ? String(managementSheetName).trim() : null;
+    const agentSs = agentSpreadsheetId ? String(agentSpreadsheetId).trim() : null;
+    const agentSn = agentSheetName ? String(agentSheetName).trim() : null;
+
+    let managementJson = managementData != null ? JSON.stringify(managementData) : null;
+    let agentJson = agentData != null ? JSON.stringify(agentData) : null;
+
+    if (mgmtSs && agentSs && (!managementJson || !agentJson)) {
+      const config = (await db.query('SELECT token, credentials FROM google_sheets_config WHERE id = 1')).rows[0];
+      if (config?.token) {
+        const credentials = config.credentials ? JSON.parse(config.credentials) : null;
+        const managementRows = await readSheetFromGoogle(mgmtSs, mgmtSn, credentials, config.token);
+        const agentRows = await readSheetFromGoogle(agentSs, agentSn, credentials, config.token);
+        managementJson = managementRows ? JSON.stringify(managementRows) : null;
+        agentJson = agentRows ? JSON.stringify(agentRows) : null;
+      }
+    }
+
+    const updates = [];
+    const params = [];
+    let idx = 1;
+    if (name != null) {
+      updates.push(`name = $${idx++}`);
+      params.push(String(name).trim());
+    }
+    if (managementJson != null) {
+      updates.push(`management_data = $${idx++}`);
+      params.push(managementJson);
+    }
+    if (agentJson != null) {
+      updates.push(`agent_data = $${idx++}`);
+      params.push(agentJson);
+    }
+    if (managementSpreadsheetId !== undefined) {
+      updates.push(`management_spreadsheet_id = $${idx++}`);
+      params.push(mgmtSs);
+    }
+    if (managementSheetName !== undefined) {
+      updates.push(`management_sheet_name = $${idx++}`);
+      params.push(mgmtSn);
+    }
+    if (agentSpreadsheetId !== undefined) {
+      updates.push(`agent_spreadsheet_id = $${idx++}`);
+      params.push(agentSs);
+    }
+    if (agentSheetName !== undefined) {
+      updates.push(`agent_sheet_name = $${idx++}`);
+      params.push(agentSn);
+    }
+    if (updates.length === 0) return res.json({ success: false, message: 'لا توجد بيانات للتحديث' });
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(cycleId, req.session.userId);
+    await db.query(
+      `UPDATE financial_cycles SET ${updates.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1}`,
+      params
+    );
+    res.json({ success: true, message: 'تم تحديث الدورة' });
+  } catch (e) {
+    console.error('[LorkERP] Cycle update error:', e.message);
+    res.json({ success: false, message: e.message || 'فشل تحديث الدورة' });
+  }
+});
+
+/** حذف دورة مالية */
+router.delete('/cycles/:id', requireAuth, async (req, res) => {
+  try {
+    const cycleId = req.params.id;
+    const db = getDb();
+    const r = await db.query('DELETE FROM financial_cycles WHERE id = $1 AND user_id = $2 RETURNING id', [cycleId, req.session.userId]);
+    if (!r.rows || r.rows.length === 0) return res.json({ success: false, message: 'الدورة غير موجودة' });
+    res.json({ success: true, message: 'تم حذف الدورة' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل الحذف' });
   }
 });
 

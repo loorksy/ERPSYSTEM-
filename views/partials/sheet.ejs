@@ -1,92 +1,112 @@
-<div class="max-w-5xl" dir="rtl">
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="flex items-center justify-between flex-wrap gap-3 py-5 px-6 border-b border-slate-100">
-      <div class="flex items-center gap-3">
-        <i class="fas fa-file-excel text-xl text-indigo-600"></i>
-        <h3 class="text-lg font-bold">الدورات المالية</h3>
-      </div>
-      <button type="button" onclick="openCreateCycleModal()" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700">
-        <i class="fas fa-plus"></i>
-        <span>إنشاء دورة مالية</span>
-      </button>
+<div class="max-w-6xl" dir="rtl">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div>
+      <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+          <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
+        </div>
+        الدورات المالية
+      </h2>
+      <p class="text-slate-500 mt-1 text-sm">إدارة دورات الإدارة والوكيل للتدقيق والمزامنة</p>
     </div>
-    <div class="p-6 md:p-10">
-      <div class="mb-6">
-        <h4 class="font-bold text-slate-800 mb-2 flex items-center gap-2"><i class="fas fa-history text-indigo-600"></i> الدورات المحفوظة</h4>
-        <div id="cyclesList" class="flex flex-wrap gap-2"></div>
-        <p id="cyclesEmpty" class="text-sm text-slate-500 py-4">لا توجد دورات محفوظة بعد.</p>
-      </div>
+    <button type="button" onclick="openCycleModal()" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.98] bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25">
+      <i class="fas fa-plus text-lg"></i>
+      <span>إنشاء دورة مالية</span>
+    </button>
+  </div>
+
+  <!-- Cycles Grid -->
+  <div id="cyclesList" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <!-- Cards rendered by JS -->
+  </div>
+  <div id="cyclesEmpty" class="text-center py-16 px-4 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+    <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+      <i class="fas fa-folder-open text-4xl text-slate-400"></i>
     </div>
+    <p class="text-slate-600 font-medium mb-1">لا توجد دورات محفوظة</p>
+    <p class="text-slate-500 text-sm mb-6">أنشئ دورة مالية جديدة لربط جداول الإدارة والوكيل</p>
+    <button type="button" onclick="openCycleModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 text-white hover:bg-indigo-700">
+      <i class="fas fa-plus"></i> إنشاء أول دورة
+    </button>
   </div>
 </div>
 
-<!-- Modal إنشاء دورة مالية -->
-<div id="createCycleModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" style="display: none;">
-  <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-    <div class="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white">
-      <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fas fa-file-excel text-indigo-600"></i> إنشاء دورة مالية</h4>
-      <button type="button" onclick="closeCreateCycleModal()" class="w-9 h-9 rounded-lg text-slate-500 hover:bg-slate-100 flex items-center justify-center"><i class="fas fa-times"></i></button>
+<!-- Modal إنشاء/تعديل دورة مالية -->
+<div id="cycleModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style="display: none;" onclick="if(event.target===this)closeCycleModal()">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+    <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+      <h4 id="cycleModalTitle" class="text-xl font-bold text-slate-800 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+          <i class="fas fa-file-excel text-indigo-600"></i>
+        </div>
+        إنشاء دورة مالية
+      </h4>
+      <button type="button" onclick="closeCycleModal()" class="w-10 h-10 rounded-xl text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-colors">
+        <i class="fas fa-times text-lg"></i>
+      </button>
     </div>
-    <div class="p-6">
-      <div class="flex gap-2 mb-6">
-        <button type="button" id="tabGoogle" onclick="setCycleTab('google')" class="px-4 py-2 rounded-xl font-semibold text-sm bg-indigo-600 text-white">استيراد من Google</button>
-        <button type="button" id="tabUpload" onclick="setCycleTab('upload')" class="px-4 py-2 rounded-xl font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200">رفع يدوي (Excel / CSV)</button>
+    <div class="p-6 overflow-y-auto flex-1">
+      <input type="hidden" id="cycleEditId" value="">
+      <div class="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
+        <button type="button" id="tabGoogle" onclick="setCycleTab('google')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-white text-indigo-600 shadow-sm">استيراد من Google</button>
+        <button type="button" id="tabUpload" onclick="setCycleTab('upload')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all text-slate-600 hover:bg-white/50">رفع يدوي (Excel / CSV)</button>
       </div>
 
-      <!-- استيراد من Google (مزامنة جداول حساب المستخدم) -->
-      <div id="panelGoogle" class="space-y-4">
+      <!-- استيراد من Google -->
+      <div id="panelGoogle" class="space-y-5">
         <p class="text-sm text-slate-600">اختر من جداول البيانات في حسابك — يتم جلب القائمة تلقائياً من Google.</p>
-        <div>
-          <label class="block mb-2 font-semibold text-sm text-slate-800">جدول الإدارة</label>
-          <select id="mgmtSpreadsheetId" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-600">
+        <div class="space-y-2">
+          <label class="block font-semibold text-sm text-slate-800">جدول الإدارة</label>
+          <select id="mgmtSpreadsheetId" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
             <option value="">— جاري التحميل... —</option>
           </select>
-          <label class="block mt-2 mb-1 font-medium text-xs text-slate-600">ورقة الإدارة (اختياري)</label>
-          <select id="mgmtSheetName" class="w-full py-2 px-4 border border-slate-200 rounded-lg text-sm bg-white">
+          <label class="block mt-2 text-xs text-slate-500">ورقة الإدارة (اختياري)</label>
+          <select id="mgmtSheetName" class="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm bg-white">
             <option value="">أول ورقة تلقائياً</option>
           </select>
         </div>
-        <div>
-          <label class="block mb-2 font-semibold text-sm text-slate-800">جدول الوكيل</label>
-          <select id="agentSpreadsheetId" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-600">
+        <div class="space-y-2">
+          <label class="block font-semibold text-sm text-slate-800">جدول الوكيل</label>
+          <select id="agentSpreadsheetId" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
             <option value="">— جاري التحميل... —</option>
           </select>
-          <label class="block mt-2 mb-1 font-medium text-xs text-slate-600">ورقة الوكيل (اختياري)</label>
-          <select id="agentSheetName" class="w-full py-2 px-4 border border-slate-200 rounded-lg text-sm bg-white">
+          <label class="block mt-2 text-xs text-slate-500">ورقة الوكيل (اختياري)</label>
+          <select id="agentSheetName" class="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm bg-white">
             <option value="">أول ورقة تلقائياً</option>
           </select>
         </div>
-        <button type="button" id="btnFetchGoogle" onclick="fetchFromGoogle()" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700">
+        <button type="button" id="btnFetchGoogle" onclick="fetchFromGoogle()" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
           <i class="fas fa-cloud-download-alt"></i> جلب البيانات من Google
         </button>
       </div>
 
       <!-- رفع يدوي -->
-      <div id="panelUpload" class="space-y-4 hidden">
-        <div>
-          <label class="block mb-2 font-semibold text-sm text-slate-800">ملف الإدارة (Excel أو CSV)</label>
-          <input type="file" id="fileManagement" accept=".xlsx,.xls,.csv" class="w-full py-2 px-4 border-2 border-slate-200 rounded-xl text-sm">
+      <div id="panelUpload" class="space-y-5 hidden">
+        <div class="space-y-2">
+          <label class="block font-semibold text-sm text-slate-800">ملف الإدارة (Excel أو CSV)</label>
+          <input type="file" id="fileManagement" accept=".xlsx,.xls,.csv" class="w-full py-3 px-4 border-2 border-dashed border-slate-200 rounded-xl text-sm bg-slate-50 hover:border-indigo-300 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-semibold">
         </div>
-        <div>
-          <label class="block mb-2 font-semibold text-sm text-slate-800">ملف الوكيل (Excel أو CSV)</label>
-          <input type="file" id="fileAgent" accept=".xlsx,.xls,.csv" class="w-full py-2 px-4 border-2 border-slate-200 rounded-xl text-sm">
+        <div class="space-y-2">
+          <label class="block font-semibold text-sm text-slate-800">ملف الوكيل (Excel أو CSV)</label>
+          <input type="file" id="fileAgent" accept=".xlsx,.xls,.csv" class="w-full py-3 px-4 border-2 border-dashed border-slate-200 rounded-xl text-sm bg-slate-50 hover:border-indigo-300 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-semibold">
         </div>
-        <button type="button" id="btnUploadFiles" onclick="uploadFiles()" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm bg-sky-600 text-white hover:bg-sky-700">
+        <button type="button" id="btnUploadFiles" onclick="uploadFiles()" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm bg-sky-600 text-white hover:bg-sky-700 transition-colors">
           <i class="fas fa-upload"></i> تحميل وقراءة الملفات
         </button>
       </div>
 
-      <!-- بعد تحميل البيانات: معاينة + اسم الدورة + حفظ -->
+      <!-- معاينة + حفظ -->
       <div id="panelSave" class="mt-6 pt-6 border-t border-slate-200 hidden">
-        <div class="flex gap-4 mb-4 text-sm">
-          <span class="text-slate-600">الإدارة: <strong id="previewMgmtRows">0</strong> صف</span>
-          <span class="text-slate-600">الوكيل: <strong id="previewAgentRows">0</strong> صف</span>
+        <div class="flex gap-6 mb-4 p-4 bg-slate-50 rounded-xl">
+          <span class="text-slate-600">الإدارة: <strong id="previewMgmtRows" class="text-indigo-600">0</strong> صف</span>
+          <span class="text-slate-600">الوكيل: <strong id="previewAgentRows" class="text-indigo-600">0</strong> صف</span>
         </div>
         <div class="mb-4">
           <label class="block mb-2 font-semibold text-sm text-slate-800">اسم الدورة المالية</label>
-          <input type="text" id="cycleName" placeholder="مثال: دورة يناير 2025" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-600">
+          <input type="text" id="cycleName" placeholder="مثال: دورة يناير 2025" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
         </div>
-        <button type="button" id="btnSaveCycle" onclick="saveCycle()" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm bg-indigo-600 text-white hover:bg-indigo-700">
+        <button type="button" id="btnSaveCycle" onclick="saveCycle()" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
           <i class="fas fa-save"></i> حفظ الدورة
         </button>
       </div>
@@ -94,23 +114,54 @@
   </div>
 </div>
 
+<!-- Modal تأكيد الحذف -->
+<div id="deleteConfirmModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style="display: none;" onclick="if(event.target===this)closeDeleteConfirm()">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onclick="event.stopPropagation()">
+    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-red-100 flex items-center justify-center">
+      <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+    </div>
+    <h4 class="text-lg font-bold text-slate-800 text-center mb-2">حذف الدورة المالية</h4>
+    <p id="deleteConfirmText" class="text-slate-600 text-sm text-center mb-6">هل أنت متأكد من حذف هذه الدورة؟ لا يمكن التراجع.</p>
+    <div class="flex gap-3">
+      <button type="button" onclick="closeDeleteConfirm()" class="flex-1 py-3 rounded-xl font-semibold text-sm bg-slate-100 text-slate-700 hover:bg-slate-200">إلغاء</button>
+      <button type="button" id="btnConfirmDelete" onclick="confirmDeleteCycle()" class="flex-1 py-3 rounded-xl font-semibold text-sm bg-red-600 text-white hover:bg-red-700">حذف</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function() {
-  var modal = document.getElementById('createCycleModal');
+  var modal = document.getElementById('cycleModal');
+  var deleteModal = document.getElementById('deleteConfirmModal');
   if (!modal) return;
-  window.openCreateCycleModal = function() {
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
+
+  window.openCycleModal = function(editId) {
+    document.getElementById('cycleEditId').value = editId || '';
+    document.getElementById('cycleModalTitle').innerHTML = '<div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center"><i class="fas fa-file-excel text-indigo-600"></i></div>' + (editId ? 'تعديل الدورة المالية' : 'إنشاء دورة مالية');
     document.getElementById('panelSave').classList.add('hidden');
     document.getElementById('cycleName').value = '';
     document.getElementById('fileManagement').value = '';
     document.getElementById('fileAgent').value = '';
+    currentManagementRows = [];
+    currentAgentRows = [];
+    setCycleTab('google');
     loadSpreadsheetsList();
+    if (editId) {
+      loadCycleForEdit(editId).then(function() {
+        document.getElementById('panelSave').classList.remove('hidden');
+        document.getElementById('previewMgmtRows').textContent = '—';
+        document.getElementById('previewAgentRows').textContent = '—';
+      });
+    }
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   };
-  window.closeCreateCycleModal = function() {
+
+  window.closeCycleModal = function() {
     modal.classList.add('hidden');
     modal.style.display = 'none';
   };
+
   window.setCycleTab = function(tab) {
     var panelGoogle = document.getElementById('panelGoogle');
     var panelUpload = document.getElementById('panelUpload');
@@ -119,17 +170,50 @@
     if (tab === 'google') {
       panelGoogle.classList.remove('hidden');
       panelUpload.classList.add('hidden');
-      tabGoogle.className = 'px-4 py-2 rounded-xl font-semibold text-sm bg-indigo-600 text-white';
-      tabUpload.className = 'px-4 py-2 rounded-xl font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200';
+      tabGoogle.className = 'flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-white text-indigo-600 shadow-sm';
+      tabUpload.className = 'flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all text-slate-600 hover:bg-white/50';
       loadSpreadsheetsList();
     } else {
       panelGoogle.classList.add('hidden');
       panelUpload.classList.remove('hidden');
-      tabUpload.className = 'px-4 py-2 rounded-xl font-semibold text-sm bg-indigo-600 text-white';
-      tabGoogle.className = 'px-4 py-2 rounded-xl font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200';
+      tabUpload.className = 'flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-white text-indigo-600 shadow-sm';
+      tabGoogle.className = 'flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all text-slate-600 hover:bg-white/50';
     }
   };
+
+  window.openDeleteConfirm = function(cycleId, cycleName) {
+    window._deleteCycleId = cycleId;
+    document.getElementById('deleteConfirmText').textContent = 'هل أنت متأكد من حذف "' + (cycleName || 'الدورة') + '"؟ لا يمكن التراجع عن هذا الإجراء.';
+    deleteModal.classList.remove('hidden');
+    deleteModal.style.display = 'flex';
+  };
+
+  window.closeDeleteConfirm = function() {
+    deleteModal.classList.add('hidden');
+    deleteModal.style.display = 'none';
+    window._deleteCycleId = null;
+  };
 })();
+
+async function loadCycleForEdit(cycleId) {
+  try {
+    var res = await fetch('/api/sheet/cycles/' + cycleId);
+    var data = await res.json();
+    if (!data.success || !data.cycle) return;
+    var c = data.cycle;
+    document.getElementById('cycleName').value = c.name || '';
+    if (c.management_spreadsheet_id) {
+      document.getElementById('mgmtSpreadsheetId').value = c.management_spreadsheet_id;
+      await loadSheetsForSpreadsheet(c.management_spreadsheet_id, 'mgmt');
+      if (c.management_sheet_name) document.getElementById('mgmtSheetName').value = c.management_sheet_name;
+    }
+    if (c.agent_spreadsheet_id) {
+      document.getElementById('agentSpreadsheetId').value = c.agent_spreadsheet_id;
+      await loadSheetsForSpreadsheet(c.agent_spreadsheet_id, 'agent');
+      if (c.agent_sheet_name) document.getElementById('agentSheetName').value = c.agent_sheet_name;
+    }
+  } catch (_) {}
+}
 
 async function loadSpreadsheetsList() {
   var selMgmt = document.getElementById('mgmtSpreadsheetId');
@@ -261,6 +345,7 @@ async function saveCycle() {
     if (typeof showToast === 'function') showToast('أدخل اسم الدورة', 'error');
     return;
   }
+  var editId = document.getElementById('cycleEditId').value.trim();
   var btn = document.getElementById('btnSaveCycle');
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
@@ -269,17 +354,21 @@ async function saveCycle() {
     var agentId = (document.getElementById('agentSpreadsheetId')?.value || '').trim();
     var payload = {
       name: name,
-      managementSpreadsheetId: mgmtId || undefined,
-      managementSheetName: (document.getElementById('mgmtSheetName')?.value || '').trim() || undefined,
-      agentSpreadsheetId: agentId || undefined,
-      agentSheetName: (document.getElementById('agentSheetName')?.value || '').trim() || undefined
+      managementSpreadsheetId: mgmtId || null,
+      managementSheetName: (document.getElementById('mgmtSheetName')?.value || '').trim() || null,
+      agentSpreadsheetId: agentId || null,
+      agentSheetName: (document.getElementById('agentSheetName')?.value || '').trim() || null
     };
-    if (!mgmtId || !agentId) {
+    if ((!mgmtId || !agentId) && (currentManagementRows.length || currentAgentRows.length)) {
       payload.managementData = currentManagementRows;
       payload.agentData = currentAgentRows;
+      payload.managementSpreadsheetId = null;
+      payload.agentSpreadsheetId = null;
     }
-    var res = await fetch('/api/sheet/cycles', {
-      method: 'POST',
+    var url = editId ? '/api/sheet/cycles/' + editId : '/api/sheet/cycles';
+    var method = editId ? 'PUT' : 'POST';
+    var res = await fetch(url, {
+      method: method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -287,7 +376,7 @@ async function saveCycle() {
     try {
       data = await res.json();
     } catch (parseErr) {
-      if (typeof showToast === 'function') showToast('خطأ في استجابة الخادم (تحقق من السجلات)', 'error');
+      if (typeof showToast === 'function') showToast('خطأ في استجابة الخادم', 'error');
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-save"></i> حفظ الدورة';
       return;
@@ -299,7 +388,7 @@ async function saveCycle() {
     }
     if (data.success) {
       if (typeof showToast === 'function') showToast(data.message || 'تم حفظ الدورة', 'success');
-      closeCreateCycleModal();
+      closeCycleModal();
       loadCycles();
     } else {
       if (typeof showToast === 'function') showToast(data.message || 'فشل الحفظ', 'error');
@@ -309,6 +398,36 @@ async function saveCycle() {
   }
   btn.disabled = false;
   btn.innerHTML = '<i class="fas fa-save"></i> حفظ الدورة';
+}
+
+async function confirmDeleteCycle() {
+  var id = window._deleteCycleId;
+  if (!id) return;
+  var btn = document.getElementById('btnConfirmDelete');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    var res = await fetch('/api/sheet/cycles/' + id, { method: 'DELETE' });
+    var data = await res.json();
+    if (data.success) {
+      if (typeof showToast === 'function') showToast(data.message || 'تم حذف الدورة', 'success');
+      closeDeleteConfirm();
+      loadCycles();
+    } else {
+      if (typeof showToast === 'function') showToast(data.message || 'فشل الحذف', 'error');
+    }
+  } catch (_) {
+    if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'حذف';
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch (_) { return d; }
 }
 
 async function loadCycles() {
@@ -324,10 +443,26 @@ async function loadCycles() {
     }
     if (empty) empty.classList.add('hidden');
     if (list) {
-      list.innerHTML = data.cycles.map(function(c) {
-        var date = c.created_at ? new Date(c.created_at).toLocaleString('ar-SA') : '';
-        return '<span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm">' +
-          '<i class="fas fa-file-excel text-indigo-600"></i> ' + (c.name || 'دورة') + ' <span class="text-slate-500 text-xs">' + date + '</span></span>';
+      var colors = ['from-indigo-500 to-violet-600', 'from-emerald-500 to-teal-600', 'from-amber-500 to-orange-600', 'from-rose-500 to-pink-600', 'from-cyan-500 to-blue-600'];
+      list.innerHTML = data.cycles.map(function(c, i) {
+        var color = colors[i % colors.length];
+        var hasGoogle = !!(c.management_spreadsheet_id && c.agent_spreadsheet_id);
+        return '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group">' +
+          '<div class="h-2 bg-gradient-to-r ' + color + '"></div>' +
+          '<div class="p-5">' +
+            '<div class="flex items-start justify-between gap-3 mb-3">' +
+              '<h5 class="font-bold text-slate-800 text-lg">' + (c.name || 'دورة') + '</h5>' +
+              '<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">' +
+                '<button type="button" onclick="event.stopPropagation(); openCycleModal(' + c.id + ')" class="w-9 h-9 rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center" title="تعديل"><i class="fas fa-edit"></i></button>' +
+                '<button type="button" onclick="event.stopPropagation(); openDeleteConfirm(' + c.id + ', \'' + (c.name || '').replace(/'/g, "\\'") + '\')" class="w-9 h-9 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 flex items-center justify-center" title="حذف"><i class="fas fa-trash-alt"></i></button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="space-y-2 text-sm text-slate-600">' +
+              '<p class="flex items-center gap-2"><i class="fas fa-calendar text-slate-400 w-4"></i>' + formatDate(c.created_at) + '</p>' +
+              (hasGoogle ? '<p class="flex items-center gap-2 text-emerald-600"><i class="fas fa-link w-4"></i> مرتبطة بـ Google</p>' : '<p class="flex items-center gap-2 text-amber-600"><i class="fas fa-file w-4"></i> ملفات محلية</p>') +
+            '</div>' +
+          '</div>' +
+        '</div>';
       }).join('');
     }
   } catch (_) {}
