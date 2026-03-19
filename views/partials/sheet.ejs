@@ -1,3 +1,8 @@
+<style>
+  @media (max-width: 1023px) {
+    body.cycle-modal-open #mobileHeader { display: none !important; }
+  }
+</style>
 <div class="max-w-6xl" dir="rtl">
   <!-- Header -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -134,7 +139,15 @@
   var deleteModal = document.getElementById('deleteConfirmModal');
   if (!modal) return;
 
+  function hideMobileHeader() {
+    document.body.classList.add('cycle-modal-open');
+  }
+  function showMobileHeader() {
+    document.body.classList.remove('cycle-modal-open');
+  }
+
   window.openCycleModal = function(editId) {
+    hideMobileHeader();
     document.getElementById('cycleEditId').value = editId || '';
     document.getElementById('cycleModalTitle').innerHTML = '<div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center"><i class="fas fa-file-excel text-indigo-600"></i></div>' + (editId ? 'تعديل الدورة المالية' : 'إنشاء دورة مالية');
     document.getElementById('panelSave').classList.add('hidden');
@@ -157,6 +170,7 @@
   };
 
   window.closeCycleModal = function() {
+    showMobileHeader();
     modal.classList.add('hidden');
     modal.style.display = 'none';
   };
@@ -181,6 +195,7 @@
   };
 
   window.openDeleteConfirm = function(cycleId, cycleName) {
+    hideMobileHeader();
     window._deleteCycleId = cycleId;
     document.getElementById('deleteConfirmText').textContent = 'هل أنت متأكد من حذف "' + (cycleName || 'الدورة') + '"؟ لا يمكن التراجع عن هذا الإجراء.';
     deleteModal.classList.remove('hidden');
@@ -188,6 +203,7 @@
   };
 
   window.closeDeleteConfirm = function() {
+    showMobileHeader();
     deleteModal.classList.add('hidden');
     deleteModal.style.display = 'none';
     window._deleteCycleId = null;
