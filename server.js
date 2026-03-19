@@ -172,13 +172,14 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(err.stack || err);
+  console.error('[LorkERP] Error:', err.message);
+  console.error(err.stack);
 
-  // إذا كانت الاستجابة قد أرسلت بالفعل، لا نحاول إرسال هيدر/HTML جديد
-  if (res.headersSent) {
-    return next(err);
+  if (res.headersSent) return next(err);
+
+  if (req.path.startsWith('/api/')) {
+    return res.status(500).json({ success: false, message: err.message || 'حدث خطأ في الخادم' });
   }
-
   res.status(500).render('error', {
     title: 'خطأ في الخادم',
     error: err && err.message ? err.message : 'حدث خطأ غير متوقع',
