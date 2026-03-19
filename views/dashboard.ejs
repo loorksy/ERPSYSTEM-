@@ -167,14 +167,6 @@
 
   <!-- Main Content -->
   <main class="lg:mr-[260px] min-h-screen transition-all duration-300 max-lg:pt-[60px] max-lg:pb-[65px]" id="mainContent">
-    <div class="bg-white py-5 px-4 lg:px-8 border-b border-slate-200 flex items-center justify-between sticky top-0 z-[100] max-lg:relative max-lg:top-auto">
-      <h1 class="text-xl lg:text-2xl font-bold text-slate-800"><%= title %></h1>
-      <div class="hidden md:flex items-center gap-2 text-slate-500 text-sm">
-        <i class="fas fa-calendar-alt"></i>
-        <span id="currentDate"></span>
-      </div>
-    </div>
-
     <div class="p-4 lg:p-8 2xl:px-12">
       <% if (page === 'home') { %>
         <%- include('partials/home') %>
