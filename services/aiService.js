@@ -98,7 +98,7 @@ async function getActiveProvider() {
   return null;
 }
 
-async async function getPreferredProvider() {
+async function getPreferredProvider() {
   const db = getDb();
   const configs = (await db.query('SELECT * FROM ai_config WHERE selected_model IS NOT NULL ORDER BY updated_at DESC')).rows;
   for (const c of configs) {

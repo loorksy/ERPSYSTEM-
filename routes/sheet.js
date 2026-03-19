@@ -1119,7 +1119,7 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
       const { saveCycleCache, saveUserAuditStatus } = require('../services/payrollSearchService');
       const auditedAgentIdsSet = new Set();
       const auditedMgmtIdsSet = new Set();
-      results.forEach(r => {
+      for (const r of results) {
         if (r.type.startsWith('سحب وكالة')) {
           if (r.userId) auditedAgentIdsSet.add(r.userId);
         }
@@ -1133,7 +1133,7 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
             title: r.title
           });
         }
-      });
+      }
       await saveCycleCache(req.session.userId, cycleId, {
         managementData: managementRows,
         agentData: agentRows,
