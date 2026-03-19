@@ -37,9 +37,9 @@
 </div>
 
 <!-- Modal إنشاء/تعديل دورة مالية -->
-<div id="cycleModal" class="fixed inset-0 z-[1100] hidden items-center justify-center p-4 py-6 max-lg:py-6 max-lg:pb-[calc(65px+1rem)] bg-black/60 backdrop-blur-sm overflow-y-auto" style="display: none;" onclick="if(event.target===this)closeCycleModal()">
-  <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] max-lg:max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col my-auto" onclick="event.stopPropagation()">
-    <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+<div id="cycleModal" class="fixed inset-0 z-[1100] hidden items-start justify-center p-4 pt-4 max-lg:pt-4 max-lg:pb-[80px] bg-black/60 backdrop-blur-sm overflow-y-auto" style="display: none;" onclick="if(event.target===this)closeCycleModal()">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[calc(100vh-2rem)] max-lg:max-h-[calc(100vh-80px)] overflow-hidden flex flex-col my-4 max-lg:my-2" onclick="event.stopPropagation()">
+    <div class="p-4 max-lg:p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
       <h4 id="cycleModalTitle" class="text-xl font-bold text-slate-800 flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
           <i class="fas fa-file-excel text-indigo-600"></i>
@@ -50,43 +50,43 @@
         <i class="fas fa-times text-lg"></i>
       </button>
     </div>
-    <div class="p-6 overflow-y-auto flex-1">
+    <div class="p-4 max-lg:p-4 overflow-y-auto flex-1 min-h-0 max-lg:pb-6">
       <input type="hidden" id="cycleEditId" value="">
-      <div class="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
+      <div class="flex gap-2 p-1 bg-slate-100 rounded-xl mb-4 max-lg:mb-4">
         <button type="button" id="tabGoogle" onclick="setCycleTab('google')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-white text-indigo-600 shadow-sm">استيراد من Google</button>
         <button type="button" id="tabUpload" onclick="setCycleTab('upload')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all text-slate-600 hover:bg-white/50">رفع يدوي (Excel / CSV)</button>
       </div>
 
       <!-- استيراد من Google -->
-      <div id="panelGoogle" class="space-y-5">
+      <div id="panelGoogle" class="space-y-4 max-lg:space-y-3">
         <p class="text-sm text-slate-600">اختر من جداول البيانات في حسابك — يتم جلب القائمة تلقائياً من Google.</p>
-        <div class="space-y-2">
+        <div class="space-y-1.5 max-lg:space-y-1">
           <label class="block font-semibold text-sm text-slate-800">جدول الإدارة</label>
-          <select id="mgmtSpreadsheetId" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
+          <select id="mgmtSpreadsheetId" class="w-full py-2.5 max-lg:py-2 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
             <option value="">— جاري التحميل... —</option>
           </select>
-          <label class="block mt-2 text-xs text-slate-500">ورقة الإدارة (اختياري)</label>
-          <select id="mgmtSheetName" class="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm bg-white">
+          <label class="block mt-1.5 max-lg:mt-1 text-xs text-slate-500">ورقة الإدارة (اختياري)</label>
+          <select id="mgmtSheetName" class="w-full py-2 max-lg:py-1.5 px-4 border border-slate-200 rounded-xl text-sm bg-white">
             <option value="">أول ورقة تلقائياً</option>
           </select>
         </div>
-        <div class="space-y-2">
+        <div class="space-y-1.5 max-lg:space-y-1">
           <label class="block font-semibold text-sm text-slate-800">جدول الوكيل</label>
-          <select id="agentSpreadsheetId" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
+          <select id="agentSpreadsheetId" class="w-full py-2.5 max-lg:py-2 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
             <option value="">— جاري التحميل... —</option>
           </select>
-          <label class="block mt-2 text-xs text-slate-500">ورقة الوكيل (اختياري)</label>
-          <select id="agentSheetName" class="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm bg-white">
+          <label class="block mt-1.5 max-lg:mt-1 text-xs text-slate-500">ورقة الوكيل (اختياري)</label>
+          <select id="agentSheetName" class="w-full py-2 max-lg:py-1.5 px-4 border border-slate-200 rounded-xl text-sm bg-white">
             <option value="">أول ورقة تلقائياً</option>
           </select>
         </div>
-        <button type="button" id="btnFetchGoogle" onclick="fetchFromGoogle()" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
+        <button type="button" id="btnFetchGoogle" onclick="fetchFromGoogle()" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 max-lg:py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
           <i class="fas fa-cloud-download-alt"></i> جلب البيانات من Google
         </button>
       </div>
 
       <!-- رفع يدوي -->
-      <div id="panelUpload" class="space-y-5 hidden">
+      <div id="panelUpload" class="space-y-4 max-lg:space-y-3 hidden">
         <div class="space-y-2">
           <label class="block font-semibold text-sm text-slate-800">ملف الإدارة (Excel أو CSV)</label>
           <input type="file" id="fileManagement" accept=".xlsx,.xls,.csv" class="w-full py-3 px-4 border-2 border-dashed border-slate-200 rounded-xl text-sm bg-slate-50 hover:border-indigo-300 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-semibold">
@@ -101,12 +101,12 @@
       </div>
 
       <!-- معاينة + حفظ -->
-      <div id="panelSave" class="mt-6 pt-6 border-t border-slate-200 hidden">
-        <div class="flex gap-6 mb-4 p-4 bg-slate-50 rounded-xl">
+      <div id="panelSave" class="mt-4 pt-4 max-lg:mt-4 max-lg:pt-4 border-t border-slate-200 hidden max-lg:pb-24">
+        <div class="flex gap-4 max-lg:gap-3 mb-3 max-lg:mb-3 p-3 max-lg:p-3 bg-slate-50 rounded-xl">
           <span class="text-slate-600">الإدارة: <strong id="previewMgmtRows" class="text-indigo-600">0</strong> صف</span>
           <span class="text-slate-600">الوكيل: <strong id="previewAgentRows" class="text-indigo-600">0</strong> صف</span>
         </div>
-        <div class="mb-4">
+        <div class="mb-3 max-lg:mb-3">
           <label class="block mb-2 font-semibold text-sm text-slate-800">اسم الدورة المالية</label>
           <input type="text" id="cycleName" placeholder="مثال: دورة يناير 2025" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
         </div>
