@@ -1,9 +1,16 @@
 <style>
-  /* شبكة الأزرار: موبايل صفان (بيع|شراء ثم سجل بعرض كامل) — sm+: ثلاثة أعمدة (الكلاسات col-span-2 غير مُولَّدة في tailwind المُجمَّع) */
+  /* مقاييس موحّدة لقسم الشحن */
   .shipping-actions-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    gap: 0.75rem;
+  }
+  .shipping-actions-row > .shipping-action-cell {
+    min-height: 3rem;
+    border-radius: 0.75rem;
+  }
+  .shipping-actions-row > .shipping-action-cell > button {
+    min-height: 3rem;
   }
   @media (min-width: 640px) {
     .shipping-actions-row {
@@ -17,36 +24,37 @@
   .shipping-actions-record {
     grid-column: 1 / -1;
   }
+  .shipping-balance-card {
+    min-height: 5.25rem;
+  }
 </style>
 <div class="w-full max-w-5xl mx-auto" dir="rtl">
   <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-w-0" data-tabs-container="shipping">
     <!-- رأس: يتكيف مع العرض الضيق -->
-    <header class="shrink-0 border-b border-slate-100 bg-white px-4 py-4 sm:px-5 sm:py-5 md:px-6">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
-            <i class="fas fa-truck-fast text-lg sm:text-xl"></i>
-          </div>
-          <div class="min-w-0">
-            <h3 class="text-base sm:text-lg md:text-xl font-bold text-slate-900 truncate">قسم الشحن</h3>
-            <p class="mt-0.5 text-xs sm:text-sm text-slate-500 leading-snug">المخزون، البيع والشراء، ووكالات النقل</p>
-          </div>
+    <header class="shrink-0 border-b border-slate-100 bg-white px-4 py-4 md:px-6">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
+          <i class="fas fa-truck-fast text-xl"></i>
+        </div>
+        <div class="min-w-0">
+          <h3 class="text-lg font-bold text-slate-900 truncate">قسم الشحن</h3>
+          <p class="mt-0.5 text-sm text-slate-500 leading-snug">المخزون، البيع والشراء، ووكالات النقل</p>
         </div>
       </div>
     </header>
 
     <!-- شريط تبويبات موحّد (segmented) — ثلاثة أعمدة متساوية على كل الشاشات -->
-    <div class="shrink-0 border-b border-slate-100 bg-white px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 md:px-5">
+    <div class="shrink-0 border-b border-slate-100 bg-white px-4 py-3 md:px-6">
       <nav class="rounded-xl bg-slate-100 p-1 grid grid-cols-3 gap-0 shadow-inner touch-manipulation" role="tablist" aria-label="أقسام الشحن">
-        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-carriers')" class="shipping-tab-link flex min-h-[44px] sm:min-h-[46px] items-center justify-center gap-1 sm:gap-1.5 px-1 py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-carriers')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
           <i class="fas fa-truck-moving shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
           <span class="leading-tight text-center">وكالات الشحن</span>
         </button>
-        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-main')" class="shipping-tab-link flex min-h-[44px] sm:min-h-[46px] items-center justify-center gap-1 sm:gap-1.5 px-1 py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-semibold text-indigo-700 bg-white shadow-sm ring-1 ring-slate-200/90 transition-colors">
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-main')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-semibold text-indigo-700 bg-white shadow-sm ring-1 ring-slate-200/90 transition-colors">
           <i class="fas fa-right-left shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
           <span class="leading-tight text-center">الشحن</span>
         </button>
-        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-packages')" class="shipping-tab-link flex min-h-[44px] sm:min-h-[46px] items-center justify-center gap-1 sm:gap-1.5 px-1 py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-packages')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
           <i class="fas fa-box-open shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
           <span class="leading-tight text-center">الباقات</span>
         </button>
@@ -54,15 +62,15 @@
     </div>
 
     <!-- محتوى التبويبات -->
-    <div class="relative bg-slate-50/70 px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6 pb-6 sm:pb-8 max-lg:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div class="relative bg-slate-50/70 px-4 py-5 md:px-6 md:py-6 max-lg:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <!-- وكالات الشحن -->
-      <div id="shipping-carriers" class="tab-content hidden rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+      <div id="shipping-carriers" class="tab-content hidden rounded-xl border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div class="min-w-0">
             <h4 class="text-sm sm:text-base font-bold text-slate-900">وكالات الشحن</h4>
             <p class="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">إضافة رصيد وعرض سجل الحركات لكل وكالة.</p>
           </div>
-          <button type="button" onclick="shippingOpenCarrierAdd()" class="w-full sm:w-auto shrink-0 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-md hover:bg-indigo-700 active:scale-[0.99] transition">
+          <button type="button" onclick="shippingOpenCarrierAdd()" class="w-full sm:w-auto shrink-0 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-md hover:bg-indigo-700 active:scale-[0.99] transition">
             <i class="fas fa-plus-circle"></i>
             إضافة وكالة
           </button>
@@ -73,27 +81,27 @@
       </div>
 
       <!-- الشحن -->
-      <div id="shipping-main" class="tab-content space-y-4 sm:space-y-5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div class="rounded-xl border border-amber-200 bg-amber-50 p-3.5 sm:p-4">
-            <div class="flex items-center gap-3">
-              <span class="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-                <i class="fas fa-coins text-sm sm:text-base"></i>
+      <div id="shipping-main" class="tab-content space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="shipping-balance-card rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center">
+            <div class="flex items-center gap-3 w-full min-w-0">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                <i class="fas fa-coins text-base"></i>
               </span>
-              <div class="min-w-0">
-                <p class="text-[11px] sm:text-xs font-semibold text-amber-900">رصيد الذهب</p>
-                <p id="shippingGoldBalance" class="text-base sm:text-lg md:text-xl font-bold tabular-nums text-amber-900 truncate">0</p>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-semibold text-amber-900">رصيد الذهب</p>
+                <p id="shippingGoldBalance" class="text-lg font-bold tabular-nums text-amber-900 truncate leading-tight mt-0.5">0</p>
               </div>
             </div>
           </div>
-          <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-3.5 sm:p-4">
-            <div class="flex items-center gap-3">
-              <span class="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
-                <i class="fas fa-gem text-sm sm:text-base"></i>
+          <div class="shipping-balance-card rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex items-center">
+            <div class="flex items-center gap-3 w-full min-w-0">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                <i class="fas fa-gem text-base"></i>
               </span>
-              <div class="min-w-0">
-                <p class="text-[11px] sm:text-xs font-semibold text-indigo-900">رصيد الكرستال</p>
-                <p id="shippingCrystalBalance" class="text-base sm:text-lg md:text-xl font-bold tabular-nums text-indigo-900 truncate">0</p>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-semibold text-indigo-900">رصيد الكرستال</p>
+                <p id="shippingCrystalBalance" class="text-lg font-bold tabular-nums text-indigo-900 truncate leading-tight mt-0.5">0</p>
               </div>
             </div>
           </div>
@@ -106,42 +114,40 @@
             <div class="flex-1" style="background-color:#0891b2;"></div>
             <div class="flex-1 bg-slate-300"></div>
           </div>
-          <div class="px-3 py-2 sm:px-4 sm:py-2.5 border-b border-slate-100">
-            <p class="text-xs sm:text-sm font-bold text-slate-800">العمليات السريعة</p>
-            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5">بيع (نيلي) · شراء (تركواز) · السجل</p>
+          <div class="px-4 py-3 border-b border-slate-100">
+            <p class="text-sm font-bold text-slate-800">العمليات السريعة</p>
+            <p class="text-xs text-slate-500 mt-0.5">بيع (نيلي) · شراء (تركواز) · السجل</p>
           </div>
-          <div class="p-2.5 sm:p-3 shipping-actions-row">
-            <!-- بيع: #4f46e5 indigo-600 -->
-            <div class="min-w-0 rounded-xl shadow overflow-hidden min-h-[50px] sm:min-h-[52px] flex ring-1 ring-black/10" style="background-color:#4f46e5;">
-              <button type="button" onclick="shippingOpenSellModal()" aria-label="بيع" class="flex flex-1 w-full min-h-[50px] sm:min-h-[52px] items-center justify-center gap-1.5 px-2 sm:px-3 text-xs sm:text-sm font-bold border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset select-none" style="background:transparent;color:#ffffff;">
-                <i class="fas fa-hand-holding-usd shrink-0 text-sm sm:text-base" aria-hidden="true"></i>
+          <div class="p-4 shipping-actions-row">
+            <div class="shipping-action-cell min-w-0 shadow overflow-hidden flex ring-1 ring-black/10" style="background-color:#4f46e5;">
+              <button type="button" onclick="shippingOpenSellModal()" aria-label="بيع" class="flex flex-1 w-full items-center justify-center gap-2 px-3 text-sm font-bold border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset select-none" style="background:transparent;color:#ffffff;">
+                <i class="fas fa-hand-holding-usd shrink-0 text-base" aria-hidden="true"></i>
                 <span class="truncate">بيع</span>
               </button>
             </div>
-            <!-- شراء: #0891b2 cyan-600 -->
-            <div class="min-w-0 rounded-xl shadow overflow-hidden min-h-[50px] sm:min-h-[52px] flex ring-1 ring-black/10" style="background-color:#0891b2;">
-              <button type="button" onclick="shippingOpenBuyModal()" aria-label="شراء" class="flex flex-1 w-full min-h-[50px] sm:min-h-[52px] items-center justify-center gap-1.5 px-2 sm:px-3 text-xs sm:text-sm font-bold border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset select-none" style="background:transparent;color:#ffffff;">
-                <i class="fas fa-shopping-cart shrink-0 text-sm sm:text-base" aria-hidden="true"></i>
+            <div class="shipping-action-cell min-w-0 shadow overflow-hidden flex ring-1 ring-black/10" style="background-color:#0891b2;">
+              <button type="button" onclick="shippingOpenBuyModal()" aria-label="شراء" class="flex flex-1 w-full items-center justify-center gap-2 px-3 text-sm font-bold border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset select-none" style="background:transparent;color:#ffffff;">
+                <i class="fas fa-shopping-cart shrink-0 text-base" aria-hidden="true"></i>
                 <span class="truncate">شراء</span>
               </button>
             </div>
-            <div class="shipping-actions-record min-w-0 rounded-xl border-2 border-slate-200 bg-white min-h-[50px] sm:min-h-[52px] flex shadow-sm hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors">
-              <button type="button" onclick="shippingOpenRecordModal()" aria-label="السجل" class="flex flex-1 w-full min-h-[50px] sm:min-h-[52px] items-center justify-center gap-1.5 px-2 sm:px-3 text-xs sm:text-sm font-bold text-slate-800 border-0 cursor-pointer bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-inset select-none">
-                <i class="fas fa-history shrink-0 text-slate-600 text-sm sm:text-base" aria-hidden="true"></i>
+            <div class="shipping-actions-record shipping-action-cell min-w-0 border-2 border-slate-200 bg-white flex shadow-sm hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors">
+              <button type="button" onclick="shippingOpenRecordModal()" aria-label="السجل" class="flex flex-1 w-full items-center justify-center gap-2 px-3 text-sm font-bold text-slate-800 border-0 cursor-pointer bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-inset select-none">
+                <i class="fas fa-history shrink-0 text-slate-600 text-base" aria-hidden="true"></i>
                 <span class="truncate">السجل</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-sm">
-          <div class="flex gap-3 sm:gap-4">
-            <div class="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
-              <i class="fas fa-info-circle text-sm sm:text-base"></i>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+              <i class="fas fa-info-circle text-base"></i>
             </div>
             <div class="min-w-0">
-              <h4 class="text-sm sm:text-base font-bold text-slate-900">عن المبلغ والكمية</h4>
-              <p class="mt-2 text-xs sm:text-sm leading-relaxed text-slate-600">
+              <h4 class="text-sm font-bold text-slate-900">عن المبلغ والكمية</h4>
+              <p class="mt-2 text-sm leading-relaxed text-slate-600">
                 المبلغ مع الكمية = <strong class="text-slate-900">إجمالي قيمة تلك الكمية</strong> (وليس سعر الوحدة). استخدم <span class="font-semibold text-indigo-700">بيع</span> و<span class="font-semibold text-cyan-700">شراء</span> ثم راجع <span class="font-semibold text-slate-800">السجل</span> عند الحاجة.
               </p>
             </div>
