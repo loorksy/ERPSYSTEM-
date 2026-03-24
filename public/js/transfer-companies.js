@@ -1,7 +1,12 @@
 (function() {
   function apiCall(url, opts) {
     if (typeof window.apiCall === 'function') return window.apiCall(url, opts);
-    return fetch(url, { credentials: 'same-origin', ...opts }).then(function(r) { return r.json(); });
+    opts = opts || {};
+    var init = Object.assign({ credentials: 'same-origin' }, opts);
+    if (init.body && typeof init.body === 'string' && !init.headers) {
+      init.headers = { 'Content-Type': 'application/json' };
+    }
+    return fetch(url, init).then(function(r) { return r.json(); });
   }
   function toast(m, t) {
     if (typeof window.showToast === 'function') window.showToast(m, t);
@@ -52,6 +57,65 @@
     document.getElementById('tcAddModal').classList.add('hidden');
     document.getElementById('tcAddModal').classList.remove('flex');
   };
+  function tcFillReturnFunds() {
+    var sel = document.getElementById('tcReturnFundId');
+    if (!sel) return;
+    apiCall('/api/funds/list').then(function(r) {
+      sel.innerHTML = '<option value="">— صندوق —</option>';
+      (r.funds || []).forEach(function(f) {
+        sel.innerHTML += '<option value="' + f.id + '">' + (f.name || f.id) + '</option>';
+      });
+    });
+  }
+  function tcToggleReturnFund() {
+    var d = document.getElementById('tcReturnDisposition');
+    var sel = document.getElementById('tcReturnFundId');
+    if (!d || !sel) return;
+    if (d.value === 'transfer_to_fund') {
+      sel.classList.remove('hidden');
+      tcFillReturnFunds();
+    } else {
+      sel.classList.add('hidden');
+    }
+  }
+  document.getElementById('tcReturnDisposition')?.addEventListener('change', tcToggleReturnFund);
+
+  window.tcSubmitReturn = function() {
+    var cid = document.getElementById('tcReturnCompanyId');
+    var amt = parseFloat(document.getElementById('tcReturnAmt').value);
+    if (!cid || !cid.value || isNaN(amt) || amt <= 0) {
+      toast('أدخل مبلغاً صالحاً', 'error');
+      return;
+    }
+    var disp = document.getElementById('tcReturnDisposition').value;
+    var body = {
+      entityType: 'transfer_company',
+      entityId: cid.value,
+      amount: amt,
+      currency: document.getElementById('tcReturnCur').value,
+      disposition: disp,
+      notes: document.getElementById('tcReturnNotes').value || null,
+    };
+    if (disp === 'transfer_to_fund') {
+      var fid = document.getElementById('tcReturnFundId').value;
+      if (!fid) {
+        toast('اختر الصندوق', 'error');
+        return;
+      }
+      body.targetFundId = fid;
+    }
+    apiCall('/api/returns', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }).then(function(res) {
+      toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
+      if (res.success) {
+        document.getElementById('tcReturnAmt').value = '';
+        tcOpen(parseInt(cid.value, 10));
+      }
+    });
+  };
+
   window.tcOpen = function(id) {
     apiCall('/api/transfer-companies/' + id).then(function(res) {
       if (!res.success) return;
@@ -61,6 +125,9 @@
       document.getElementById('tcDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
         return '<div class="flex justify-between py-2 border-b border-slate-50"><span>' + (l.notes || '') + '</span><span>' + (l.amount || 0) + ' ' + (l.currency || '') + '</span></div>';
       }).join('') || '<p class="text-slate-400">لا سجل</p>';
+      var hid = document.getElementById('tcReturnCompanyId');
+      if (hid) hid.value = id;
+      tcToggleReturnFund();
       document.getElementById('tcDetailModal').classList.remove('hidden');
       document.getElementById('tcDetailModal').classList.add('flex');
     });

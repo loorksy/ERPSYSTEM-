@@ -1,0 +1,10 @@
+<div class="max-w-3xl mx-auto" dir="rtl">
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <a href="/debts" class="text-sm text-indigo-600 font-semibold hover:underline">← الديون</a>
+    <h2 class="text-xl font-bold text-slate-800" id="debtCompanyTitle">شركة تحويل</h2>
+  </div>
+  <div id="debtCompanyBody" class="space-y-4">
+    <p class="text-slate-400">جاري التحميل...</p>
+  </div>
+</div>
+<script>window.__DEBT_PAGE__ = { mode: 'company', id: <%= typeof debtEntityId !== 'undefined' ? debtEntityId : 'null' %> };</script>

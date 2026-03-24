@@ -151,6 +151,8 @@ const fundsRoutes = require('./routes/funds');
 const transferCompaniesRoutes = require('./routes/transferCompanies');
 const accreditationsRoutes = require('./routes/accreditations');
 const aiRoutes = require('./routes/ai');
+const returnsRoutes = require('./routes/returns');
+const debtsRoutes = require('./routes/debts');
 
 app.use('/', authRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -163,6 +165,8 @@ app.use('/api/sub-agencies', subAgenciesRoutes);
 app.use('/api/funds', fundsRoutes);
 app.use('/api/transfer-companies', transferCompaniesRoutes);
 app.use('/api/accreditations', accreditationsRoutes);
+app.use('/api/returns', returnsRoutes);
+app.use('/api/debts', debtsRoutes);
 app.use('/ai', aiRoutes(io));
 app.use('/', pagesRoutes);
 

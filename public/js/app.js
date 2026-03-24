@@ -111,34 +111,6 @@ window.homeCloseFundModal = function() {
   if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
 };
 
-window.homeOpenDebtsModal = function() {
-  var m = document.getElementById('homeDebtModal');
-  var body = document.getElementById('homeDebtModalBody');
-  if (!m || !body) return;
-  body.innerHTML = '<p class="text-slate-400">جاري التحميل...</p>';
-  m.classList.remove('hidden');
-  m.classList.add('flex');
-  fetch('/dashboard/debts-detail', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
-    if (!d.success) {
-      body.innerHTML = '<p class="text-red-500">' + (d.message || '') + '</p>';
-      return;
-    }
-    var html = '<p class="font-semibold">ديون شحن (بيع بالدين)</p>';
-    (d.shippingDebts || []).forEach(function(x) {
-      html += '<div class="p-2 rounded-lg bg-red-50 text-sm">' + formatMoney(x.total) + ' — ' + (x.item_type || '') + '</div>';
-    });
-    html += '<p class="font-semibold mt-3">اعتمادات (رصيد سالب)</p>';
-    (d.accreditationDebts || []).forEach(function(x) {
-      html += '<div class="p-2 rounded-lg bg-amber-50 text-sm">' + (x.name || '') + ': ' + formatMoney(x.balance_amount) + '</div>';
-    });
-    body.innerHTML = html || '<p class="text-slate-400">لا ديون مسجلة</p>';
-  });
-};
-window.homeCloseDebtModal = function() {
-  var m = document.getElementById('homeDebtModal');
-  if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
-};
-
 window.homeOpenCapitalModal = function() {
   var m = document.getElementById('homeCapitalModal');
   if (!m) return;

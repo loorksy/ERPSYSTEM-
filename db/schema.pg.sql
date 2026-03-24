@@ -381,3 +381,34 @@ ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS cost_allocated REAL;
 ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS profit_amount REAL;
 ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS capital_amount REAL;
 ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS buyer_carrier_id INTEGER;
+
+-- مرتجع مالي (شركة تحويل / صندوق)
+CREATE TABLE IF NOT EXISTS financial_returns (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER NOT NULL,
+  amount REAL NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  sent_amount REAL,
+  utilized_amount REAL,
+  disposition TEXT NOT NULL,
+  target_fund_id INTEGER REFERENCES funds(id) ON DELETE SET NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- تسجيل ديون صريحة (مديونية على حسابنا تجاه صندوق أو شركة)
+CREATE TABLE IF NOT EXISTS entity_payables (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER NOT NULL,
+  amount REAL NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE transfer_company_ledger ADD COLUMN IF NOT EXISTS ref_table TEXT;
+ALTER TABLE transfer_company_ledger ADD COLUMN IF NOT EXISTS ref_id INTEGER;

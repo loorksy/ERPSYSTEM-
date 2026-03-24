@@ -4,7 +4,12 @@
 
   function apiCall(url, opts) {
     if (typeof window.apiCall === 'function') return window.apiCall(url, opts);
-    return fetch(url, { credentials: 'same-origin', ...opts }).then(function(r) { return r.json(); });
+    opts = opts || {};
+    var init = Object.assign({ credentials: 'same-origin' }, opts);
+    if (init.body && typeof init.body === 'string' && !init.headers) {
+      init.headers = { 'Content-Type': 'application/json' };
+    }
+    return fetch(url, init).then(function(r) { return r.json(); });
   }
   function toast(m, t) {
     if (typeof window.showToast === 'function') window.showToast(m, t);
@@ -102,6 +107,14 @@
         (r2.funds || []).forEach(function(x) {
           if (x.id !== id) sel.innerHTML += '<option value="' + x.id + '">' + (x.name || x.id) + '</option>';
         });
+        var rts = document.getElementById('fundReturnTarget');
+        if (rts) {
+          rts.innerHTML = '<option value="">— صندوق مقصد —</option>';
+          (r2.funds || []).forEach(function(x) {
+            if (x.id !== id) rts.innerHTML += '<option value="' + x.id + '">' + (x.name || x.id) + '</option>';
+          });
+        }
+        fundsToggleReturnTarget();
       });
       document.getElementById('fundDetailModal').classList.remove('hidden');
       document.getElementById('fundDetailModal').classList.add('flex');
@@ -119,6 +132,42 @@
       fundsLoadList();
     });
   };
+  function fundsToggleReturnTarget() {
+    var d = document.getElementById('fundReturnDisposition');
+    var rts = document.getElementById('fundReturnTarget');
+    if (!d || !rts) return;
+    if (d.value === 'transfer_to_fund') rts.classList.remove('hidden');
+    else rts.classList.add('hidden');
+  }
+  document.getElementById('fundReturnDisposition')?.addEventListener('change', fundsToggleReturnTarget);
+
+  window.fundsSubmitReturn = function() {
+    if (!currentFundId) return;
+    var amt = parseFloat(document.getElementById('fundReturnAmt').value);
+    if (isNaN(amt) || amt <= 0) return toast('أدخل مبلغاً صالحاً', 'error');
+    var disp = document.getElementById('fundReturnDisposition').value;
+    var body = {
+      entityType: 'fund',
+      entityId: currentFundId,
+      amount: amt,
+      currency: document.getElementById('fundReturnCur').value,
+      disposition: disp,
+      notes: document.getElementById('fundReturnNotes').value || null,
+    };
+    if (disp === 'transfer_to_fund') {
+      var tid = document.getElementById('fundReturnTarget').value;
+      if (!tid) return toast('اختر صندوق المقصد', 'error');
+      body.targetFundId = tid;
+    }
+    apiCall('/api/returns', { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
+      toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
+      if (res.success) {
+        document.getElementById('fundReturnAmt').value = '';
+        fundsOpenDetail(currentFundId);
+      }
+    });
+  };
+
   window.fundsDoTransfer = function() {
     if (!currentFundId) return;
     var to = document.getElementById('fundTransferTo').value;

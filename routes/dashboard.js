@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { calculateCashBoxBalance, fetchDeferredBalanceUsers } = require('../services/agencySyncService');
 const { getFundTotalsByCurrency, getMainFundSummary, transferProfitToFund } = require('../services/fundService');
+const { computeDebtBreakdown } = require('../services/debtAggregation');
 
 router.get('/', requireAuth, (req, res) => {
   res.render('dashboard', {
@@ -66,17 +67,38 @@ router.get('/stats', requireAuth, async (req, res) => {
     capitalRecovered = sellAgg?.capital_sum ?? 0;
     let shippingDebt = sellAgg?.debt_sell ?? 0;
 
+    let debtBreakdown = {
+      shippingDebt: 0,
+      accreditationDebtTotal: 0,
+      payablesSumUsd: 0,
+      companyDebtFromBalance: 0,
+      fundDebtFromBalance: 0,
+      totalDebts: 0,
+    };
     try {
-      const accDebt = (await db.query(`
-        SELECT COALESCE(SUM(-balance_amount), 0)::float AS t
-        FROM accreditation_entities WHERE user_id = $1 AND balance_amount < 0
-      `, [userId])).rows[0];
-      accreditationDebtTotal = accDebt?.t ?? 0;
+      debtBreakdown = await computeDebtBreakdown(db, userId);
     } catch (_) {
-      accreditationDebtTotal = 0;
+      try {
+        const accDebt = (await db.query(`
+          SELECT COALESCE(SUM(-balance_amount), 0)::float AS t
+          FROM accreditation_entities WHERE user_id = $1 AND balance_amount < 0
+        `, [userId])).rows[0];
+        accreditationDebtTotal = accDebt?.t ?? 0;
+      } catch (__) {
+        accreditationDebtTotal = 0;
+      }
+      debtBreakdown = {
+        shippingDebt,
+        accreditationDebtTotal,
+        payablesSumUsd: 0,
+        companyDebtFromBalance: 0,
+        fundDebtFromBalance: 0,
+        totalDebts: shippingDebt + accreditationDebtTotal,
+      };
     }
-
-    totalDebts = shippingDebt + accreditationDebtTotal;
+    shippingDebt = debtBreakdown.shippingDebt;
+    accreditationDebtTotal = debtBreakdown.accreditationDebtTotal;
+    totalDebts = debtBreakdown.totalDebts;
 
     const fundTotals = await getFundTotalsByCurrency(db, userId);
     let fundUsd = 0;
@@ -117,6 +139,9 @@ router.get('/stats', requireAuth, async (req, res) => {
       totalDebts,
       shippingDebt,
       accreditationDebtTotal,
+      payablesSumUsd: debtBreakdown.payablesSumUsd,
+      companyDebtFromBalance: debtBreakdown.companyDebtFromBalance,
+      fundDebtFromBalance: debtBreakdown.fundDebtFromBalance,
     });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل جلب الإحصائيات' });

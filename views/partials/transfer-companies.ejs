@@ -50,6 +50,25 @@
     <div class="p-4 overflow-y-auto flex-1">
       <p id="tcDetailBal" class="text-indigo-600 font-bold mb-4"></p>
       <div id="tcDetailLedger" class="space-y-2 text-sm"></div>
+      <div class="border-t border-slate-200 pt-4 mt-4">
+        <h5 class="font-bold text-slate-800 mb-2">تسجيل مرتجع</h5>
+        <input type="hidden" id="tcReturnCompanyId">
+        <div class="flex flex-wrap gap-2 items-end mb-2">
+          <input type="number" id="tcReturnAmt" step="0.01" min="0" placeholder="المبلغ" class="px-3 py-2 rounded-lg border border-slate-200 w-32 text-sm">
+          <select id="tcReturnCur" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+            <option value="USD">USD</option>
+            <option value="TRY">TRY</option>
+            <option value="SYP">SYP</option>
+          </select>
+          <select id="tcReturnDisposition" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+            <option value="remain_at_entity">يبقى لدى الشركة</option>
+            <option value="transfer_to_fund">ترحيل لصندوق</option>
+          </select>
+          <select id="tcReturnFundId" class="px-3 py-2 rounded-lg border border-slate-200 text-sm hidden"></select>
+        </div>
+        <input type="text" id="tcReturnNotes" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm mb-2" placeholder="ملاحظات (اختياري)">
+        <button type="button" onclick="tcSubmitReturn()" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold">تسجيل المرتجع</button>
+      </div>
     </div>
   </div>
 </div>

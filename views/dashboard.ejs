@@ -335,6 +335,12 @@
           </a>
         </li>
         <li>
+          <a href="/debts" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'debts' || page === 'debt-company' || page === 'debt-fund' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-file-invoice-dollar w-5 text-center <%= page === 'debts' || page === 'debt-company' || page === 'debt-fund' ? 'text-indigo-400' : '' %>"></i>
+            <span>الديون</span>
+          </a>
+        </li>
+        <li>
           <a href="/shipping" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'shipping' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-truck w-5 text-center <%= page === 'shipping' ? 'text-indigo-400' : '' %>"></i>
             <span>الشحن</span>
@@ -403,6 +409,12 @@
         <%- include('partials/client-portal') %>
       <% } else if (page === 'settings') { %>
         <%- include('partials/settings') %>
+      <% } else if (page === 'debts') { %>
+        <%- include('partials/debts') %>
+      <% } else if (page === 'debt-company') { %>
+        <%- include('partials/debt-company') %>
+      <% } else if (page === 'debt-fund') { %>
+        <%- include('partials/debt-fund') %>
       <% } %>
     </div>
   </main>
@@ -478,6 +490,9 @@
   <% } %>
   <% if (page === 'approvals') { %>
     <script src="/js/approvals.js"></script>
+  <% } %>
+  <% if (page === 'debts' || page === 'debt-company' || page === 'debt-fund') { %>
+    <script src="/js/debts.js"></script>
   <% } %>
 </body>
 </html>

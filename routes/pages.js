@@ -2,6 +2,32 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 
+router.get('/debts/company/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.redirect('/debts');
+  res.render('dashboard', {
+    title: 'سجل شركة',
+    page: 'debt-company',
+    debtEntityId: id,
+    user: req.session.user,
+  });
+});
+
+router.get('/debts/fund/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.redirect('/debts');
+  res.render('dashboard', {
+    title: 'سجل صندوق',
+    page: 'debt-fund',
+    debtEntityId: id,
+    user: req.session.user,
+  });
+});
+
+router.get('/debts', requireAuth, (req, res) => {
+  res.render('dashboard', { title: 'الديون', page: 'debts', user: req.session.user });
+});
+
 const pages = [
   { path: '/sheet', page: 'sheet', title: 'Sheet' },
   { path: '/payroll', page: 'payroll', title: 'تدقيق الرواتب' },
