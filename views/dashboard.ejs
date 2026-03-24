@@ -164,16 +164,16 @@
       opacity: 1;
       transition-delay: 0.14s;
     }
-    /* لابتوب: ميلان بسيط للمجموعة حتى لا تُقصّ أيقونة المرتجع عند الحافة اليسرى */
+    /* لابتوب: دوران المجموعة 25° حول مركز الزر (بدل 15°) لإبعاد المرتجع عن الحافة */
     @media (min-width: 64rem) {
       .quick-action-radial--desktop.quick-action-radial--open .quick-action-radial-sub:nth-child(1) {
-        transform: translate(1.4rem, -5.3rem) scale(1);
+        transform: translate(2.32rem, -4.98rem) scale(1);
       }
       .quick-action-radial--desktop.quick-action-radial--open .quick-action-radial-sub:nth-child(2) {
-        transform: translate(5.15rem, -3rem) scale(1);
+        transform: translate(5.65rem, -2.06rem) scale(1);
       }
       .quick-action-radial--desktop.quick-action-radial--open .quick-action-radial-sub:nth-child(3) {
-        transform: translate(-3rem, -5.2rem) scale(1);
+        transform: translate(-2.06rem, -5.65rem) scale(1);
       }
     }
     #mobileBottomNav:has(.quick-action-radial--open) {
