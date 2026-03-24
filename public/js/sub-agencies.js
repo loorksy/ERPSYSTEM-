@@ -102,6 +102,14 @@
       if (res.success) {
         const el = document.getElementById('subAgencyProfit');
         if (el) el.textContent = (window.formatMoney ? window.formatMoney(res.profit || 0) : (res.profit || 0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $');
+        const inp = document.getElementById('subAgencyPercentInput');
+        if (inp) {
+          if (cycleId && res.cycleCommissionPercent != null && res.cycleCommissionPercent !== undefined) {
+            inp.value = res.cycleCommissionPercent;
+          } else if (!cycleId) {
+            inp.value = res.commissionPercent || 0;
+          }
+        }
       }
     });
     apiCall('/api/sub-agencies/' + currentAgencyId + '/users').then(function(res) {
@@ -120,6 +128,23 @@
       body: JSON.stringify({ commissionPercent: val })
     }).then(function(res) {
       showToast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
+    });
+  };
+
+  window.subAgenciesSaveCyclePercent = function() {
+    if (!currentAgencyId) return;
+    const cycleId = document.getElementById('subAgencyCycleSelect').value;
+    if (!cycleId) {
+      showToast('اختر الدورة المالية أولاً', 'error');
+      return;
+    }
+    const val = document.getElementById('subAgencyPercentInput').value;
+    apiCall('/api/sub-agencies/' + currentAgencyId + '/cycle-percent', {
+      method: 'POST',
+      body: JSON.stringify({ cycleId, commissionPercent: val })
+    }).then(function(res) {
+      showToast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
+      if (res.success) subAgenciesLoadDashboard();
     });
   };
 

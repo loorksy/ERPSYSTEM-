@@ -1,15 +1,67 @@
-<div class="max-w-5xl" dir="rtl">
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="flex items-center gap-3 py-5 px-6 border-b border-slate-100">
-      <i class="fas fa-clipboard-check text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">الاعتمادات</h3>
-    </div>
-    <div class="p-6 md:p-10">
-      <div class="flex flex-col items-center justify-center py-16 text-slate-400">
-        <i class="fas fa-clipboard-check text-5xl mb-4 opacity-40"></i>
-        <p class="text-lg font-medium">سيتم إضافة محتوى الاعتمادات هنا</p>
-        <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
+<div class="max-w-6xl" dir="rtl">
+  <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+    <h2 class="text-2xl font-bold text-slate-800">الاعتمادات</h2>
+    <button type="button" onclick="accOpenAdd()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+      <i class="fas fa-plus ml-2"></i> إضافة معتمد
+    </button>
+  </div>
+  <div id="accCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <p class="text-slate-400 col-span-full text-center py-12">جاري التحميل...</p>
+  </div>
+</div>
+
+<div id="accAddModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+    <h4 class="font-bold mb-4">معتمد جديد</h4>
+    <form id="accAddForm" class="space-y-3">
+      <input type="text" id="accName" placeholder="الاسم" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+      <input type="text" id="accCode" placeholder="الكود" class="w-full px-4 py-2.5 rounded-xl border border-slate-200">
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold">حفظ</button>
+        <button type="button" onclick="accCloseAdd()" class="px-4 py-3 rounded-xl bg-slate-100">إلغاء</button>
       </div>
+    </form>
+  </div>
+</div>
+
+<div id="accDetailModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <h4 id="accDetailTitle" class="text-lg font-bold"></h4>
+        <p id="accDetailBal" class="text-indigo-600 font-semibold mt-1"></p>
+      </div>
+      <button type="button" onclick="accCloseDetail()" class="text-slate-400"><i class="fas fa-times text-xl"></i></button>
     </div>
+    <div class="flex gap-2 mb-4">
+      <button type="button" onclick="accShowAddAmount()" class="flex-1 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold">إضافة مبلغ</button>
+      <button type="button" onclick="accShowTransfer()" class="flex-1 py-2 rounded-xl bg-slate-700 text-white text-sm font-semibold">تحويل</button>
+      <button type="button" id="accPinBtn" onclick="accTogglePin()" class="py-2 px-3 rounded-xl bg-amber-100 text-amber-800 text-sm">تثبيت</button>
+    </div>
+    <div id="accAddAmountPanel" class="hidden space-y-2 mb-4 p-4 rounded-xl bg-slate-50">
+      <select id="accSalaryDir" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm">
+        <option value="to_us">راتب لنا</option>
+        <option value="to_them">راتب علينا</option>
+      </select>
+      <input type="number" id="accAmt" step="0.01" placeholder="المبلغ" class="w-full px-3 py-2 rounded-lg border border-slate-200">
+      <input type="number" id="accBroker" step="0.1" placeholder="نسبة الوساطة %" class="w-full px-3 py-2 rounded-lg border border-slate-200">
+      <select id="accCycle" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"><option value="">— دورة مالية —</option></select>
+      <button type="button" onclick="accSubmitAmount()" class="w-full py-2 rounded-lg bg-indigo-600 text-white text-sm">تسجيل</button>
+    </div>
+    <div id="accTransferPanel" class="hidden space-y-2 mb-4 p-4 rounded-xl bg-slate-50">
+      <select id="accTfType" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" onchange="accTfTypeChange()">
+        <option value="manual">تسليم يدوي</option>
+        <option value="fund">تحويل صندوق</option>
+        <option value="company">تحويل (شركة)</option>
+        <option value="shipping">شحن</option>
+      </select>
+      <input type="number" id="accTfAmt" step="0.01" placeholder="المبلغ" class="w-full px-3 py-2 rounded-lg border border-slate-200">
+      <select id="accTfFund" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm hidden"></select>
+      <select id="accTfCompany" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm hidden"></select>
+      <p id="accTfShipHint" class="text-xs text-slate-500 hidden">سجّل عملية الشحن من قسم الشحن ثم اربطها لاحقاً إن لزم.</p>
+      <button type="button" onclick="accSubmitTransfer()" class="w-full py-2 rounded-lg bg-indigo-600 text-white text-sm">تنفيذ</button>
+    </div>
+    <h5 class="font-bold text-slate-800 mb-2">السجل</h5>
+    <div id="accLedger" class="text-sm space-y-2 max-h-48 overflow-y-auto"></div>
   </div>
 </div>

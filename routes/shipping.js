@@ -3,6 +3,14 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { registerShippingForAgency } = require('./subAgencies');
+const { applyBuy, applySell } = require('../services/shippingInventoryService');
+const { creditShippingCashSale, debitShippingCashBuy } = require('../services/fundService');
+
+/** المبلغ المدخل في الحقل = إجمالي قيمة الكمية (ليس سعر الوحدة) */
+function lineTotalFromBody(unitPriceField) {
+  const v = parseFloat(unitPriceField);
+  return isNaN(v) || v < 0 ? NaN : v;
+}
 
 // جلب الرصيد: رصيد الذهب = إجمالي الشراء ذهب - إجمالي البيع ذهب
 router.get('/balance', requireAuth, async (req, res) => {
@@ -31,7 +39,6 @@ router.get('/balance', requireAuth, async (req, res) => {
   }
 });
 
-// قائمة المعتمدين
 router.get('/approved', requireAuth, async (req, res) => {
   try {
     const db = getDb();
@@ -42,7 +49,6 @@ router.get('/approved', requireAuth, async (req, res) => {
   }
 });
 
-// قائمة الوكالات الفرعية
 router.get('/sub-agencies', requireAuth, async (req, res) => {
   try {
     const db = getDb();
@@ -53,7 +59,88 @@ router.get('/sub-agencies', requireAuth, async (req, res) => {
   }
 });
 
-// قائمة الشركات
+router.get('/carriers', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const rows = (await db.query(
+      'SELECT id, name FROM shipping_carrier_agencies WHERE user_id = $1 ORDER BY name',
+      [req.session.userId]
+    )).rows;
+    res.json({ success: true, list: rows });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل الجلب', list: [] });
+  }
+});
+
+/** إضافة وكالة شحن */
+router.post('/carriers', requireAuth, async (req, res) => {
+  try {
+    const { name, amount, quantity } = req.body || {};
+    if (!name || !String(name).trim()) return res.json({ success: false, message: 'الاسم مطلوب' });
+    const db = getDb();
+    const r = await db.query(
+      'INSERT INTO shipping_carrier_agencies (user_id, name) VALUES ($1, $2)',
+      [req.session.userId, String(name).trim()]
+    );
+    const id = r.lastInsertRowid;
+    const amt = parseFloat(amount);
+    const qty = parseFloat(quantity);
+    if (id && !isNaN(amt) && amt !== 0) {
+      await db.query(
+        `INSERT INTO shipping_carrier_transactions (carrier_id, direction, amount, quantity, notes)
+         VALUES ($1, 'in', $2, $3, $4)`,
+        [id, amt, !isNaN(qty) ? qty : 0, 'رصيد افتتاحي']
+      );
+    }
+    res.json({ success: true, message: 'تمت الإضافة', id });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+router.get('/carriers/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.json({ success: false, message: 'معرف غير صالح' });
+    const db = getDb();
+    const row = (await db.query(
+      'SELECT * FROM shipping_carrier_agencies WHERE id = $1 AND user_id = $2',
+      [id, req.session.userId]
+    )).rows[0];
+    if (!row) return res.json({ success: false, message: 'غير موجود' });
+    const txRows = (await db.query(
+      `SELECT * FROM shipping_carrier_transactions WHERE carrier_id = $1 ORDER BY created_at DESC`,
+      [id]
+    )).rows;
+    res.json({ success: true, carrier: row, transactions: txRows });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+router.post('/carriers/:id/balance', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { amount, quantity, direction, notes } = req.body || {};
+    if (!id) return res.json({ success: false, message: 'معرف غير صالح' });
+    const db = getDb();
+    const ok = (await db.query(
+      'SELECT id FROM shipping_carrier_agencies WHERE id = $1 AND user_id = $2',
+      [id, req.session.userId]
+    )).rows[0];
+    if (!ok) return res.json({ success: false, message: 'غير موجود' });
+    const dir = direction === 'out' ? 'out' : 'in';
+    await db.query(
+      `INSERT INTO shipping_carrier_transactions (carrier_id, direction, amount, quantity, notes)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, dir, parseFloat(amount) || 0, parseFloat(quantity) || 0, notes || null]
+    );
+    res.json({ success: true, message: 'تم التسجيل' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
 router.get('/companies', requireAuth, async (req, res) => {
   try {
     const db = getDb();
@@ -64,7 +151,6 @@ router.get('/companies', requireAuth, async (req, res) => {
   }
 });
 
-// قائمة المستخدمين (للخصم من الراتب) - يمكن ربطها لاحقاً من الرواتب
 router.get('/users', requireAuth, async (req, res) => {
   try {
     const db = getDb();
@@ -87,7 +173,6 @@ router.get('/users', requireAuth, async (req, res) => {
   }
 });
 
-// إضافة معتمد
 router.post('/approved', requireAuth, async (req, res) => {
   try {
     const { name } = req.body || {};
@@ -100,7 +185,6 @@ router.post('/approved', requireAuth, async (req, res) => {
   }
 });
 
-// إضافة وكالة فرعية (من الشحن أو الوكالات)
 router.post('/sub-agencies', requireAuth, async (req, res) => {
   try {
     const { name, commissionPercent } = req.body || {};
@@ -116,7 +200,6 @@ router.post('/sub-agencies', requireAuth, async (req, res) => {
   }
 });
 
-// إضافة شركة
 router.post('/companies', requireAuth, async (req, res) => {
   try {
     const { name } = req.body || {};
@@ -129,42 +212,86 @@ router.post('/companies', requireAuth, async (req, res) => {
   }
 });
 
-// إضافة عملية بيع
 router.post('/sell', requireAuth, async (req, res) => {
   try {
     const body = req.body || {};
-    const { buyerType, userNumber, approvedId, subAgencyId, itemType, quantity, unitPrice, paymentMethod, salaryDeductionUserId, notes } = body;
+    const {
+      buyerType, userNumber, approvedId, subAgencyId, carrierId,
+      itemType, quantity, unitPrice, paymentMethod, salaryDeductionUserId, notes,
+    } = body;
     const qty = parseFloat(quantity);
-    const price = parseFloat(unitPrice);
-    if (!itemType || !buyerType || !quantity || isNaN(qty) || qty <= 0 || isNaN(price) || price < 0 || !paymentMethod) {
+    const lineTotal = lineTotalFromBody(unitPrice);
+    if (!itemType || !buyerType || !quantity || isNaN(qty) || qty <= 0 || isNaN(lineTotal) || lineTotal < 0 || !paymentMethod) {
       return res.json({ success: false, message: 'تأكد من ملء جميع الحقول المطلوبة' });
     }
-    const total = qty * price;
-    const status = paymentMethod === 'debt' ? 'debt' : 'completed';
+    if (buyerType === 'shipping_carrier' && !carrierId) {
+      return res.json({ success: false, message: 'اختر وكالة الشحن' });
+    }
+    const userId = req.session.userId;
     const db = getDb();
+    const { costAllocated, profit, capital } = await applySell(db, userId, itemType, qty, lineTotal);
+    const unitEquiv = qty > 0 ? lineTotal / qty : 0;
+    const status = paymentMethod === 'debt' ? 'debt' : 'completed';
+    const carrierIdInt = buyerType === 'shipping_carrier' && carrierId ? parseInt(carrierId, 10) : null;
     const r = await db.query(`
-      INSERT INTO shipping_transactions (type, item_type, quantity, unit_price, total, payment_method, status, buyer_type, buyer_user_id, buyer_approved_id, buyer_sub_agency_id, salary_deduction_user_id, notes)
-      VALUES ('sell', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-    `, [itemType, qty, price, total, paymentMethod, status, buyerType, buyerType === 'user' ? (userNumber || null) : null, buyerType === 'approved' ? (approvedId || null) : null, buyerType === 'sub_agent' ? (subAgencyId || null) : null, paymentMethod === 'salary_deduction' ? (salaryDeductionUserId || null) : null, notes || null]);
+      INSERT INTO shipping_transactions (
+        type, item_type, quantity, unit_price, total, payment_method, status,
+        buyer_type, buyer_user_id, buyer_approved_id, buyer_sub_agency_id, buyer_carrier_id,
+        salary_deduction_user_id, notes, cost_allocated, profit_amount, capital_amount
+      )
+      VALUES (
+        'sell', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+      )
+    `, [
+      itemType, qty, unitEquiv, lineTotal, paymentMethod, status, buyerType,
+      buyerType === 'user' ? (userNumber || null) : null,
+      buyerType === 'approved' ? (approvedId || null) : null,
+      buyerType === 'sub_agent' ? (subAgencyId || null) : null,
+      carrierIdInt,
+      paymentMethod === 'salary_deduction' ? (salaryDeductionUserId || null) : null,
+      notes || null,
+      costAllocated, profit, capital,
+    ]);
     const txId = r.lastInsertRowid;
-    const txRow = { id: txId, type: 'sell', buyer_type: buyerType, buyer_sub_agency_id: subAgencyId ? parseInt(subAgencyId, 10) : null, payment_method: paymentMethod, total };
+    const txRow = {
+      id: txId,
+      type: 'sell',
+      buyer_type: buyerType,
+      buyer_sub_agency_id: subAgencyId ? parseInt(subAgencyId, 10) : null,
+      payment_method: paymentMethod,
+      total: lineTotal,
+      profit_amount: profit,
+    };
     await registerShippingForAgency(db, txRow);
-    res.json({ success: true, message: 'تم تسجيل عملية البيع' });
+    if (paymentMethod === 'cash') {
+      await creditShippingCashSale(db, userId, lineTotal, notes, txId);
+    }
+    if (carrierIdInt) {
+      await db.query(
+        `INSERT INTO shipping_carrier_transactions (carrier_id, direction, amount, quantity, notes, shipping_transaction_id)
+         VALUES ($1, 'out', $2, $3, $4, $5)`,
+        [carrierIdInt, lineTotal, qty, notes || 'بيع عبر وكالة شحن', txId]
+      );
+    }
+    res.json({ success: true, message: 'تم تسجيل عملية البيع', profit, capitalRecovered: capital });
   } catch (e) {
+    if (e.code === 'INSUFFICIENT_QTY') {
+      return res.json({ success: false, message: e.message });
+    }
     res.json({ success: false, message: e.message || 'فشل تسجيل البيع' });
   }
 });
 
-// إضافة عملية شراء
 router.post('/buy', requireAuth, async (req, res) => {
   try {
     const body = req.body || {};
     const { purchaseSource, companyName, companyId, itemType, quantity, unitPrice, paymentMethod, notes } = body;
     const qty = parseFloat(quantity);
-    const price = parseFloat(unitPrice);
-    if (!itemType || !purchaseSource || !quantity || isNaN(qty) || qty <= 0 || isNaN(price) || price < 0 || !paymentMethod) {
+    const lineTotal = lineTotalFromBody(unitPrice);
+    if (!itemType || !purchaseSource || !quantity || isNaN(qty) || qty <= 0 || isNaN(lineTotal) || lineTotal < 0 || !paymentMethod) {
       return res.json({ success: false, message: 'تأكد من ملء جميع الحقول المطلوبة' });
     }
+    const userId = req.session.userId;
     const db = getDb();
     let finalCompanyName = null;
     let finalCompanyId = null;
@@ -179,19 +306,33 @@ router.post('/buy', requireAuth, async (req, res) => {
       if (!finalCompanyName && companyName) finalCompanyName = String(companyName).trim();
       if (!finalCompanyName) return res.json({ success: false, message: 'اسم الشركة مطلوب' });
     }
-    const total = qty * price;
+    await applyBuy(db, userId, itemType, qty, lineTotal);
+    const unitEquiv = qty > 0 ? lineTotal / qty : 0;
     const status = paymentMethod === 'debt' ? 'debt' : 'completed';
-    await db.query(`
-      INSERT INTO shipping_transactions (type, item_type, quantity, unit_price, total, payment_method, status, purchase_source, purchase_company_id, purchase_company_name, notes)
-      VALUES ('buy', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    `, [itemType, qty, price, total, paymentMethod, status, purchaseSource, finalCompanyId, finalCompanyName, notes || null]);
+    const r = await db.query(`
+      INSERT INTO shipping_transactions (
+        type, item_type, quantity, unit_price, total, payment_method, status,
+        purchase_source, purchase_company_id, purchase_company_name, notes,
+        cost_allocated, profit_amount, capital_amount
+      )
+      VALUES (
+        'buy', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+      )
+    `, [
+      itemType, qty, unitEquiv, lineTotal, paymentMethod, status,
+      purchaseSource, finalCompanyId, finalCompanyName, notes || null,
+      lineTotal, 0, lineTotal,
+    ]);
+    const txId = r.lastInsertRowid;
+    if (paymentMethod === 'cash') {
+      await debitShippingCashBuy(db, userId, lineTotal, notes, txId);
+    }
     res.json({ success: true, message: 'تم تسجيل عملية الشراء' });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل تسجيل الشراء' });
   }
 });
 
-// جلب السجل مع التصفية
 router.get('/transactions', requireAuth, async (req, res) => {
   try {
     const { type, buyerType, buyerId, fromDate, toDate, status } = req.query || {};

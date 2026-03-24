@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
+const { recalculateSyncProfitsForCycle } = require('../services/agencySyncService');
 
 /** قائمة الوكالات مع الرصيد */
 router.get('/list', requireAuth, async (req, res) => {
@@ -53,6 +54,35 @@ router.post('/add', requireAuth, async (req, res) => {
     res.json({ success: true, message: 'تم إضافة الوكالة', id: r.lastInsertRowid });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل الإضافة' });
+  }
+});
+
+/** حفظ نسبة الوكالة للدورة المالية + إعادة احتساب أرباح المزامنة من عمود W */
+router.post('/:id/cycle-percent', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { cycleId, commissionPercent } = req.body || {};
+    const cid = parseInt(cycleId, 10);
+    if (!id || !cid) return res.json({ success: false, message: 'الوكالة والدورة مطلوبان' });
+    const pct = parseFloat(commissionPercent);
+    const pctVal = isNaN(pct) || pct < 0 ? 0 : Math.min(100, pct);
+    const companyPct = 100 - pctVal;
+    const db = getDb();
+    const cycle = (await db.query('SELECT id FROM financial_cycles WHERE id = $1 AND user_id = $2', [cid, req.session.userId])).rows[0];
+    if (!cycle) return res.json({ success: false, message: 'الدورة غير موجودة' });
+    await db.query(
+      `INSERT INTO sub_agency_cycle_settings (cycle_id, sub_agency_id, commission_percent, company_percent, saved_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+       ON CONFLICT (cycle_id, sub_agency_id) DO UPDATE SET
+         commission_percent = excluded.commission_percent,
+         company_percent = excluded.company_percent,
+         saved_at = CURRENT_TIMESTAMP`,
+      [cid, id, pctVal, companyPct]
+    );
+    await recalculateSyncProfitsForCycle(db, cid);
+    res.json({ success: true, message: 'تم حفظ النسبة وإعادة احتساب أرباح المزامنة لهذه الدورة' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل الحفظ' });
   }
 });
 
@@ -113,7 +143,20 @@ router.get('/:id/profit', requireAuth, async (req, res) => {
     if (cycleId) { sql += ` AND cycle_id = $${params.length + 1}`; params.push(cycleId); }
     const row = (await db.query(sql, params)).rows[0];
     const profit = row?.total || 0;
-    res.json({ success: true, profit, commissionPercent: agency.commission_percent });
+    let cycleCommissionPercent = null;
+    if (cycleId) {
+      const s = (await db.query(
+        'SELECT commission_percent FROM sub_agency_cycle_settings WHERE cycle_id = $1 AND sub_agency_id = $2',
+        [cycleId, id]
+      )).rows[0];
+      cycleCommissionPercent = s?.commission_percent ?? null;
+    }
+    res.json({
+      success: true,
+      profit,
+      commissionPercent: agency.commission_percent,
+      cycleCommissionPercent,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل جلب الربح' });
   }

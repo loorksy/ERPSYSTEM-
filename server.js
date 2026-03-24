@@ -147,6 +147,9 @@ const pagesRoutes = require('./routes/pages');
 const searchRoutes = require('./routes/search');
 const shippingRoutes = require('./routes/shipping');
 const subAgenciesRoutes = require('./routes/subAgencies');
+const fundsRoutes = require('./routes/funds');
+const transferCompaniesRoutes = require('./routes/transferCompanies');
+const accreditationsRoutes = require('./routes/accreditations');
 const aiRoutes = require('./routes/ai');
 
 app.use('/', authRoutes);
@@ -157,6 +160,9 @@ app.use('/settings', settingsRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/sub-agencies', subAgenciesRoutes);
+app.use('/api/funds', fundsRoutes);
+app.use('/api/transfer-companies', transferCompaniesRoutes);
+app.use('/api/accreditations', accreditationsRoutes);
 app.use('/ai', aiRoutes(io));
 app.use('/', pagesRoutes);
 

@@ -39,13 +39,22 @@
         </button>
       </div>
 
-      <!-- تبويب الباقات (placeholder) -->
       <div class="flex gap-2 mb-6 flex-wrap">
         <button onclick="switchTab(this, 'shipping-main')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-indigo-600 text-white shadow-md">الشحن</button>
+        <button onclick="switchTab(this, 'shipping-carriers')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200">وكالات الشحن</button>
         <button onclick="switchTab(this, 'shipping-packages')" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200">الباقات</button>
       </div>
       <div id="shipping-main" class="tab-content">
-        <p class="text-slate-500 text-sm">استخدم أزرار البيع والشراء أعلاه لإدارة عمليات الشحن.</p>
+        <p class="text-slate-500 text-sm">المبلغ المدخل مع الكمية = <strong>إجمالي قيمة تلك الكمية</strong> (وليس سعر الوحدة).</p>
+      </div>
+      <div id="shipping-carriers" class="tab-content hidden">
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+          <p class="text-slate-600 text-sm">وكالات الشحن — إضافة رصيد وعرض السجل</p>
+          <button type="button" onclick="shippingOpenCarrierAdd()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold">+ وكالة</button>
+        </div>
+        <div id="shippingCarrierCards" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <p class="text-slate-400 text-sm col-span-full">جاري التحميل...</p>
+        </div>
       </div>
       <div id="shipping-packages" class="tab-content hidden">
         <div class="flex flex-col items-center justify-center py-16 text-slate-400">
@@ -73,6 +82,7 @@
           <option value="user">مستخدم</option>
           <option value="approved">معتمد</option>
           <option value="sub_agent">وكيل فرعي</option>
+          <option value="shipping_carrier">وكالة شحن</option>
         </select>
       </div>
 
@@ -104,6 +114,14 @@
         </div>
       </div>
 
+      <div id="sellCarrierFields" class="hidden space-y-3">
+        <div class="flex gap-2">
+          <select id="sellCarrierId" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200">
+            <option value="">-- وكالة الشحن --</option>
+          </select>
+        </div>
+      </div>
+
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-2">نوع الشحن</label>
         <select id="sellItemType" name="itemType" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
@@ -118,7 +136,7 @@
           <input type="number" id="sellQuantity" name="quantity" step="0.01" min="0.01" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
         </div>
         <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1">سعر البيع</label>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">إجمالي مبلغ البيع (للكمية)</label>
           <input type="number" id="sellUnitPrice" name="unitPrice" step="0.01" min="0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
         </div>
       </div>
@@ -197,7 +215,7 @@
           <input type="number" id="buyQuantity" name="quantity" step="0.01" min="0.01" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
         </div>
         <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1">السعر</label>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">إجمالي مبلغ الشراء (للكمية)</label>
           <input type="number" id="buyUnitPrice" name="unitPrice" step="0.01" min="0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
         </div>
       </div>
@@ -251,6 +269,34 @@
       <div id="shippingRecordList" class="space-y-2">
         <p class="text-slate-400 text-center py-8">جاري التحميل...</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="shippingCarrierAddModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+    <h4 class="font-bold text-lg mb-4">إضافة وكالة شحن</h4>
+    <form id="shippingCarrierAddForm" class="space-y-3">
+      <input type="text" id="carrierAddName" placeholder="الاسم" class="w-full px-4 py-2.5 rounded-xl border border-slate-200" required>
+      <div class="grid grid-cols-2 gap-2">
+        <input type="number" id="carrierAddAmt" step="0.01" placeholder="المبلغ (اختياري)" class="px-4 py-2.5 rounded-xl border border-slate-200">
+        <input type="number" id="carrierAddQty" step="0.01" placeholder="الكمية (اختياري)" class="px-4 py-2.5 rounded-xl border border-slate-200">
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold">حفظ</button>
+        <button type="button" onclick="shippingCloseCarrierAdd()" class="px-4 py-3 rounded-xl bg-slate-100">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div id="shippingCarrierDetailModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
+    <div class="px-6 py-4 border-b flex justify-between items-center">
+      <h4 id="carrierDetailTitle" class="font-bold text-lg">وكالة</h4>
+      <button type="button" onclick="shippingCloseCarrierDetail()" class="text-slate-400"><i class="fas fa-times text-xl"></i></button>
+    </div>
+    <div class="p-4 overflow-y-auto flex-1">
+      <div id="carrierDetailTx" class="space-y-2 text-sm"></div>
     </div>
   </div>
 </div>

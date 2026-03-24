@@ -33,12 +33,39 @@ function initHomeStats() {
           }).join('');
           cycleSel.dataset.filled = '1';
         }
-        var cash = document.getElementById('cashBalance');
-        var deferred = document.getElementById('deferredBalance');
-        var shipping = document.getElementById('shippingBalance');
-        if (cash) cash.textContent = formatMoney(data.cashBalance || 0);
-        if (deferred) deferred.textContent = formatMoney(data.deferredBalance || 0);
-        if (shipping) shipping.textContent = formatMoney(data.shippingBalance || 0);
+        var pc = document.getElementById('homeProfitCycle');
+        if (pc && cycles.length && !pc.dataset.filled) {
+          pc.innerHTML = '<option value="">— دورة —</option>' + cycles.map(function(c) {
+            return '<option value="' + c.id + '">' + (c.name || '') + '</option>';
+          }).join('');
+          pc.dataset.filled = '1';
+        }
+        function setEl(id, val) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = formatMoney(val != null ? val : 0);
+        }
+        setEl('cashBalance', data.cashBalance);
+        setEl('deferredBalance', data.deferredBalance);
+        setEl('shippingBalance', data.shippingBalance);
+        setEl('totalRevenue', data.totalRevenue);
+        setEl('netProfit', data.netProfit);
+        setEl('totalDebts', data.totalDebts);
+        setEl('capitalRecovery', data.capitalRecovered);
+        var sub = document.getElementById('cashBalanceSub');
+        if (sub) {
+          var mf = data.mainFund;
+          var parts = [];
+          if (data.snapshotCash != null && data.snapshotCash !== 0) {
+            parts.push('من الجداول: ' + formatMoney(data.snapshotCash));
+          }
+          if (data.fundTotals && data.fundTotals.length) {
+            parts.push('صناديع: ' + data.fundTotals.map(function(ft) {
+              return formatMoney(ft.total) + ' ' + (ft.currency || '');
+            }).join(' · '));
+          }
+          if (mf && mf.name) parts.push('رئيسي: ' + mf.name);
+          sub.textContent = parts.join(' | ') || '';
+        }
         var link = document.getElementById('deferredBalanceLink');
         if (link && data.cycleId) link.href = '/deferred-balance?cycleId=' + data.cycleId;
       })
@@ -46,6 +73,130 @@ function initHomeStats() {
   };
   homeLoadStats();
 }
+
+window.homeOpenFundModal = function() {
+  var m = document.getElementById('homeFundModal');
+  var body = document.getElementById('homeFundModalBody');
+  if (!m || !body) return;
+  body.innerHTML = '<p class="text-slate-400">جاري التحميل...</p>';
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  fetch('/dashboard/fund-sources', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
+    if (!d.success) {
+      body.innerHTML = '<p class="text-red-500">' + (d.message || 'فشل') + '</p>';
+      return;
+    }
+    var html = '';
+    (d.funds || []).forEach(function(f) {
+      var bs = (f.balances || []).map(function(b) {
+        return (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '');
+      }).join(' | ');
+      html += '<div class="p-3 rounded-xl bg-slate-50 border border-slate-100"><strong>' + (f.name || '') + '</strong> ' +
+        (f.is_main ? '<span class="text-amber-600 text-xs">رئيسي</span>' : '') +
+        '<p class="text-xs text-slate-500">' + (f.fund_number || '') + ' · ' + (f.country || '') + '</p>' +
+        '<p class="font-semibold text-indigo-700">' + (bs || '0') + '</p></div>';
+    });
+    if (d.recentSnapshots && d.recentSnapshots.length) {
+      html += '<p class="font-semibold text-slate-700 mt-2">لقطات من الجداول (مرجع)</p>';
+      d.recentSnapshots.forEach(function(s) {
+        html += '<p class="text-xs">' + (s.name || '') + ': ' + formatMoney(s.cash_balance || 0) + '</p>';
+      });
+    }
+    body.innerHTML = html || '<p class="text-slate-400">لا بيانات</p>';
+  });
+};
+window.homeCloseFundModal = function() {
+  var m = document.getElementById('homeFundModal');
+  if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+};
+
+window.homeOpenDebtsModal = function() {
+  var m = document.getElementById('homeDebtModal');
+  var body = document.getElementById('homeDebtModalBody');
+  if (!m || !body) return;
+  body.innerHTML = '<p class="text-slate-400">جاري التحميل...</p>';
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  fetch('/dashboard/debts-detail', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
+    if (!d.success) {
+      body.innerHTML = '<p class="text-red-500">' + (d.message || '') + '</p>';
+      return;
+    }
+    var html = '<p class="font-semibold">ديون شحن (بيع بالدين)</p>';
+    (d.shippingDebts || []).forEach(function(x) {
+      html += '<div class="p-2 rounded-lg bg-red-50 text-sm">' + formatMoney(x.total) + ' — ' + (x.item_type || '') + '</div>';
+    });
+    html += '<p class="font-semibold mt-3">اعتمادات (رصيد سالب)</p>';
+    (d.accreditationDebts || []).forEach(function(x) {
+      html += '<div class="p-2 rounded-lg bg-amber-50 text-sm">' + (x.name || '') + ': ' + formatMoney(x.balance_amount) + '</div>';
+    });
+    body.innerHTML = html || '<p class="text-slate-400">لا ديون مسجلة</p>';
+  });
+};
+window.homeCloseDebtModal = function() {
+  var m = document.getElementById('homeDebtModal');
+  if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+};
+
+window.homeOpenCapitalModal = function() {
+  var m = document.getElementById('homeCapitalModal');
+  if (!m) return;
+  var rows = document.getElementById('homeProfitRows');
+  if (rows && !rows.dataset.inited) {
+    homeAddProfitRow();
+    rows.dataset.inited = '1';
+  }
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  fetch('/api/funds/list', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
+    document.querySelectorAll('.home-profit-fund-select').forEach(function(sel) {
+      var v = sel.value;
+      sel.innerHTML = '<option value="">— صندوق —</option>';
+      (d.funds || []).forEach(function(f) {
+        sel.innerHTML += '<option value="' + f.id + '">' + (f.name || '') + '</option>';
+      });
+      sel.value = v;
+    });
+  });
+};
+window.homeCloseCapitalModal = function() {
+  var m = document.getElementById('homeCapitalModal');
+  if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+};
+window.homeAddProfitRow = function() {
+  var rows = document.getElementById('homeProfitRows');
+  if (!rows) return;
+  var div = document.createElement('div');
+  div.className = 'flex gap-2 items-center';
+  div.innerHTML = '<select class="home-profit-fund-select flex-1 px-2 py-2 rounded-lg border border-slate-200 text-sm"><option value="">— صندوق —</option></select>' +
+    '<input type="number" class="home-profit-amt w-28 px-2 py-2 rounded-lg border border-slate-200" step="0.01" placeholder="مبلغ">';
+  rows.appendChild(div);
+  fetch('/api/funds/list', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
+    var sel = div.querySelector('.home-profit-fund-select');
+    (d.funds || []).forEach(function(f) {
+      sel.innerHTML += '<option value="' + f.id + '">' + (f.name || '') + '</option>';
+    });
+  });
+};
+window.homeSubmitProfitTransfer = function() {
+  var batches = [];
+  document.querySelectorAll('#homeProfitRows > div').forEach(function(row) {
+    var fid = row.querySelector('.home-profit-fund-select');
+    var amt = row.querySelector('.home-profit-amt');
+    if (fid && amt && fid.value && amt.value) {
+      batches.push({ fundId: fid.value, amount: parseFloat(amt.value), currency: 'USD' });
+    }
+  });
+  var cycleId = document.getElementById('homeProfitCycle') && document.getElementById('homeProfitCycle').value;
+  apiCall('/dashboard/transfer-profit', {
+    method: 'POST',
+    body: JSON.stringify({ batches: batches, cycleId: cycleId || null })
+  }).then(function(res) {
+    if (typeof showToast === 'function') showToast(res.message || '', res.success ? 'success' : 'error');
+    if (res.success) homeCloseCapitalModal();
+    if (typeof homeLoadStats === 'function') homeLoadStats();
+  });
+};
 
 function initHomeSheetsStatus() {
   var el = document.getElementById('homeSheetsStatus');

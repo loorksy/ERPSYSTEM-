@@ -40,10 +40,14 @@
       </div>
       <div class="dash-card dash-card-percent">
         <p class="dash-card-label">نسبة الوكالة</p>
-        <div class="flex items-center gap-2">
-          <input type="number" id="subAgencyPercentInput" step="0.1" min="0" max="100" class="input-percent" onchange="subAgenciesUpdatePercent()">
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="number" id="subAgencyPercentInput" step="0.1" min="0" max="100" class="input-percent" placeholder="0">
           <span class="text-amber-700 font-bold">%</span>
+          <button type="button" onclick="subAgenciesSaveCyclePercent()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+            حفظ للدورة
+          </button>
         </div>
+        <p class="text-xs text-slate-500 mt-2">يُحفظ النسبة لهذه الدورة فقط ويُعاد احتساب ربح عمود W من المزامنة.</p>
       </div>
     </div>
 

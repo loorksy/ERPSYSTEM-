@@ -236,3 +236,148 @@ CREATE TABLE IF NOT EXISTS deferred_balance_users (
   sheet_source TEXT,
   synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- مخزون الشحن: متوسط التكلفة لكل مستخدم ونوع سلعة
+CREATE TABLE IF NOT EXISTS shipping_inventory (
+  user_id INTEGER NOT NULL,
+  item_type TEXT NOT NULL,
+  quantity_on_hand REAL NOT NULL DEFAULT 0,
+  total_cost_basis REAL NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, item_type)
+);
+
+-- نسبة الوكالة الفرعية المحفوظة لكل دورة مالية
+CREATE TABLE IF NOT EXISTS sub_agency_cycle_settings (
+  cycle_id INTEGER NOT NULL,
+  sub_agency_id INTEGER NOT NULL,
+  commission_percent REAL DEFAULT 0,
+  company_percent REAL DEFAULT 0,
+  saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (cycle_id, sub_agency_id),
+  FOREIGN KEY (sub_agency_id) REFERENCES shipping_sub_agencies(id) ON DELETE CASCADE
+);
+
+-- وكالات الشحن (ناقلون)
+CREATE TABLE IF NOT EXISTS shipping_carrier_agencies (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS shipping_carrier_transactions (
+  id SERIAL PRIMARY KEY,
+  carrier_id INTEGER NOT NULL REFERENCES shipping_carrier_agencies(id) ON DELETE CASCADE,
+  direction TEXT NOT NULL,
+  amount REAL DEFAULT 0,
+  quantity REAL DEFAULT 0,
+  notes TEXT,
+  shipping_transaction_id INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- شركات التحويل (موسّعة)
+CREATE TABLE IF NOT EXISTS transfer_companies (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  country TEXT,
+  region_syria TEXT,
+  balance_amount REAL DEFAULT 0,
+  balance_currency TEXT DEFAULT 'USD',
+  transfer_types TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS transfer_company_ledger (
+  id SERIAL PRIMARY KEY,
+  company_id INTEGER NOT NULL REFERENCES transfer_companies(id) ON DELETE CASCADE,
+  amount REAL NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- الصناديع
+CREATE TABLE IF NOT EXISTS funds (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  fund_number TEXT,
+  transfer_company_id INTEGER REFERENCES transfer_companies(id) ON DELETE SET NULL,
+  country TEXT,
+  region_syria TEXT,
+  is_main INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fund_balances (
+  fund_id INTEGER NOT NULL REFERENCES funds(id) ON DELETE CASCADE,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  amount REAL NOT NULL DEFAULT 0,
+  PRIMARY KEY (fund_id, currency)
+);
+
+CREATE TABLE IF NOT EXISTS fund_ledger (
+  id SERIAL PRIMARY KEY,
+  fund_id INTEGER NOT NULL REFERENCES funds(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  amount REAL NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  notes TEXT,
+  ref_table TEXT,
+  ref_id INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fund_transfers (
+  id SERIAL PRIMARY KEY,
+  from_fund_id INTEGER NOT NULL REFERENCES funds(id) ON DELETE CASCADE,
+  to_fund_id INTEGER NOT NULL REFERENCES funds(id) ON DELETE CASCADE,
+  amount REAL NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS profit_transfer_batches (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  fund_id INTEGER NOT NULL REFERENCES funds(id) ON DELETE CASCADE,
+  amount REAL NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  cycle_id INTEGER,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- اعتمادات (معتمدون بكود)
+CREATE TABLE IF NOT EXISTS accreditation_entities (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  code TEXT,
+  balance_amount REAL DEFAULT 0,
+  pinned INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS accreditation_ledger (
+  id SERIAL PRIMARY KEY,
+  accreditation_id INTEGER NOT NULL REFERENCES accreditation_entities(id) ON DELETE CASCADE,
+  entry_type TEXT NOT NULL,
+  amount REAL NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  direction TEXT,
+  brokerage_pct REAL,
+  brokerage_amount REAL,
+  cycle_id INTEGER,
+  notes TEXT,
+  meta_json TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS cost_allocated REAL;
+ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS profit_amount REAL;
+ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS capital_amount REAL;
+ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS buyer_carrier_id INTEGER;

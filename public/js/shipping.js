@@ -47,7 +47,60 @@
         sel.innerHTML += '<option value="' + (u.id || u.name) + '">' + (u.name || u.id) + '</option>';
       });
     });
+    apiCall('/api/shipping/carriers').then(function(res) {
+      var sel = document.getElementById('sellCarrierId');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">-- وكالة الشحن --</option>';
+      (res.list || []).forEach(function(c) {
+        sel.innerHTML += '<option value="' + c.id + '">' + (c.name || '') + '</option>';
+      });
+    });
   }
+
+  function loadCarrierCards() {
+    var box = document.getElementById('shippingCarrierCards');
+    if (!box) return;
+    apiCall('/api/shipping/carriers').then(function(res) {
+      var list = res.list || [];
+      if (list.length === 0) {
+        box.innerHTML = '<p class="text-slate-400 col-span-full">لا وكالات. أضف من الزر أعلاه.</p>';
+        return;
+      }
+      box.innerHTML = list.map(function(c) {
+        return '<div class="p-4 rounded-xl border border-slate-100 bg-slate-50/80 cursor-pointer hover:shadow-md" onclick="shippingOpenCarrierDetail(' + c.id + ')">' +
+          '<h5 class="font-bold text-slate-800">' + (c.name || '') + '</h5>' +
+          '<p class="text-xs text-slate-500 mt-1">اضغط للسجل</p></div>';
+      }).join('');
+    });
+  }
+
+  window.shippingOpenCarrierAdd = function() {
+    document.getElementById('shippingCarrierAddModal').classList.remove('hidden');
+    document.getElementById('shippingCarrierAddModal').classList.add('flex');
+  };
+  window.shippingCloseCarrierAdd = function() {
+    document.getElementById('shippingCarrierAddModal').classList.add('hidden');
+    document.getElementById('shippingCarrierAddModal').classList.remove('flex');
+  };
+  window.shippingOpenCarrierDetail = function(id) {
+    apiCall('/api/shipping/carriers/' + id).then(function(res) {
+      if (!res.success) return;
+      document.getElementById('carrierDetailTitle').textContent = res.carrier.name || '';
+      var tx = res.transactions || [];
+      document.getElementById('carrierDetailTx').innerHTML = tx.map(function(t) {
+        var dir = t.direction === 'in' ? 'وارد' : 'صادر';
+        var dt = t.created_at ? new Date(t.created_at).toLocaleString('ar-SA') : '';
+        return '<div class="p-3 rounded-lg border border-slate-100 flex justify-between gap-2"><span>' + dir + '</span><span>' +
+          (t.amount != null ? t.amount : '') + ' / كمية: ' + (t.quantity != null ? t.quantity : '') + '</span><span class="text-xs text-slate-400">' + dt + '</span></div>';
+      }).join('') || '<p class="text-slate-400">لا سجل</p>';
+      document.getElementById('shippingCarrierDetailModal').classList.remove('hidden');
+      document.getElementById('shippingCarrierDetailModal').classList.add('flex');
+    });
+  };
+  window.shippingCloseCarrierDetail = function() {
+    document.getElementById('shippingCarrierDetailModal').classList.add('hidden');
+    document.getElementById('shippingCarrierDetailModal').classList.remove('flex');
+  };
 
   function loadBuyDropdowns() {
     apiCall('/api/shipping/companies').then(function(res) {
@@ -65,9 +118,11 @@
     document.getElementById('sellUserFields').classList.toggle('hidden', t !== 'user');
     document.getElementById('sellApprovedFields').classList.toggle('hidden', t !== 'approved');
     document.getElementById('sellSubAgentFields').classList.toggle('hidden', t !== 'sub_agent');
+    var cf = document.getElementById('sellCarrierFields');
+    if (cf) cf.classList.toggle('hidden', t !== 'shipping_carrier');
     var salaryOpt = document.getElementById('sellSalaryOpt');
     var agencyOpt = document.getElementById('sellAgencyOpt');
-    if (salaryOpt) salaryOpt.classList.toggle('hidden', t === 'sub_agent');
+    if (salaryOpt) salaryOpt.classList.toggle('hidden', t === 'sub_agent' || t === 'shipping_carrier');
     if (agencyOpt) agencyOpt.classList.toggle('hidden', t !== 'sub_agent');
     shippingSellPaymentChange();
   };
@@ -184,11 +239,13 @@
         if (r.buyer_type === 'user' && r.buyer_user_id) buyer = 'مستخدم: ' + r.buyer_user_id;
         else if (r.buyer_type === 'approved' && r.buyer_approved_id) buyer = 'معتمد #' + r.buyer_approved_id;
         else if (r.buyer_type === 'sub_agent' && r.buyer_sub_agency_id) buyer = 'وكيل #' + r.buyer_sub_agency_id;
+        else if (r.buyer_type === 'shipping_carrier' && r.buyer_carrier_id) buyer = 'وكالة شحن #' + r.buyer_carrier_id;
         else if (r.purchase_source === 'company' && r.purchase_company_name) buyer = 'شركة: ' + r.purchase_company_name;
         else if (r.purchase_source === 'administration') buyer = 'الإدارة';
         var pm = r.payment_method === 'cash' ? 'كاش' : r.payment_method === 'debt' ? 'دين' : r.payment_method === 'salary_deduction' ? 'خصم من راتب' : r.payment_method === 'agency_deduction' ? 'خصم من نسبة الوكالة' : r.payment_method;
+        var profitLine = (r.type === 'sell' && r.profit_amount != null) ? ' | ربح: ' + (window.formatMoney ? window.formatMoney(r.profit_amount) : r.profit_amount) : '';
         return '<div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-2">' +
-          '<div><span class="font-semibold ' + (r.type === 'buy' ? 'text-blue-600' : 'text-emerald-600') + '">' + typeLabel + '</span> ' + itemLabel + ' | ' + (r.quantity||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' × ' + (r.unit_price||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' = ' + (window.formatMoney ? window.formatMoney(r.total) : (r.total||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $') + '</div>' +
+          '<div><span class="font-semibold ' + (r.type === 'buy' ? 'text-blue-600' : 'text-emerald-600') + '">' + typeLabel + '</span> ' + itemLabel + ' | كمية: ' + (r.quantity||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' — إجمالي: ' + (window.formatMoney ? window.formatMoney(r.total) : (r.total||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $') + profitLine + '</div>' +
           '<div class="text-sm text-slate-600">' + buyer + ' | ' + pm + ' | ' + statusLabel + '</div>' +
           '<div class="text-xs text-slate-400">' + date + '</div>' +
           '</div>';
@@ -196,8 +253,28 @@
     });
   };
 
+  document.getElementById('shippingCarrierAddForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    apiCall('/api/shipping/carriers', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('carrierAddName').value,
+        amount: document.getElementById('carrierAddAmt').value,
+        quantity: document.getElementById('carrierAddQty').value
+      })
+    }).then(function(res) {
+      showToast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        shippingCloseCarrierAdd();
+        loadCarrierCards();
+        loadSellDropdowns();
+      }
+    });
+  });
+
   document.addEventListener('DOMContentLoaded', function() {
     loadBalance();
+    loadCarrierCards();
     var sellForm = document.getElementById('shippingSellForm');
     if (sellForm) {
       sellForm.addEventListener('submit', function(e) {
@@ -208,6 +285,7 @@
           userNumber: t === 'user' ? document.getElementById('sellUserNumber').value : null,
           approvedId: t === 'approved' ? document.getElementById('sellApprovedId').value : null,
           subAgencyId: t === 'sub_agent' ? document.getElementById('sellSubAgencyId').value : null,
+          carrierId: t === 'shipping_carrier' ? document.getElementById('sellCarrierId').value : null,
           itemType: document.getElementById('sellItemType').value,
           quantity: document.getElementById('sellQuantity').value,
           unitPrice: document.getElementById('sellUnitPrice').value,

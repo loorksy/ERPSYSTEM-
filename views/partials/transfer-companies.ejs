@@ -1,15 +1,58 @@
-<div class="max-w-5xl" dir="rtl">
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="flex items-center gap-3 py-5 px-6 border-b border-slate-100">
-      <i class="fas fa-exchange-alt text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">شركات التحويل</h3>
-    </div>
-    <div class="p-6 md:p-10">
-      <div class="flex flex-col items-center justify-center py-16 text-slate-400">
-        <i class="fas fa-exchange-alt text-5xl mb-4 opacity-40"></i>
-        <p class="text-lg font-medium">سيتم إضافة محتوى شركات التحويل هنا</p>
-        <p class="text-sm mt-2">سيتم بناء هذا القسم قريباً</p>
+<div class="max-w-6xl" dir="rtl">
+  <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+    <h2 class="text-2xl font-bold text-slate-800">شركات التحويل</h2>
+    <button type="button" onclick="tcOpenAdd()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+      <i class="fas fa-plus ml-2"></i> إضافة شركة
+    </button>
+  </div>
+  <div id="tcCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <p class="text-slate-400 col-span-full text-center py-12">جاري التحميل...</p>
+  </div>
+</div>
+
+<div id="tcAddModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+    <h4 class="text-lg font-bold mb-4">إضافة شركة تحويل</h4>
+    <form id="tcAddForm" class="space-y-3">
+      <div>
+        <label class="text-sm font-semibold">اسم الشركة</label>
+        <input type="text" id="tcName" class="w-full mt-1 px-4 py-2.5 rounded-xl border border-slate-200" required>
       </div>
+      <div>
+        <label class="text-sm font-semibold">الدولة</label>
+        <select id="tcCountry" class="w-full mt-1 px-4 py-2.5 rounded-xl border border-slate-200"></select>
+      </div>
+      <div>
+        <label class="text-sm font-semibold">الرصيد (موجب لنا / سالب علينا)</label>
+        <div class="flex gap-2 mt-1">
+          <input type="number" id="tcBal" step="0.01" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200" value="0">
+          <select id="tcBalCur" class="w-28 rounded-xl border border-slate-200"><option value="USD">USD</option><option value="TRY">TRY</option><option value="SYP">SYP</option></select>
+        </div>
+      </div>
+      <div>
+        <label class="text-sm font-semibold">أنواع التحويل (اختر عدة)</label>
+        <div id="tcTypesWrap" class="mt-2 flex flex-wrap gap-2"></div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold">حفظ</button>
+        <button type="button" onclick="tcCloseAdd()" class="px-5 py-3 rounded-xl bg-slate-100">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="tcDetailModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="px-6 py-4 border-b flex justify-between">
+      <h4 id="tcDetailTitle" class="text-lg font-bold">الشركة</h4>
+      <button type="button" onclick="tcCloseDetail()" class="w-10 h-10 rounded-xl hover:bg-slate-100 text-slate-400"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="p-4 overflow-y-auto flex-1">
+      <p id="tcDetailBal" class="text-indigo-600 font-bold mb-4"></p>
+      <div id="tcDetailLedger" class="space-y-2 text-sm"></div>
     </div>
   </div>
 </div>
+<script>
+  window.FUNDS_COUNTRIES = ['سوريا','تركيا','مصر','العراق','الجزائر','الأردن','المغرب','فلسطين','لبنان','السعودية','الإمارات','الكويت','قطر','البحرين','عُمان','اليمن','السودان','تونس','ليبيا','موريتانيا'];
+</script>

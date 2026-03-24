@@ -130,6 +130,12 @@
           </a>
         </li>
         <li>
+          <a href="/funds" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'funds' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-vault w-5 text-center <%= page === 'funds' ? 'text-indigo-400' : '' %>"></i>
+            <span>الصناديع</span>
+          </a>
+        </li>
+        <li>
           <a href="/shipping" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'shipping' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-truck w-5 text-center <%= page === 'shipping' ? 'text-indigo-400' : '' %>"></i>
             <span>الشحن</span>
@@ -190,6 +196,8 @@
         <%- include('partials/main-agency') %>
       <% } else if (page === 'transfer-companies') { %>
         <%- include('partials/transfer-companies') %>
+      <% } else if (page === 'funds') { %>
+        <%- include('partials/funds') %>
       <% } else if (page === 'shipping') { %>
         <%- include('partials/shipping') %>
       <% } else if (page === 'client-portal') { %>
@@ -236,6 +244,15 @@
   <% } %>
   <% if (page === 'sub-agencies') { %>
     <script src="/js/sub-agencies.js"></script>
+  <% } %>
+  <% if (page === 'funds') { %>
+    <script src="/js/funds.js"></script>
+  <% } %>
+  <% if (page === 'transfer-companies') { %>
+    <script src="/js/transfer-companies.js"></script>
+  <% } %>
+  <% if (page === 'approvals') { %>
+    <script src="/js/approvals.js"></script>
   <% } %>
 </body>
 </html>

@@ -102,8 +102,23 @@ async function syncAgenciesFromManagementTable(cycleId, userId, sheetsApi) {
         agency = (await db.query('SELECT id, name, commission_percent, company_percent FROM shipping_sub_agencies WHERE name = $1', [sheetName])).rows[0];
       }
 
-      const companyPercent = (agency.company_percent != null && !isNaN(agency.company_percent)) ? agency.company_percent : (100 - (agency.commission_percent || 0));
-      const agencyPercent = 100 - companyPercent;
+      await db.query(
+        `DELETE FROM sub_agency_transactions WHERE cycle_id = $1 AND sub_agency_id = $2 AND notes LIKE 'ربح من مزامنة%'`,
+        [cycleId, agency.id]
+      );
+
+      const cycleSettings = (await db.query(
+        `SELECT commission_percent, company_percent FROM sub_agency_cycle_settings WHERE cycle_id = $1 AND sub_agency_id = $2`,
+        [cycleId, agency.id]
+      )).rows[0];
+
+      let agencyPercent = 0;
+      if (cycleSettings) {
+        const cp = (cycleSettings.company_percent != null && !isNaN(cycleSettings.company_percent))
+          ? cycleSettings.company_percent
+          : (100 - (cycleSettings.commission_percent || 0));
+        agencyPercent = 100 - cp;
+      }
 
       let rows = [];
       try {
@@ -145,14 +160,9 @@ async function syncAgenciesFromManagementTable(cycleId, userId, sheetsApi) {
           totalUsers++;
         }
 
-        const agencyProfit = baseProfitW * (agencyPercent / 100);
-        if (agencyProfit > 0) {
-          const existing = (await db.query(
-            `SELECT id FROM sub_agency_transactions
-             WHERE sub_agency_id = $1 AND cycle_id = $2 AND member_user_id = $3 AND type = 'profit'`,
-            [agency.id, cycleId, memberUserId]
-          )).rows[0];
-          if (!existing) {
+        if (cycleSettings && agencyPercent > 0) {
+          const agencyProfit = baseProfitW * (agencyPercent / 100);
+          if (agencyProfit > 0) {
             await db.query(
               `INSERT INTO sub_agency_transactions (sub_agency_id, type, amount, notes, cycle_id, member_user_id)
                VALUES ($1, 'profit', $2, $3, $4, $5)`,
@@ -316,9 +326,51 @@ async function fetchDeferredBalanceUsers(cycleId, userId, sheetsApi) {
   return result;
 }
 
+/**
+ * إعادة احتساب أرباح المزامنة من عمود W لدورة معيّنة بعد حفظ نسبة الوكالة للدورة.
+ */
+async function recalculateSyncProfitsForCycle(db, cycleId) {
+  const agencies = (await db.query(
+    `SELECT DISTINCT sub_agency_id FROM agency_cycle_users WHERE cycle_id = $1`,
+    [cycleId]
+  )).rows;
+  for (const { sub_agency_id } of agencies) {
+    await db.query(
+      `DELETE FROM sub_agency_transactions WHERE cycle_id = $1 AND sub_agency_id = $2 AND notes LIKE 'ربح من مزامنة%'`,
+      [cycleId, sub_agency_id]
+    );
+    const settings = (await db.query(
+      `SELECT commission_percent, company_percent FROM sub_agency_cycle_settings WHERE cycle_id = $1 AND sub_agency_id = $2`,
+      [cycleId, sub_agency_id]
+    )).rows[0];
+    if (!settings) continue;
+    const cp = (settings.company_percent != null && !isNaN(settings.company_percent))
+      ? settings.company_percent
+      : (100 - (settings.commission_percent || 0));
+    const agencyPercent = 100 - cp;
+    if (agencyPercent <= 0) continue;
+    const users = (await db.query(
+      `SELECT member_user_id, base_profit_w FROM agency_cycle_users WHERE cycle_id = $1 AND sub_agency_id = $2`,
+      [cycleId, sub_agency_id]
+    )).rows;
+    for (const u of users) {
+      const baseProfitW = parseDecimal(u.base_profit_w);
+      const agencyProfit = baseProfitW * (agencyPercent / 100);
+      if (agencyProfit > 0) {
+        await db.query(
+          `INSERT INTO sub_agency_transactions (sub_agency_id, type, amount, notes, cycle_id, member_user_id)
+           VALUES ($1, 'profit', $2, $3, $4, $5)`,
+          [sub_agency_id, agencyProfit, `ربح من مزامنة - مستخدم ${u.member_user_id}`, cycleId, u.member_user_id]
+        );
+      }
+    }
+  }
+}
+
 module.exports = {
   syncAgenciesFromManagementTable,
   calculateCashBoxBalance,
   fetchDeferredBalanceUsers,
-  fetchSheetValuesBatched
+  fetchSheetValuesBatched,
+  recalculateSyncProfitsForCycle,
 };
