@@ -10,6 +10,62 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="/css/tailwind.css">
+  <style>
+    /* Tailwind المُجمَّع لا يضمّ كل مرافقات lg — نُثبّت FAB وشريط الموبايل هنا */
+    @media (max-width: 63.99rem) {
+      #mobileBottomNav {
+        display: grid !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        align-items: end;
+        justify-items: stretch;
+        column-gap: 0;
+      }
+      #mobileBottomNav > a,
+      #mobileBottomNav > .mobile-bottom-nav-fab-wrap {
+        min-width: 0;
+        justify-self: stretch;
+      }
+      #mobileBottomNav > .mobile-bottom-nav-fab-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        padding-bottom: 0.25rem;
+      }
+    }
+    @media (min-width: 64rem) {
+      #quickActionFabDesktop {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        bottom: 2rem;
+        right: calc(260px + 1.25rem);
+        z-index: 1004;
+      }
+      #quickActionMenu {
+        left: auto !important;
+        right: calc(260px + 1rem) !important;
+        bottom: 7.5rem !important;
+        top: auto !important;
+        width: 14rem;
+        max-width: calc(100vw - 260px - 2rem);
+      }
+    }
+    @media (max-width: 63.99rem) {
+      #quickActionFabDesktop {
+        display: none !important;
+      }
+      #quickActionMenu {
+        left: 1rem !important;
+        right: 1rem !important;
+        width: auto !important;
+        max-width: none !important;
+        bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)) !important;
+        top: auto !important;
+      }
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-slate-100 font-[Tajawal] text-slate-800">
 
@@ -211,43 +267,39 @@
   <!-- Toast -->
   <div class="fixed top-5 left-5 z-[9999] flex flex-col gap-2 max-md:left-3 max-md:right-3 max-md:top-[72px]" id="toastContainer"></div>
 
-  <!-- Mobile Bottom Nav + زر + في المنتصف -->
-  <nav id="mobileBottomNav" class="hidden max-lg:flex fixed bottom-0 left-0 right-0 min-h-[65px] bg-white border-t border-slate-200 items-end z-[999] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom,0)] px-1 pt-1">
-    <div class="flex flex-1 justify-evenly items-end pb-2 min-w-0">
-      <a href="/dashboard" class="flex flex-col items-center gap-0.5 text-[0.65rem] font-medium py-1 px-1 rounded-lg transition-all duration-300 <%= page === 'home' ? 'text-indigo-600' : 'text-slate-400' %>">
-        <i class="fas fa-home text-lg"></i>
-        <span>الرئيسية</span>
-      </a>
-      <a href="/sheet" class="flex flex-col items-center gap-0.5 text-[0.65rem] font-medium py-1 px-1 rounded-lg transition-all duration-300 <%= page === 'sheet' ? 'text-indigo-600' : 'text-slate-400' %>">
-        <i class="fas fa-file-excel text-lg"></i>
-        <span>Sheet</span>
-      </a>
-    </div>
-    <div class="flex flex-col items-center justify-end shrink-0 w-[3.25rem] px-0.5 pb-1">
+  <!-- Mobile Bottom Nav: شبكة 5 أعمدة متساوية + زر + في المنتصف -->
+  <nav id="mobileBottomNav" class="hidden max-lg:flex fixed bottom-0 left-0 right-0 min-h-[65px] bg-white border-t border-slate-200 items-end z-[999] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom,0)] px-0.5 pt-1">
+    <a href="/dashboard" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'home' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-home text-lg"></i>
+      <span class="truncate max-w-full">الرئيسية</span>
+    </a>
+    <a href="/sheet" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'sheet' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-file-excel text-lg"></i>
+      <span class="truncate max-w-full">Sheet</span>
+    </a>
+    <div class="mobile-bottom-nav-fab-wrap relative">
       <button type="button" id="quickActionFabMobile" class="w-12 h-12 rounded-full bg-indigo-600 text-white shadow-lg border-4 border-white -mt-5 flex items-center justify-center active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" aria-haspopup="true" aria-expanded="false" aria-label="إجراء سريع">
         <i class="fas fa-plus text-xl"></i>
       </button>
     </div>
-    <div class="flex flex-1 justify-evenly items-end pb-2 min-w-0">
-      <a href="/clients" class="flex flex-col items-center gap-0.5 text-[0.65rem] font-medium py-1 px-1 rounded-lg transition-all duration-300 <%= page === 'clients' ? 'text-indigo-600' : 'text-slate-400' %>">
-        <i class="fas fa-users text-lg"></i>
-        <span>العملاء</span>
-      </a>
-      <a href="/search" class="flex flex-col items-center gap-0.5 text-[0.65rem] font-medium py-1 px-1 rounded-lg transition-all duration-300 <%= page === 'search' ? 'text-indigo-600' : 'text-slate-400' %>">
-        <i class="fas fa-search text-lg"></i>
-        <span>البحث</span>
-      </a>
-    </div>
+    <a href="/clients" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'clients' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-users text-lg"></i>
+      <span class="truncate max-w-full">العملاء</span>
+    </a>
+    <a href="/search" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'search' ? 'text-indigo-600' : 'text-slate-400' %>">
+      <i class="fas fa-search text-lg"></i>
+      <span class="truncate max-w-full">البحث</span>
+    </a>
   </nav>
 
-  <!-- زر + ثابت يمين الشاشة (لابتوب فقط) -->
-  <button type="button" id="quickActionFabDesktop" class="hidden lg:flex fixed bottom-8 right-8 z-[998] w-14 h-14 rounded-full bg-indigo-600 text-white shadow-xl border-4 border-white items-center justify-center active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" aria-haspopup="true" aria-expanded="false" aria-label="إجراء سريع">
+  <!-- زر + بجانب منطقة المحتوى (يسار الشريط الجانبي) — يظهر على الشاشات ≥64rem عبر style في الـ head -->
+  <button type="button" id="quickActionFabDesktop" class="hidden w-14 h-14 rounded-full bg-indigo-600 text-white shadow-xl border-4 border-white active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" aria-haspopup="true" aria-expanded="false" aria-label="إجراء سريع">
     <i class="fas fa-plus text-2xl"></i>
   </button>
 
   <!-- خلفية + قائمة الإجراءات السريعة -->
   <div id="quickActionBackdrop" class="hidden fixed inset-0 bg-slate-900/40 z-[1002] backdrop-blur-[1px]" aria-hidden="true"></div>
-  <div id="quickActionMenu" class="hidden fixed z-[1003] left-4 right-4 max-lg:bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:left-auto lg:right-8 lg:bottom-[7.5rem] lg:w-56 rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden" role="menu" aria-label="خيارات سريعة">
+  <div id="quickActionMenu" class="hidden fixed z-[1003] rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden" role="menu" aria-label="خيارات سريعة">
     <button type="button" class="quick-action-item w-full flex items-center gap-3 px-4 py-3.5 text-right text-sm font-semibold text-slate-800 hover:bg-slate-50 border-b border-slate-100 transition-colors" data-quick-type="صادر" role="menuitem">
       <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-600"><i class="fas fa-upload"></i></span>
       صادر
