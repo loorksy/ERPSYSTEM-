@@ -258,16 +258,22 @@ function initDate() {
   if (el) el.textContent = new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-/** زر + (موبايل: وسط الشريط — لابتوب: يسار الشاشة) + قائمة صادر / وارد / مرتجع */
+/** زر + شعاعي (صادر / وارد / مرتجع) — موبايل + لابتوب */
 function initQuickActionFab() {
   var backdrop = document.getElementById('quickActionBackdrop');
-  var menu = document.getElementById('quickActionMenu');
+  var radialM = document.getElementById('quickActionRadialMobile');
+  var radialD = document.getElementById('quickActionRadialDesktop');
   var fabM = document.getElementById('quickActionFabMobile');
   var fabD = document.getElementById('quickActionFabDesktop');
-  if (!menu || !backdrop) return;
+  if (!backdrop) return;
 
   var closeTimer = null;
   var PANEL_MS = 260;
+
+  function isOpen() {
+    return (radialM && radialM.classList.contains('quick-action-radial--open')) ||
+      (radialD && radialD.classList.contains('quick-action-radial--open'));
+  }
 
   function triggerFabPress(btn) {
     if (!btn || !btn.classList.contains('quick-action-fab')) return;
@@ -286,24 +292,27 @@ function initQuickActionFab() {
       clearTimeout(closeTimer);
       closeTimer = null;
     }
+    [radialM, radialD].forEach(function (el) {
+      if (!el) return;
+      if (open) el.classList.add('quick-action-radial--open');
+      else el.classList.remove('quick-action-radial--open');
+    });
+    document.querySelectorAll('.quick-action-radial-subs').forEach(function (el) {
+      el.setAttribute('aria-hidden', open ? 'false' : 'true');
+    });
     if (open) {
       backdrop.classList.remove('hidden');
-      menu.classList.remove('hidden');
       backdrop.classList.remove('quick-action-panel-open');
-      menu.classList.remove('quick-action-panel-open');
       document.body.style.overflow = 'hidden';
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           backdrop.classList.add('quick-action-panel-open');
-          menu.classList.add('quick-action-panel-open');
         });
       });
     } else {
       backdrop.classList.remove('quick-action-panel-open');
-      menu.classList.remove('quick-action-panel-open');
       closeTimer = setTimeout(function () {
         backdrop.classList.add('hidden');
-        menu.classList.add('hidden');
         closeTimer = null;
       }, PANEL_MS);
       document.body.style.overflow = '';
@@ -314,18 +323,18 @@ function initQuickActionFab() {
   }
 
   function toggle(fromBtn) {
-    var isOpen = menu.classList.contains('quick-action-panel-open');
-    if (!isOpen && fromBtn) triggerFabPress(fromBtn);
-    setOpen(!isOpen);
+    var open = isOpen();
+    if (!open && fromBtn) triggerFabPress(fromBtn);
+    setOpen(!open);
   }
 
   if (fabM) fabM.addEventListener('click', function (e) { e.stopPropagation(); toggle(fabM); });
   if (fabD) fabD.addEventListener('click', function (e) { e.stopPropagation(); toggle(fabD); });
   backdrop.addEventListener('click', function () { setOpen(false); });
-  menu.addEventListener('click', function (e) { e.stopPropagation(); });
 
-  menu.querySelectorAll('.quick-action-item').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+  document.querySelectorAll('.quick-action-radial-sub').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
       var t = this.getAttribute('data-quick-type') || '';
       if (typeof window.showToast === 'function') {
         window.showToast('تم اختيار: ' + t + ' — يمكن ربطه لاحقاً بالصفحة المناسبة.', 'success');
@@ -338,7 +347,7 @@ function initQuickActionFab() {
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && menu && !menu.classList.contains('hidden')) setOpen(false);
+    if (e.key === 'Escape' && isOpen()) setOpen(false);
   });
 }
 
