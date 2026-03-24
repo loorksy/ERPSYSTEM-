@@ -63,17 +63,17 @@
     apiCall('/api/shipping/carriers').then(function(res) {
       var list = res.list || [];
       if (list.length === 0) {
-        box.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-16 px-6 rounded-3xl border border-dashed border-slate-200/90 bg-gradient-to-b from-slate-50/80 to-white">' +
-          '<div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100 text-slate-500 shadow-inner"><i class="fas fa-truck-moving text-2xl"></i></div>' +
+        box.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-16 px-6 rounded-3xl border border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white">' +
+          '<div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 shadow-inner"><i class="fas fa-truck-moving text-2xl"></i></div>' +
           '<p class="text-slate-700 font-semibold mb-1">لا توجد وكالات بعد</p>' +
           '<p class="text-sm text-slate-500 text-center max-w-sm">أضف وكالة شحن لعرض الرصيد وسجل الحركات من الزر أعلاه.</p></div>';
         return;
       }
       box.innerHTML = list.map(function(c) {
-        return '<div class="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-white to-indigo-50/30 p-5 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-200/70 hover:-translate-y-0.5 transition-all duration-300" onclick="shippingOpenCarrierDetail(' + c.id + ')">' +
-          '<div class="absolute top-0 left-0 h-full w-1 rounded-r-full bg-gradient-to-b from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>' +
+        return '<div class="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 cursor-pointer shadow-sm hover:shadow-[0_12px_32px_rgba(79,70,229,0.12)] hover:border-indigo-200 hover:-translate-y-0.5 transition-all duration-300" onclick="shippingOpenCarrierDetail(' + c.id + ')">' +
+          '<div class="absolute top-0 left-0 h-full w-1 rounded-r-full bg-gradient-to-b from-indigo-600 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>' +
           '<div class="flex items-start gap-4">' +
-          '<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30"><i class="fas fa-truck text-lg"></i></div>' +
+          '<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-[0_6px_18px_rgba(79,70,229,0.35)]"><i class="fas fa-truck text-lg"></i></div>' +
           '<div class="min-w-0 flex-1">' +
           '<h5 class="font-bold text-slate-800 text-base leading-snug">' + (c.name || '') + '</h5>' +
           '<p class="text-xs text-slate-500 mt-1.5 flex items-center gap-1"><i class="fas fa-receipt text-[10px]"></i> عرض السجل والحركات</p></div>' +
@@ -82,8 +82,8 @@
     });
   }
 
-  var SHIP_TAB_INACTIVE = 'shipping-tab-link flex flex-1 min-w-0 items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold text-slate-600 bg-transparent hover:bg-white/80 transition-all duration-200';
-  var SHIP_TAB_ACTIVE = 'shipping-tab-link flex flex-1 min-w-0 items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-l from-indigo-600 via-violet-600 to-purple-600 shadow-md shadow-indigo-500/25 transition-all duration-200';
+  var SHIP_TAB_INACTIVE = 'shipping-tab-link flex flex-1 min-w-0 items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold text-slate-600 bg-transparent hover:bg-white transition-all duration-200';
+  var SHIP_TAB_ACTIVE = 'shipping-tab-link flex flex-1 min-w-0 items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-br from-indigo-600 to-indigo-700 shadow-[0_4px_16px_rgba(79,70,229,0.28)] transition-all duration-200';
 
   window.switchShippingTab = function(btn, tabId) {
     var card = document.querySelector('[data-tabs-container="shipping"]');
