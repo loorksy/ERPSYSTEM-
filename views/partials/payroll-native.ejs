@@ -1,0 +1,154 @@
+<div id="payrollNativeRoot" class="max-w-[1600px] mx-auto space-y-4 pb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800">تدقيق الرواتب</h1>
+      <p class="text-sm text-slate-500 mt-1">رفع وتحرير جداول الإدارة والوكيل ومعلومات المستخدمين على السيرفر، ثم التدقيق والتصدير إلى Google.</p>
+      <a href="/payroll-google" class="inline-flex items-center gap-1.5 mt-2 text-sm text-indigo-600 hover:underline">
+        <i class="fab fa-google-drive"></i> فتح النسخة المرتبطة بجداول Google
+      </a>
+    </div>
+  </div>
+
+  <div id="pnListView" class="space-y-4">
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
+      <h2 class="font-semibold text-slate-800 mb-3">دورة جديدة</h2>
+      <form id="pnCreateForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">اسم الدورة</label>
+          <input type="text" id="pnNewName" name="name" class="w-full max-w-md py-2.5 px-3 border border-slate-200 rounded-xl text-sm" placeholder="مثال: 15.03" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">ملف الإدارة (.xlsx)</label>
+            <input type="file" id="pnFileMgmt" name="management" accept=".xlsx,.xls" class="block w-full text-sm text-slate-600" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">ملف الوكيل (.xlsx)</label>
+            <input type="file" id="pnFileAgent" name="agent" accept=".xlsx,.xls" class="block w-full text-sm text-slate-600" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">معلومات المستخدمين (.xlsx)</label>
+            <input type="file" id="pnFileUser" name="userInfo" accept=".xlsx,.xls" class="block w-full text-sm text-slate-600" />
+          </div>
+        </div>
+        <button type="submit" id="pnCreateBtn" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+          <i class="fas fa-plus"></i> إنشاء الدورة
+        </button>
+      </form>
+    </section>
+
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100 font-semibold text-slate-800">الدورات المحفوظة</div>
+      <div id="pnListBody" class="p-4 text-sm text-slate-500">جاري التحميل...</div>
+    </section>
+  </div>
+
+  <div id="pnEditorView" class="hidden space-y-4">
+    <div class="flex flex-col lg:flex-row lg:items-end gap-3 flex-wrap">
+      <button type="button" id="pnBackBtn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm hover:bg-slate-50 self-start">
+        <i class="fas fa-arrow-right"></i> الرجوع للقائمة
+      </button>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">اسم الدورة</label>
+        <input type="text" id="pnCycleName" class="flex-1 min-w-[200px] py-2 px-3 border border-slate-200 rounded-xl text-sm" />
+        <button type="button" id="pnSaveNameBtn" class="px-4 py-2 rounded-xl bg-slate-700 text-white text-sm font-medium">حفظ الاسم</button>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <button type="button" id="pnSaveSheetsBtn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold">
+        <i class="fas fa-save"></i> حفظ الجداول
+      </button>
+      <button type="button" id="pnAuditBtn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold">
+        <i class="fas fa-check-double"></i> تدقيق على السيرفر
+      </button>
+      <button type="button" id="pnExportMgmt" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-300 text-emerald-800 text-sm font-medium bg-emerald-50">
+        <i class="fab fa-google-drive"></i> تصدير الإدارة
+      </button>
+      <button type="button" id="pnExportAgent" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-300 text-emerald-800 text-sm font-medium bg-emerald-50">
+        <i class="fab fa-google-drive"></i> تصدير الوكيل
+      </button>
+      <button type="button" id="pnExportUser" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-300 text-emerald-800 text-sm font-medium bg-emerald-50">
+        <i class="fab fa-google-drive"></i> تصدير معلومات المستخدمين
+      </button>
+    </div>
+
+    <details class="bg-white rounded-2xl border border-slate-100 p-4 md:p-5 group">
+      <summary class="font-semibold text-slate-800 cursor-pointer list-none flex items-center justify-between">
+        <span>إعدادات التدقيق (الأعمدة والخصم والألوان)</span>
+        <i class="fas fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+      </summary>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">ورقة معلومات المستخدمين (رقم الفهرس من 0)</label>
+          <input type="number" id="pnUserInfoSheetIdx" min="0" value="0" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">عمود رقم المستخدم — معلومات المستخدمين</label>
+          <select id="pnColUiUid" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm pn-col-select"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">عمود الاسم — معلومات المستخدمين</label>
+          <select id="pnColUiTitle" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm pn-col-select"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">عمود الراتب — معلومات المستخدمين</label>
+          <select id="pnColUiSal" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm pn-col-select"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">عمود رقم المستخدم — الإدارة</label>
+          <select id="pnColMgmt" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm pn-col-select"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">عمود رقم المستخدم — الوكيل</label>
+          <select id="pnColAgentUid" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm pn-col-select"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">عمود الراتب — الوكيل</label>
+          <select id="pnColAgentSal" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm pn-col-select"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">نسبة الخصم %</label>
+          <input type="number" id="pnDiscount" min="0" max="100" step="0.01" value="0" class="w-full py-2 px-3 border border-slate-200 rounded-lg text-sm" />
+        </div>
+        <div class="flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="block text-xs font-medium text-slate-600 mb-1">لون الوكيل</label>
+            <input type="color" id="pnColorAgent" value="#3b82f6" class="h-10 w-full rounded-lg border border-slate-200" />
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs font-medium text-slate-600 mb-1">لون الإدارة</label>
+            <input type="color" id="pnColorMgmt" value="#10b981" class="h-10 w-full rounded-lg border border-slate-200" />
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+      <button type="button" class="pn-main-tab px-4 py-2 rounded-xl text-sm font-medium bg-indigo-100 text-indigo-800" data-main="management">جدول الإدارة</button>
+      <button type="button" class="pn-main-tab px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100" data-main="agent">جدول الوكيل</button>
+      <button type="button" class="pn-main-tab px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100" data-main="userInfo">معلومات المستخدمين</button>
+    </div>
+
+    <div id="pnSheetTabsWrap" class="flex flex-wrap gap-1 items-center min-h-[40px]"></div>
+
+    <div class="flex flex-wrap gap-2 mb-2">
+      <button type="button" id="pnAddSheetBtn" class="text-sm px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-slate-600 hover:bg-slate-50">
+        <i class="fas fa-plus"></i> ورقة جديدة
+      </button>
+      <label class="text-sm px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 self-center">
+        <i class="fas fa-file-upload"></i> استبدال الملف
+        <input type="file" id="pnReplaceFile" accept=".xlsx,.xls" class="hidden" />
+      </label>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+      <div id="pnHotContainer" class="w-full overflow-x-auto min-h-[320px] p-2"></div>
+    </div>
+
+    <section id="pnResultsSection" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hidden">
+      <div class="px-4 py-3 border-b border-slate-100 font-semibold text-slate-800">نتائج التدقيق</div>
+      <div id="pnResultsBody" class="p-4 text-sm text-slate-600"></div>
+    </section>
+  </div>
+</div>

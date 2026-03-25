@@ -104,9 +104,9 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'", "ws:", "wss:", "https://cdnjs.cloudflare.com"],
@@ -160,6 +160,7 @@ const expensesRoutes = require('./routes/expenses');
 const adminBrokerageRoutes = require('./routes/adminBrokerage');
 const payablesRoutes = require('./routes/payables');
 const quickActionRoutes = require('./routes/quickAction');
+const payrollNativeRoutes = require('./routes/payrollNative');
 
 app.use('/', authRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -181,6 +182,7 @@ app.use('/api/expenses', expensesRoutes);
 app.use('/api/admin-brokerage', adminBrokerageRoutes);
 app.use('/api/payables', payablesRoutes);
 app.use('/api/quick-action', quickActionRoutes);
+app.use('/api/payroll-native', payrollNativeRoutes);
 app.use('/ai', aiRoutes(io));
 app.use('/', pagesRoutes);
 

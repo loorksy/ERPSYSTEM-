@@ -125,6 +125,57 @@ CREATE TABLE IF NOT EXISTS payroll_user_audit_cache (
   PRIMARY KEY (user_id, cycle_id, member_user_id)
 );
 
+/** تدقيق الرواتب المحلي — دورات مرفوعة كملفات، جدولان (إدارة / وكيل) + معلومات المستخدمين */
+CREATE TABLE IF NOT EXISTS payroll_native_cycles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS payroll_native_management_workbook (
+  cycle_id INTEGER PRIMARY KEY REFERENCES payroll_native_cycles(id) ON DELETE CASCADE,
+  sheets_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS payroll_native_agent_workbook (
+  cycle_id INTEGER PRIMARY KEY REFERENCES payroll_native_cycles(id) ON DELETE CASCADE,
+  sheets_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS payroll_native_userinfo_workbook (
+  cycle_id INTEGER PRIMARY KEY REFERENCES payroll_native_cycles(id) ON DELETE CASCADE,
+  sheets_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS payroll_native_settings (
+  user_id INTEGER NOT NULL,
+  native_cycle_id INTEGER NOT NULL,
+  mgmt_user_id_col TEXT DEFAULT 'A',
+  agent_user_id_col TEXT DEFAULT 'A',
+  agent_salary_col TEXT DEFAULT 'D',
+  user_info_user_id_col TEXT DEFAULT 'C',
+  user_info_title_col TEXT DEFAULT 'D',
+  user_info_salary_col TEXT DEFAULT 'L',
+  user_info_sheet_index INTEGER DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, native_cycle_id),
+  FOREIGN KEY (native_cycle_id) REFERENCES payroll_native_cycles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS payroll_native_user_audit (
+  user_id INTEGER NOT NULL,
+  native_cycle_id INTEGER NOT NULL,
+  member_user_id TEXT NOT NULL,
+  audit_status TEXT DEFAULT 'غير مدقق',
+  audit_source TEXT,
+  details_json TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, native_cycle_id, member_user_id),
+  FOREIGN KEY (native_cycle_id) REFERENCES payroll_native_cycles(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS shipping_approved (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
