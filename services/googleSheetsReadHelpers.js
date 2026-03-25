@@ -1,5 +1,6 @@
 /**
- * قراءة Google Sheets مع تخفيف أخطاء 429 (حد الطلبات لكل مستخدم/دقيقة).
+ * قراءة/كتابة Google Sheets مع تخفيف أخطاء 429 (حد الطلبات لكل مستخدم/دقيقة).
+ * ملاحظة: قد تُحتسب كل نطاق في batchGet كقراءة منفصلة — لذلك نستخدم دفعات صغيرة + تأخير بينها.
  */
 
 const SHEET_BATCH_ROWS = 5000;
@@ -9,8 +10,16 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function envInt(name, def) {
+  const v = process.env[name];
+  if (v == null || v === '') return def;
+  const n = parseInt(String(v), 10);
+  return !isNaN(n) && n >= 0 ? n : def;
+}
+
+/** قراءة وكتابة — نفس منطق إعادة المحاولة */
 /** @param {() => Promise<any>} fn */
-async function withSheetsRetry(fn, { maxAttempts = 8 } = {}) {
+async function withSheetsRetry(fn, { maxAttempts = 12 } = {}) {
   let lastErr;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -19,14 +28,18 @@ async function withSheetsRetry(fn, { maxAttempts = 8 } = {}) {
       lastErr = e;
       const status = e.code || e.response?.status;
       const reason = e.errors?.[0]?.reason;
-      const is429 = status === 429 || reason === 'rateLimitExceeded' || reason === 'userRateLimitExceeded';
+      const msg = String(e.message || '');
+      const is429 = status === 429
+        || reason === 'rateLimitExceeded'
+        || reason === 'userRateLimitExceeded'
+        || /quota exceeded|429/i.test(msg);
       if (is429) {
         const ra = e.response?.headers?.['retry-after'];
         const retryAfterSec = ra != null ? parseInt(String(ra), 10) : NaN;
         const backoffSec = !isNaN(retryAfterSec) && retryAfterSec > 0
           ? retryAfterSec
-          : Math.min(90, 3 * (2 ** attempt));
-        const waitMs = backoffSec * 1000 + Math.floor(Math.random() * 400);
+          : Math.min(120, Math.max(5, 4 * (2 ** attempt)));
+        const waitMs = backoffSec * 1000 + Math.floor(Math.random() * 500);
         console.warn(`[GoogleSheets] 429 — انتظار ${Math.round(waitMs / 1000)}s ثم إعادة المحاولة (${attempt + 1}/${maxAttempts})`);
         await sleep(waitMs);
         continue;
@@ -70,15 +83,19 @@ async function fetchSheetValuesBatched(sheets, spreadsheetId, title, startRow = 
 }
 
 /**
- * جلب أول 5000 صف من عدة أوراق في طلب(ات) batchGet — يقلّل طلبات القراءة من N إلى ~ceil(N/chunkSize).
+ * جلب أول 5000 صف من عدة أوراق عبر batchGet على دفعات صغيرة + تأخير بين الدفعات
+ * (تخفيف تجاوز Read requests per minute).
  * @returns {Map<string, any[][]>}
  */
-async function batchGetSheetsFirstChunk(sheets, spreadsheetId, sheetNames, chunkSize = 35) {
+async function batchGetSheetsFirstChunk(sheets, spreadsheetId, sheetNames, chunkSize, delayMsBetweenChunks) {
   const map = new Map();
   if (!sheetNames || !sheetNames.length) return map;
 
-  for (let i = 0; i < sheetNames.length; i += chunkSize) {
-    const chunk = sheetNames.slice(i, i + chunkSize);
+  const size = chunkSize != null ? chunkSize : envInt('SHEETS_BATCHGET_CHUNK_SIZE', 10);
+  const delayMs = delayMsBetweenChunks != null ? delayMsBetweenChunks : envInt('SHEETS_BATCHGET_CHUNK_DELAY_MS', 2500);
+
+  for (let i = 0; i < sheetNames.length; i += size) {
+    const chunk = sheetNames.slice(i, i + size);
     const ranges = chunk.map((name) => rangeA1ZZ(name, 1, SHEET_BATCH_ROWS));
     const res = await withSheetsRetry(() =>
       sheets.spreadsheets.values.batchGet({
@@ -92,14 +109,40 @@ async function batchGetSheetsFirstChunk(sheets, spreadsheetId, sheetNames, chunk
       const vrj = vr[j];
       map.set(name, (vrj && vrj.values) ? vrj.values : []);
     }
+    if (i + size < sheetNames.length && delayMs > 0) {
+      await sleep(delayMs);
+    }
   }
   return map;
+}
+
+/**
+ * تنفيذ batchUpdate على شكل عدة طلبات صغيرة (تخفيف Write requests per minute عند تلوين صفوف كثيرة).
+ */
+async function batchUpdateRequestsInChunks(sheets, spreadsheetId, requests, options = {}) {
+  const chunkSize = options.chunkSize != null ? options.chunkSize : envInt('SHEETS_BATCHUPDATE_CHUNK_SIZE', 8);
+  const delayMs = options.delayMs != null ? options.delayMs : envInt('SHEETS_BATCHUPDATE_CHUNK_DELAY_MS', 1500);
+  if (!requests || !requests.length) return;
+  for (let i = 0; i < requests.length; i += chunkSize) {
+    const chunk = requests.slice(i, i + chunkSize);
+    await withSheetsRetry(() =>
+      sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests: chunk },
+      })
+    );
+    if (i + chunkSize < requests.length && delayMs > 0) {
+      await sleep(delayMs);
+    }
+  }
 }
 
 module.exports = {
   withSheetsRetry,
   fetchSheetValuesBatched,
   batchGetSheetsFirstChunk,
+  batchUpdateRequestsInChunks,
   escapeSheetTitleForRange,
   SHEET_BATCH_ROWS,
+  sleep,
 };

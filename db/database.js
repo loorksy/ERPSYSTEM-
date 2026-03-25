@@ -65,6 +65,25 @@ async function ensurePgSchema() {
   }
 }
 
+/** ترحيل أعمدة لقطات جدول معلومات المستخدمين (تدقيق سيرفر فقط) */
+async function ensureFinancialCyclesUserInfoColumns() {
+  if (!pgPool) return;
+  const stmts = [
+    'ALTER TABLE financial_cycles ADD COLUMN IF NOT EXISTS user_info_data TEXT',
+    'ALTER TABLE financial_cycles ADD COLUMN IF NOT EXISTS user_info_sheet_name TEXT',
+    'ALTER TABLE financial_cycles ADD COLUMN IF NOT EXISTS user_info_spreadsheet_id TEXT',
+  ];
+  for (const s of stmts) {
+    try {
+      await pgPool.query(s);
+    } catch (e) {
+      if (!/already exists|duplicate column/i.test(String(e.message))) {
+        console.error('[DB] user_info migration:', e.message);
+      }
+    }
+  }
+}
+
 async function ensureAdminUser() {
   if (!pgPool) return;
   const r = await query('SELECT * FROM users WHERE username = $1', [process.env.ADMIN_USERNAME || 'admin']);
@@ -88,6 +107,7 @@ async function initDatabase() {
     await pgPool.query('SELECT 1');
     console.log('[LorkERP] Using PostgreSQL');
     await ensurePgSchema();
+    await ensureFinancialCyclesUserInfoColumns();
     await ensureAdminUser();
     return getDb();
   }

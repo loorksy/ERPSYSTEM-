@@ -40,7 +40,7 @@
         <i class="fas fa-cogs text-emerald-600"></i>
         خيارات التدقيق
       </h3>
-      <p class="text-sm text-slate-600">اختر جدول <strong>معلومات المستخدمين</strong> من حساب Google، حدد الأعمدة ثم نفّذ التدقيق.</p>
+      <p class="text-sm text-slate-600">اختر جدول <strong>معلومات المستخدمين</strong>، حدد الأعمدة، ثم <strong>مزامنة للتدقيق</strong> (سحب من Google فقط) وبعدها <strong>تدقيق محلي</strong> على السيرفر — أو استخدم <strong>تطبيق على Google</strong> للكتابة في الجداول كما سابقاً.</p>
 
       <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
         <div class="flex-1 min-w-0 sm:min-w-[200px]">
@@ -49,8 +49,14 @@
             <option value="">— جاري التحميل... —</option>
           </select>
         </div>
-        <button type="button" id="payrollExecuteBtn" onclick="payrollExecute()" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] transition-all shrink-0">
-          <i class="fas fa-play"></i> تنفيذ
+        <button type="button" id="payrollSyncAuditBtn" onclick="payrollSyncForAudit()" class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.98] transition-all shrink-0" title="جلب إدارة + وكيل + معلومات المستخدمين وحفظها على السيرفر">
+          <i class="fas fa-cloud-download-alt"></i> مزامنة للتدقيق
+        </button>
+        <button type="button" id="payrollAuditLocalBtn" onclick="payrollAuditLocal()" class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm bg-slate-700 text-white hover:bg-slate-800 active:scale-[0.98] transition-all shrink-0" title="تدقيق على السيرفر دون كتابة على Google">
+          <i class="fas fa-server"></i> تدقيق محلي
+        </button>
+        <button type="button" id="payrollExecuteBtn" onclick="payrollExecute()" class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] transition-all shrink-0" title="كتابة النتائج والألوان في Google">
+          <i class="fas fa-play"></i> تطبيق على Google
         </button>
       </div>
 
@@ -382,6 +388,152 @@ async function payrollLoadSpreadsheetsList() {
     });
   })();
 
+function payrollBuildResultHtml(data) {
+  var s = data.summary || {};
+  var msg = data.message || 'تم';
+  if (data.cycleSynced && msg.indexOf('تمت مزامنة جداول الدورة') === -1) {
+    msg = 'تمت مزامنة جداول الدورة من Google ثم ' + msg;
+  }
+  var html = '';
+  if (data.localOnly) {
+    html += '<p class="text-xs text-slate-500 mb-2"><i class="fas fa-server ml-1"></i> تدقيق على السيرفر فقط — لم تُكتب أي بيانات على Google.</p>';
+  }
+  html += '<p class="font-semibold ' + (data.applied ? 'text-emerald-700' : 'text-amber-700') + ' mb-2">' + msg + '</p>';
+  if (data.agencySync && data.agencySync.success && data.agencySync.agenciesCount > 0) {
+    html += '<p class="text-slate-600 mb-2"><i class="fas fa-check text-emerald-600 ml-1"></i> مزامنة الوكلات الفرعية: ' + data.agencySync.usersCount + ' مستخدم من ' + data.agencySync.agenciesCount + ' وكالة</p>';
+  } else if (data.agencySync && !data.agencySync.success && data.agencySync.error) {
+    html += '<p class="text-amber-600 mb-2"><i class="fas fa-exclamation-triangle ml-1"></i> مزامنة الوكلات الفرعية: ' + (data.agencySync.error || 'فشل') + '</p>';
+  }
+  html += '<ul class="space-y-1 text-slate-600 mb-3">';
+  html += '<li>إجمالي الصفوف: <strong>' + (s.total || 0) + '</strong></li>';
+  html += '<li>سحب وكالة: <strong>' + (s.agent || 0) + '</strong></li>';
+  html += '<li>سحب إدارة: <strong>' + (s.management || 0) + '</strong></li>';
+  html += '<li>غير موجود: <strong>' + (s.notFound || 0) + '</strong></li></ul>';
+  if (data.diagnostic) {
+    var d = data.diagnostic;
+    html += '<div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm space-y-2">';
+    html += '<p class="font-semibold text-amber-800">تشخيص عند عدم التطابق:</p>';
+    html += '<ul class="text-slate-700 space-y-1">';
+    html += '<li>عدد الأرقام الفريدة في <strong>جدول معلومات المستخدمين</strong>: ' + (d.userInfoUniqueCount != null ? d.userInfoUniqueCount : '—') + '</li>';
+    html += '<li>عدد الأرقام الفريدة في <strong>جدول الإدارة</strong> (الدورة): ' + (d.managementUniqueCount != null ? d.managementUniqueCount : '—') + '</li>';
+    html += '<li>عدد الأرقام الفريدة في <strong>جدول الوكيل</strong> (الدورة): ' + (d.agentUniqueCount != null ? d.agentUniqueCount : '—') + '</li>';
+    html += '</ul>';
+    if (d.managementUniqueCount === 0 && d.agentUniqueCount === 0) {
+      html += '<p class="text-amber-700 font-medium mt-2">عمودا الإدارة والوكيل لا يقرآن أرقاماً — غيّر «عمود رقم المستخدم - الإدارة» و«عمود رقم المستخدم - الوكيل» إلى العمود الذي فيه رقم المستخدم فعلياً (B, C, D...).</p>';
+    } else if (d.managementUniqueCount === 0) {
+      html += '<p class="text-amber-700 font-medium mt-2"><strong>المشكلة من جدول الإدارة:</strong> لم يُقرأ أي رقم من ورقة الإدارة (العدد 0). غيّر «عمود رقم المستخدم - الإدارة» إلى العمود الذي فيه رقم المستخدم فعلياً في ورقة الإدارة (جرّب B ثم C ثم D…). الوكيل يقرأ بشكل صحيح.</p>';
+    } else if (d.agentUniqueCount === 0) {
+      html += '<p class="text-amber-700 font-medium mt-2"><strong>المشكلة من جدول الوكيل:</strong> لم يُقرأ أي رقم من ورقة الوكيل. غيّر «عمود رقم المستخدم - الوكيل» إلى العمود الصحيح (B, C, D…).</p>';
+    }
+    if (d.sampleCheck && d.sampleCheck.length) {
+      html += '<p class="font-medium text-slate-700 mt-2">تحقق من أول 5 أرقام من جدول المستخدمين:</p><ul class="space-y-0.5">';
+      d.sampleCheck.forEach(function(sc) {
+        html += '<li><code>' + sc.userId + '</code>: في الإدارة ' + (sc.inMgmt ? 'نعم' : 'لا') + '، في الوكيل ' + (sc.inAgent ? 'نعم' : 'لا') + '</li>';
+      });
+      html += '</ul>';
+    }
+    html += '</div>';
+  }
+  if (data.sampleUserIds && data.sampleUserIds.length) {
+    html += '<div class="mt-3 p-3 bg-slate-50 rounded-xl text-sm space-y-2">';
+    html += '<p class="font-medium text-slate-700">عينة أرقام للمقارنة (للمراجعة عند عدم التطابق):</p>';
+    html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول معلومات المستخدمين:</span> <code class="bg-white px-1 rounded">' + (data.sampleUserIds.slice(0, 10).join(', ')) + (data.sampleUserIds.length > 10 ? '...' : '') + '</code></p>';
+    if (data.sampleMgmtIds && data.sampleMgmtIds.length) {
+      html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول الإدارة (الدورة):</span> <code class="bg-white px-1 rounded">' + (data.sampleMgmtIds.slice(0, 10).join(', ')) + (data.sampleMgmtIds.length > 10 ? '...' : '') + '</code></p>';
+    }
+    if (data.sampleAgentIds && data.sampleAgentIds.length) {
+      html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول الوكيل (الدورة):</span> <code class="bg-white px-1 rounded">' + (data.sampleAgentIds.slice(0, 10).join(', ')) + (data.sampleAgentIds.length > 10 ? '...' : '') + '</code></p>';
+    }
+    html += '</div>';
+  }
+  if (data.spreadsheetUrl) {
+    html += '<p class="text-sm mt-3"><a href="' + data.spreadsheetUrl + '" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">فتح جدول معلومات المستخدمين في Google ←</a></p>';
+  }
+  return html;
+}
+
+async function payrollSyncForAudit() {
+  var cycleId = document.getElementById('payrollCycleSelect').value;
+  var spreadsheetId = (document.getElementById('payrollSpreadsheetSelect').value || '').trim();
+  var userInfoSheetName = (document.getElementById('payrollUserInfoSheetSelect') && document.getElementById('payrollUserInfoSheetSelect').value) || '';
+  if (!cycleId || !spreadsheetId) {
+    if (typeof showToast === 'function') showToast('اختر الدورة وجدول معلومات المستخدمين أولاً', 'error');
+    return;
+  }
+  var btn = document.getElementById('payrollSyncAuditBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري السحب...'; }
+  try {
+    var res = await fetch('/api/sheet/cycles/' + cycleId + '/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userInfoSpreadsheetId: spreadsheetId,
+        userInfoSheetName: userInfoSheetName || undefined
+      })
+    });
+    var data = await res.json();
+    if (data.success) {
+      var t = data.message || 'تم';
+      if (data.detail) t += ' — ' + data.detail;
+      if (typeof showToast === 'function') showToast(t, 'success');
+    } else {
+      if (typeof showToast === 'function') showToast(data.message || 'فشل المزامنة', 'error');
+    }
+  } catch (_) {
+    if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> مزامنة للتدقيق'; }
+}
+
+async function payrollAuditLocal() {
+  var cycleId = document.getElementById('payrollCycleSelect').value;
+  if (!cycleId) {
+    if (typeof showToast === 'function') showToast('اختر الدورة المالية أولاً', 'error');
+    return;
+  }
+  var btn = document.getElementById('payrollAuditLocalBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التدقيق...'; }
+  var discountRate = document.getElementById('payrollDiscountRate').value;
+  var agentColor = document.getElementById('payrollAgentColor').value;
+  var managementColor = document.getElementById('payrollMgmtColor').value;
+  var userInfoUserIdCol = (document.getElementById('payrollUserInfoUserIdCol') && document.getElementById('payrollUserInfoUserIdCol').value) || 'C';
+  var userInfoTitleCol = (document.getElementById('payrollUserInfoTitleCol') && document.getElementById('payrollUserInfoTitleCol').value) || 'D';
+  var userInfoSalaryCol = (document.getElementById('payrollUserInfoSalaryCol') && document.getElementById('payrollUserInfoSalaryCol').value) || 'L';
+  var cycleMgmtUserIdCol = (document.getElementById('payrollCycleMgmtUserIdCol') && document.getElementById('payrollCycleMgmtUserIdCol').value) || 'A';
+  var cycleAgentUserIdCol = (document.getElementById('payrollCycleAgentUserIdCol') && document.getElementById('payrollCycleAgentUserIdCol').value) || 'A';
+  var cycleAgentSalaryCol = (document.getElementById('payrollCycleAgentSalaryCol') && document.getElementById('payrollCycleAgentSalaryCol').value) || 'D';
+  try {
+    var res = await fetch('/api/sheet/payroll-audit-local', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cycleId: Number(cycleId),
+        discountRate: Number(discountRate) || 0,
+        agentColor: agentColor || '#3b82f6',
+        managementColor: managementColor || '#10b981',
+        userInfoUserIdCol: userInfoUserIdCol,
+        userInfoTitleCol: userInfoTitleCol,
+        userInfoSalaryCol: userInfoSalaryCol,
+        cycleMgmtUserIdCol: cycleMgmtUserIdCol,
+        cycleAgentUserIdCol: cycleAgentUserIdCol,
+        cycleAgentSalaryCol: cycleAgentSalaryCol
+      })
+    });
+    var data = await res.json();
+    if (data.success) {
+      var html = payrollBuildResultHtml(data);
+      document.getElementById('payrollResultsContent').innerHTML = html;
+      document.getElementById('payrollResultsSection').classList.remove('hidden');
+      if (typeof showToast === 'function') showToast(data.message || 'تم', data.applied ? 'success' : 'warning');
+    } else {
+      if (typeof showToast === 'function') showToast(data.message || 'فشل', 'error');
+    }
+  } catch (_) {
+    if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-server"></i> تدقيق محلي'; }
+}
+
 async function payrollExecute() {
   var cycleId = document.getElementById('payrollCycleSelect').value;
   var spreadsheetId = (document.getElementById('payrollSpreadsheetSelect').value || '').trim();
@@ -391,7 +543,7 @@ async function payrollExecute() {
   }
   var btn = document.getElementById('payrollExecuteBtn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التنفيذ...';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التطبيق...';
   var discountRate = document.getElementById('payrollDiscountRate').value;
   var agentColor = document.getElementById('payrollAgentColor').value;
   var managementColor = document.getElementById('payrollMgmtColor').value;
@@ -425,63 +577,14 @@ async function payrollExecute() {
     });
     var data = await res.json();
     if (data.success) {
-      var s = data.summary || {};
-      var msg = data.message || 'تم تنفيذ التدقيق';
-      if (data.cycleSynced) msg = 'تمت مزامنة جداول الدورة من Google ثم ' + msg;
-      var html = '<p class="font-semibold ' + (data.applied ? 'text-emerald-700' : 'text-amber-700') + ' mb-2">' + msg + '</p>';
-      if (data.agencySync && data.agencySync.success && data.agencySync.agenciesCount > 0) {
-        html += '<p class="text-slate-600 mb-2"><i class="fas fa-check text-emerald-600 ml-1"></i> مزامنة الوكلات الفرعية: ' + data.agencySync.usersCount + ' مستخدم من ' + data.agencySync.agenciesCount + ' وكالة</p>';
-      } else if (data.agencySync && !data.agencySync.success && data.agencySync.error) {
-        html += '<p class="text-amber-600 mb-2"><i class="fas fa-exclamation-triangle ml-1"></i> مزامنة الوكلات الفرعية: ' + (data.agencySync.error || 'فشل') + '</p>';
-      }
-      html += '<ul class="space-y-1 text-slate-600 mb-3">';
-      html += '<li>إجمالي الصفوف: <strong>' + (s.total || 0) + '</strong></li>';
-      html += '<li>سحب وكالة: <strong>' + (s.agent || 0) + '</strong></li>';
-      html += '<li>سحب إدارة: <strong>' + (s.management || 0) + '</strong></li>';
-      html += '<li>غير موجود: <strong>' + (s.notFound || 0) + '</strong></li></ul>';
-      if (data.diagnostic) {
-        var d = data.diagnostic;
-        html += '<div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm space-y-2">';
-        html += '<p class="font-semibold text-amber-800">تشخيص عند عدم التطابق:</p>';
-        html += '<ul class="text-slate-700 space-y-1">';
-        html += '<li>عدد الأرقام الفريدة في <strong>جدول معلومات المستخدمين</strong>: ' + (d.userInfoUniqueCount != null ? d.userInfoUniqueCount : '—') + '</li>';
-        html += '<li>عدد الأرقام الفريدة في <strong>جدول الإدارة</strong> (الدورة): ' + (d.managementUniqueCount != null ? d.managementUniqueCount : '—') + '</li>';
-        html += '<li>عدد الأرقام الفريدة في <strong>جدول الوكيل</strong> (الدورة): ' + (d.agentUniqueCount != null ? d.agentUniqueCount : '—') + '</li>';
-        html += '</ul>';
-        if (d.managementUniqueCount === 0 && d.agentUniqueCount === 0) {
-          html += '<p class="text-amber-700 font-medium mt-2">عمودا الإدارة والوكيل لا يقرآن أرقاماً — غيّر «عمود رقم المستخدم - الإدارة» و«عمود رقم المستخدم - الوكيل» إلى العمود الذي فيه رقم المستخدم فعلياً (B, C, D...).</p>';
-        } else if (d.managementUniqueCount === 0) {
-          html += '<p class="text-amber-700 font-medium mt-2"><strong>المشكلة من جدول الإدارة:</strong> لم يُقرأ أي رقم من ورقة الإدارة (العدد 0). غيّر «عمود رقم المستخدم - الإدارة» إلى العمود الذي فيه رقم المستخدم فعلياً في ورقة الإدارة (جرّب B ثم C ثم D…). الوكيل يقرأ بشكل صحيح.</p>';
-        } else if (d.agentUniqueCount === 0) {
-          html += '<p class="text-amber-700 font-medium mt-2"><strong>المشكلة من جدول الوكيل:</strong> لم يُقرأ أي رقم من ورقة الوكيل. غيّر «عمود رقم المستخدم - الوكيل» إلى العمود الصحيح (B, C, D…).</p>';
-        }
-        if (d.sampleCheck && d.sampleCheck.length) {
-          html += '<p class="font-medium text-slate-700 mt-2">تحقق من أول 5 أرقام من جدول المستخدمين:</p><ul class="space-y-0.5">';
-          d.sampleCheck.forEach(function(sc) {
-            html += '<li><code>' + sc.userId + '</code>: في الإدارة ' + (sc.inMgmt ? 'نعم' : 'لا') + '، في الوكيل ' + (sc.inAgent ? 'نعم' : 'لا') + '</li>';
-          });
-          html += '</ul>';
-        }
-        html += '</div>';
-      }
-      if (data.sampleUserIds && data.sampleUserIds.length) {
-        html += '<div class="mt-3 p-3 bg-slate-50 rounded-xl text-sm space-y-2">';
-        html += '<p class="font-medium text-slate-700">عينة أرقام للمقارنة (للمراجعة عند عدم التطابق):</p>';
-        html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول معلومات المستخدمين:</span> <code class="bg-white px-1 rounded">' + (data.sampleUserIds.slice(0, 10).join(', ')) + (data.sampleUserIds.length > 10 ? '...' : '') + '</code></p>';
-        if (data.sampleMgmtIds && data.sampleMgmtIds.length) {
-          html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول الإدارة (الدورة):</span> <code class="bg-white px-1 rounded">' + (data.sampleMgmtIds.slice(0, 10).join(', ')) + (data.sampleMgmtIds.length > 10 ? '...' : '') + '</code></p>';
-        }
-        if (data.sampleAgentIds && data.sampleAgentIds.length) {
-          html += '<p class="text-slate-600"><span class="font-medium">عمود المستخدم في جدول الوكيل (الدورة):</span> <code class="bg-white px-1 rounded">' + (data.sampleAgentIds.slice(0, 10).join(', ')) + (data.sampleAgentIds.length > 10 ? '...' : '') + '</code></p>';
-        }
-        html += '</div>';
-      }
-      if (data.spreadsheetUrl) {
-        html += '<p class="text-sm mt-3"><a href="' + data.spreadsheetUrl + '" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">فتح جدول معلومات المستخدمين في Google ←</a></p>';
-      }
+      var html = payrollBuildResultHtml(data);
       document.getElementById('payrollResultsContent').innerHTML = html;
       document.getElementById('payrollResultsSection').classList.remove('hidden');
-      if (typeof showToast === 'function') showToast(msg, data.applied ? 'success' : 'warning');
+      var toastMsg = data.message || 'تم تنفيذ التدقيق';
+      if (data.cycleSynced && toastMsg.indexOf('تمت مزامنة جداول الدورة') === -1) {
+        toastMsg = 'تمت مزامنة جداول الدورة من Google ثم ' + toastMsg;
+      }
+      if (typeof showToast === 'function') showToast(toastMsg, data.applied ? 'success' : 'warning');
     } else {
       if (typeof showToast === 'function') showToast(data.message || 'فشل التنفيذ', 'error');
     }
@@ -489,7 +592,7 @@ async function payrollExecute() {
     if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
   }
   btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-play"></i> تنفيذ';
+  btn.innerHTML = '<i class="fas fa-play"></i> تطبيق على Google';
 }
 
 async function payrollSaveSettings() {

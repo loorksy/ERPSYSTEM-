@@ -74,6 +74,9 @@ CREATE TABLE IF NOT EXISTS financial_cycles (
   management_sheet_name TEXT,
   agent_spreadsheet_id TEXT,
   agent_sheet_name TEXT,
+  user_info_data TEXT,
+  user_info_sheet_name TEXT,
+  user_info_spreadsheet_id TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

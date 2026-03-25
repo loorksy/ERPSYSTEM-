@@ -7,6 +7,7 @@ const {
   fetchSheetValuesBatched,
   batchGetSheetsFirstChunk,
   SHEET_BATCH_ROWS,
+  sleep,
 } = require('./googleSheetsReadHelpers');
 
 function getOAuth2Client(credentials) {
@@ -81,7 +82,9 @@ async function syncAgenciesFromManagementTable(cycleId, userId, sheetsApi) {
     let totalUsers = 0;
     const seenUserIds = new Set();
 
-    /** جلب أول دفعة لكل ورقات الوكالة دفعة واحدة (batchGet) لتجنب تجاوز حد القراءات/دقيقة من Google */
+    const fallbackSheetDelayMs = parseInt(process.env.SHEETS_AGENCY_FALLBACK_SHEET_DELAY_MS || '2000', 10) || 2000;
+
+    /** جلب أول دفعة لكل ورقات الوكالة عبر batchGet على دفعات صغيرة + تأخير (تخفيف 429) */
     let sheetRowsMap;
     try {
       sheetRowsMap = await batchGetSheetsFirstChunk(sheets, spreadsheetId, agencySheetNames);
@@ -90,7 +93,12 @@ async function syncAgenciesFromManagementTable(cycleId, userId, sheetsApi) {
       sheetRowsMap = null;
     }
 
+    let agencySheetIdx = 0;
     for (const sheetName of agencySheetNames) {
+      if (!sheetRowsMap && agencySheetIdx > 0) {
+        await sleep(fallbackSheetDelayMs);
+      }
+      agencySheetIdx += 1;
       let agency = (await db.query('SELECT id, name, commission_percent, company_percent FROM shipping_sub_agencies WHERE name = $1', [sheetName])).rows[0];
       if (!agency) {
         await db.query('INSERT INTO shipping_sub_agencies (name, commission_percent, company_percent) VALUES ($1, 0, 0)', [sheetName]);
