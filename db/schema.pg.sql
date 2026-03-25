@@ -291,6 +291,23 @@ CREATE TABLE IF NOT EXISTS deferred_balance_users (
   synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+/** أرصدة مؤجلة لكل دورة مع ترحيل عبر الدورات (لا تُحذف عند دورة جديدة) */
+CREATE TABLE IF NOT EXISTS deferred_salary_lines (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  cycle_id INTEGER NOT NULL,
+  member_user_id TEXT NOT NULL,
+  extra_id_c TEXT,
+  balance_d REAL NOT NULL DEFAULT 0,
+  salary_before_discount REAL,
+  sheet_source TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, cycle_id, member_user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_deferred_salary_lines_uid ON deferred_salary_lines(user_id);
+CREATE INDEX IF NOT EXISTS idx_deferred_salary_lines_member ON deferred_salary_lines(user_id, member_user_id);
+
 -- مخزون الشحن: متوسط التكلفة لكل مستخدم ونوع سلعة
 CREATE TABLE IF NOT EXISTS shipping_inventory (
   user_id INTEGER NOT NULL,

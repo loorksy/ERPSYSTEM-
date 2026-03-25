@@ -1,6 +1,8 @@
 const { google } = require('googleapis');
 const { getDb } = require('../db/database');
-const { normalizeUserId } = require('./payrollSearchService');
+const { normalizeUserId, computeSalaryWithDiscount } = require('./payrollSearchService');
+const { insertLedgerEntry } = require('./ledgerService');
+const { replaceDeferredLinesForCycle } = require('./deferredSalaryService');
 const { parseDecimal } = require('../utils/numbers');
 const {
   withSheetsRetry,
@@ -278,10 +280,14 @@ async function calculateCashBoxBalance(cycleId, userId, sheetsApi) {
 
 /**
  * جلب رصيد المؤجل: مستخدمون غير مدققين من جدول الوكيل (A, C, D)
+ * يطبّق نفس خصم نسبة التحويل وربح الخصم المحاسبي مثل rebuildDeferredFromLocalAgentData.
  */
 async function fetchDeferredBalanceUsers(cycleId, userId, sheetsApi) {
   const db = getDb();
-  const cycle = (await db.query('SELECT agent_spreadsheet_id, agent_sheet_name FROM financial_cycles WHERE id = $1 AND user_id = $2', [cycleId, userId])).rows[0];
+  const cycle = (await db.query(
+    'SELECT agent_spreadsheet_id, agent_sheet_name, transfer_discount_pct FROM financial_cycles WHERE id = $1 AND user_id = $2',
+    [cycleId, userId]
+  )).rows[0];
   if (!cycle || !cycle.agent_spreadsheet_id) return [];
 
   const audited = (await db.query(
@@ -317,21 +323,57 @@ async function fetchDeferredBalanceUsers(cycleId, userId, sheetsApi) {
   const headerRows = rows.length > 0 && isHeaderRow(rows[0], COL_A) ? 1 : 0;
   const dataRows = rows.slice(headerRows);
 
+  const discountPct = cycle.transfer_discount_pct != null && !isNaN(cycle.transfer_discount_pct)
+    ? Number(cycle.transfer_discount_pct)
+    : 0;
+
+  let transferDiscountProfit = 0;
+  for (const row of dataRows) {
+    const uid = normalizeUserId(row[COL_A]);
+    if (!uid) continue;
+    const { before, after } = computeSalaryWithDiscount([row[COL_D]], discountPct);
+    transferDiscountProfit += Math.round((before - after) * 100) / 100;
+  }
+
   const result = [];
-  await db.query('DELETE FROM deferred_balance_users WHERE cycle_id = $1', [cycleId]);
+  const lineRows = [];
 
   for (const row of dataRows) {
     const memberUserId = normalizeUserId(row[COL_A]);
     if (!memberUserId || auditedSet.has(memberUserId)) continue;
 
     const extraIdC = (row[COL_C] != null ? String(row[COL_C]) : '').trim();
-    const balanceD = parseDecimal(row[COL_D]);
+    const { before, after } = computeSalaryWithDiscount([row[COL_D]], discountPct);
+    const balanceAfter = Math.round(after * 100) / 100;
+    if (balanceAfter === 0) continue;
 
-    result.push({ member_user_id: memberUserId, extra_id_c: extraIdC, balance_d: balanceD });
-    await db.query(
-      'INSERT INTO deferred_balance_users (cycle_id, member_user_id, extra_id_c, balance_d, sheet_source, synced_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)',
-      [cycleId, memberUserId, extraIdC, balanceD, sheetToUse]
-    );
+    result.push({ member_user_id: memberUserId, extra_id_c: extraIdC, balance_d: balanceAfter });
+    lineRows.push({
+      member_user_id: memberUserId,
+      extra_id_c: extraIdC,
+      balance_d: balanceAfter,
+      salary_before_discount: Math.round(before * 100) / 100,
+      sheet_source: sheetToUse,
+    });
+  }
+
+  await replaceDeferredLinesForCycle(db, userId, cycleId, lineRows);
+
+  if (transferDiscountProfit > 0) {
+    const dup = (await db.query(
+      `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = 'transfer_discount_profit' LIMIT 1`,
+      [userId, cycleId]
+    )).rows[0];
+    if (!dup) {
+      await insertLedgerEntry(db, {
+        userId,
+        bucket: 'net_profit',
+        sourceType: 'transfer_discount_profit',
+        amount: transferDiscountProfit,
+        cycleId,
+        notes: 'ربح نسبة خصم التحويل (جدول الوكيل — مزامنة)',
+      });
+    }
   }
 
   return result;

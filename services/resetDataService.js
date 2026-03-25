@@ -98,6 +98,7 @@ async function executeReset(client, userId, selected, wipeAll) {
       'DELETE FROM deferred_balance_users WHERE cycle_id IN (SELECT id FROM financial_cycles WHERE user_id = $1)',
       [userId]
     );
+    await client.query('DELETE FROM deferred_salary_lines WHERE user_id = $1', [userId]);
     await client.query(
       'DELETE FROM agency_cycle_users WHERE cycle_id IN (SELECT id FROM financial_cycles WHERE user_id = $1)',
       [userId]

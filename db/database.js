@@ -84,6 +84,39 @@ async function ensureFinancialCyclesUserInfoColumns() {
   }
 }
 
+/** جدول المؤجل متعدد الدورات + ترحيل من deferred_balance_users القديم */
+async function ensureDeferredSalaryLinesTable() {
+  if (!pgPool) return;
+  await pgPool.query(`CREATE TABLE IF NOT EXISTS deferred_salary_lines (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    cycle_id INTEGER NOT NULL,
+    member_user_id TEXT NOT NULL,
+    extra_id_c TEXT,
+    balance_d REAL NOT NULL DEFAULT 0,
+    salary_before_discount REAL,
+    sheet_source TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, cycle_id, member_user_id)
+  )`);
+  await pgPool.query('CREATE INDEX IF NOT EXISTS idx_deferred_salary_lines_uid ON deferred_salary_lines(user_id)');
+  await pgPool.query('CREATE INDEX IF NOT EXISTS idx_deferred_salary_lines_member ON deferred_salary_lines(user_id, member_user_id)');
+  try {
+    await pgPool.query(`
+      INSERT INTO deferred_salary_lines (user_id, cycle_id, member_user_id, extra_id_c, balance_d, sheet_source)
+      SELECT fc.user_id, dbu.cycle_id, dbu.member_user_id, dbu.extra_id_c, dbu.balance_d, dbu.sheet_source
+      FROM deferred_balance_users dbu
+      INNER JOIN financial_cycles fc ON fc.id = dbu.cycle_id
+      ON CONFLICT (user_id, cycle_id, member_user_id) DO NOTHING
+    `);
+  } catch (e) {
+    if (!/duplicate key|violates unique constraint/i.test(String(e.message))) {
+      console.warn('[DB] deferred_salary_lines backfill:', e.message);
+    }
+  }
+}
+
 async function ensureAdminUser() {
   if (!pgPool) return;
   const r = await query('SELECT * FROM users WHERE username = $1', [process.env.ADMIN_USERNAME || 'admin']);
@@ -108,6 +141,7 @@ async function initDatabase() {
     console.log('[LorkERP] Using PostgreSQL');
     await ensurePgSchema();
     await ensureFinancialCyclesUserInfoColumns();
+    await ensureDeferredSalaryLinesTable();
     await ensureAdminUser();
     return getDb();
   }

@@ -149,11 +149,11 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
 /** رفع أرصدة: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي (كود أو اسم) */
 router.post('/bulk-balance', requireAuth, upload.single('file'), async (req, res) => {
   try {
-    const { cycleId } = req.body || {};
+    const { cycleId, brokeragePct } = req.body || {};
     if (!req.file) return res.json({ success: false, message: 'الملف مطلوب' });
     const rows = parseUploadedRows(req.file.path, req.file.mimetype);
     const db = getDb();
-    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId);
+    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId, brokeragePct);
     res.json(out);
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
@@ -163,10 +163,10 @@ router.post('/bulk-balance', requireAuth, upload.single('file'), async (req, res
 /** لصق CSV/TSV كنص (نفس أعمدة الملف) */
 router.post('/bulk-balance-text', requireAuth, async (req, res) => {
   try {
-    const { csvText, cycleId } = req.body || {};
+    const { csvText, cycleId, brokeragePct } = req.body || {};
     const rows = parseCsvTextToRows(csvText || '');
     const db = getDb();
-    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId);
+    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId, brokeragePct);
     res.json(out);
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
@@ -176,7 +176,7 @@ router.post('/bulk-balance-text', requireAuth, async (req, res) => {
 /** جلب ورقة من رابط Google Sheet (يتطلب ربط Google في إعدادات الجداول) */
 router.post('/bulk-balance-sheet-url', requireAuth, async (req, res) => {
   try {
-    const { sheetUrl, sheetName, cycleId } = req.body || {};
+    const { sheetUrl, sheetName, cycleId, brokeragePct } = req.body || {};
     const sid = extractSpreadsheetIdFromUrl(sheetUrl);
     if (!sid) return res.json({ success: false, message: 'رابط Google Sheet غير صالح' });
     const db = getDb();
@@ -185,7 +185,7 @@ router.post('/bulk-balance-sheet-url', requireAuth, async (req, res) => {
     if (rows.length < 2) {
       return res.json({ success: false, message: 'الورقة فارغة أو غير قابلة للقراءة', sheetTitleUsed: result.sheetTitleUsed });
     }
-    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId);
+    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId, brokeragePct);
     res.json({ ...out, sheetTitleUsed: result.sheetTitleUsed });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل جلب الورقة' });
@@ -221,16 +221,37 @@ router.post('/delivery-settle', requireAuth, async (req, res) => {
   }
 });
 
-/** قائمة معتمدين برصيد لدورة */
+/**
+ * معتمدون جاهزون للتسليم (رصيد > 0).
+ * بدون cycleId: كل من له رصيد موجب.
+ * مع cycleId: من له رصيد موجب وله قيد في accreditation_ledger مرتبط بهذه الدورة (نشاط محاسبي في الدورة).
+ */
 router.get('/with-balance', requireAuth, async (req, res) => {
   try {
     const db = getDb();
+    const userId = req.session.userId;
+    const cycleId = req.query.cycleId ? parseInt(req.query.cycleId, 10) : null;
+    if (!cycleId) {
+      const rows = (await db.query(
+        `SELECT id, name, code, balance_amount FROM accreditation_entities
+         WHERE user_id = $1 AND balance_amount > 0.0001 ORDER BY name`,
+        [userId]
+      )).rows;
+      return res.json({ success: true, list: rows, cycleId: null });
+    }
     const rows = (await db.query(
-      `SELECT id, name, code, balance_amount FROM accreditation_entities
-       WHERE user_id = $1 AND balance_amount > 0.0001 ORDER BY name`,
-      [req.session.userId]
+      `SELECT e.id, e.name, e.code, e.balance_amount
+       FROM accreditation_entities e
+       WHERE e.user_id = $1
+         AND e.balance_amount > 0.0001
+         AND EXISTS (
+           SELECT 1 FROM accreditation_ledger l
+           WHERE l.accreditation_id = e.id AND l.cycle_id = $2
+         )
+       ORDER BY e.name`,
+      [userId, cycleId]
     )).rows;
-    res.json({ success: true, list: rows });
+    res.json({ success: true, list: rows, cycleId });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل', list: [] });
   }

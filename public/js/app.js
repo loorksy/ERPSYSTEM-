@@ -86,16 +86,13 @@ function initHomeStats() {
           if (data.snapshotCash != null && data.snapshotCash !== 0) {
             parts.push('من الجداول: ' + formatMoney(data.snapshotCash));
           }
-          if (data.fundTotals && data.fundTotals.length) {
-            parts.push('صناديع: ' + data.fundTotals.map(function(ft) {
-              return formatMoney(ft.total) + ' ' + (ft.currency || '');
-            }).join(' · '));
+          if (mf && mf.name) {
+            parts.push('الصندوق الرئيسي: ' + mf.name + (data.mainFundUsd != null ? ' (' + formatMoney(data.mainFundUsd) + ')' : ''));
           }
-          if (mf && mf.name) parts.push('رئيسي: ' + mf.name);
-          sub.textContent = parts.join(' | ') || '';
+          sub.textContent = parts.join(' | ');
         }
         var link = document.getElementById('deferredBalanceLink');
-        if (link && data.cycleId) link.href = '/deferred-balance?cycleId=' + data.cycleId;
+        if (link) link.href = '/deferred-balance';
       })
       .catch(function() {});
   };

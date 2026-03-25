@@ -43,21 +43,52 @@
     document.getElementById('accAddModal').classList.remove('flex');
   };
 
-  function fillCycleSelect(selId) {
+  /** @returns {Promise<string>} قيمة المحدد بعد التعبئة (آخر دورة إن طُلب defaultLatest) */
+  function fillCycleSelect(selId, opts) {
+    opts = opts || {};
     var sel = document.getElementById(selId);
-    if (!sel) return;
-    apiCall('/api/sub-agencies/cycles/list').then(function(c) {
-      var cur = sel.value;
+    if (!sel) return Promise.resolve('');
+    return apiCall('/api/sub-agencies/cycles/list').then(function(c) {
+      var cycles = c.cycles || [];
+      var cur = opts.keepSelection ? sel.value : '';
       sel.innerHTML = '<option value="">— دورة (اختياري) —</option>';
-      (c.cycles || []).forEach(function(x) {
+      cycles.forEach(function(x) {
         sel.innerHTML += '<option value="' + x.id + '">' + (x.name || x.id) + '</option>';
       });
-      if (cur) sel.value = cur;
+      if (opts.defaultLatest && cycles.length > 0) {
+        sel.value = String(cycles[0].id);
+      } else if (cur) {
+        sel.value = cur;
+      }
+      return sel.value || '';
+    });
+  }
+
+  function accRefreshDeliveryList(cycleId) {
+    var listEl = document.getElementById('accDelList');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="text-slate-400">جاري التحميل…</p>';
+    var url = '/api/accreditations/with-balance';
+    if (cycleId) url += '?cycleId=' + encodeURIComponent(cycleId);
+    apiCall(url).then(function(res) {
+      if (!listEl) return;
+      if (!res.success || !(res.list || []).length) {
+        listEl.innerHTML = '<p class="text-slate-500">لا يوجد معتمدون برصيد' + (cycleId ? ' له نشاط في الدورة المختارة' : '') + '</p>';
+        return;
+      }
+      listEl.innerHTML = (res.list || []).map(function(a) {
+        return '<label class="flex items-center gap-2 p-2 rounded-lg border border-slate-100 cursor-pointer hover:bg-slate-50">' +
+          '<input type="checkbox" class="acc-del-cb" value="' + a.id + '">' +
+          '<span class="flex-1">' + (a.name || '') + ' <span class="text-slate-400 text-xs">' + (a.code || '') + '</span></span>' +
+          '<span class="font-semibold text-indigo-600">' + (a.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</span></label>';
+      }).join('');
     });
   }
 
   window.accOpenBulk = function() {
-    fillCycleSelect('accBulkCycle');
+    fillCycleSelect('accBulkCycle', { defaultLatest: true, keepSelection: false });
+    var br = document.getElementById('accBulkBroker');
+    if (br) br.value = '';
     document.getElementById('accBulkModal').classList.remove('hidden');
     document.getElementById('accBulkModal').classList.add('flex');
   };

@@ -2,13 +2,11 @@ const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry } = require('./ledgerService');
 
 /**
- * نفس منطق استيراد الأرصدة من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
- * @param {object} db
- * @param {number} userId
- * @param {string[][]} rows
- * @param {number|null} cycleId
+ * استيراد أرصدة معتمدين من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
+ * بدون وساطة: المبلغ كاملاً يزيد رصيد المعتمد ويُسجَّل في الصندوق الرئيسي (main_cash) مثل السابق.
+ * مع brokeragePct (0–100): نسبة الوساطة → صافي الربح، والباقي → الصندوق الرئيسي (نفس منطق إضافة مبلغ يدويًا).
  */
-async function processAccreditationBulkRows(db, userId, rows, cycleId) {
+async function processAccreditationBulkRows(db, userId, rows, cycleId, brokeragePctOpt) {
   if (!rows || rows.length < 2) {
     return { success: false, message: 'لا توجد بيانات كافية', imported: 0, errors: [] };
   }
@@ -16,6 +14,10 @@ async function processAccreditationBulkRows(db, userId, rows, cycleId) {
   if (!mainFundId) {
     return { success: false, message: 'عيّن صندوقاً رئيسياً أولاً', imported: 0, errors: [] };
   }
+  let pct = parseFloat(brokeragePctOpt);
+  if (isNaN(pct) || pct < 0) pct = 0;
+  pct = Math.min(100, pct);
+
   let ok = 0;
   const errs = [];
   const cid = cycleId ? parseInt(cycleId, 10) : null;
@@ -42,22 +44,60 @@ async function processAccreditationBulkRows(db, userId, rows, cycleId) {
       continue;
     }
     const led = await db.query(
-      `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
-       VALUES ($1, 'salary', $2, 'USD', 'to_us', $3, $4) RETURNING id`,
-      [ent.id, bal, cid, 'استيراد دفعة — ' + (parentRef || '')]
+      `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes)
+       VALUES ($1, 'salary', $2, 'USD', 'to_us', $3, $4, $5, $6) RETURNING id`,
+      [
+        ent.id,
+        bal,
+        pct > 0 ? pct : null,
+        pct > 0 ? bal * (pct / 100) : null,
+        cid,
+        'استيراد دفعة — ' + (parentRef || ''),
+      ]
     );
     const lid = led.rows[0].id;
     await db.query('UPDATE accreditation_entities SET balance_amount = balance_amount + $1 WHERE id = $2', [bal, ent.id]);
-    await adjustFundBalance(db, mainFundId, 'USD', bal, 'accreditation_bulk', 'استيراد رصيد معتمد', 'accreditation_ledger', lid);
-    await insertLedgerEntry(db, {
-      userId,
-      bucket: 'main_cash',
-      sourceType: 'accreditation_bulk_import',
-      amount: bal,
-      cycleId: cid,
-      refTable: 'accreditation_ledger',
-      refId: lid,
-    });
+
+    if (pct > 0) {
+      const brokerageAmount = bal * (pct / 100);
+      const remainder = bal - brokerageAmount;
+      if (brokerageAmount > 0) {
+        await insertLedgerEntry(db, {
+          userId,
+          bucket: 'net_profit',
+          sourceType: 'accreditation_brokerage',
+          amount: brokerageAmount,
+          cycleId: cid,
+          refTable: 'accreditation_ledger',
+          refId: lid,
+          notes: 'وساطة معتمد — استيراد دفعة',
+        });
+      }
+      if (remainder > 0) {
+        await adjustFundBalance(db, mainFundId, 'USD', remainder, 'accreditation_remainder', 'باقي بعد الوساطة — استيراد', 'accreditation_ledger', lid);
+        await insertLedgerEntry(db, {
+          userId,
+          bucket: 'main_cash',
+          sourceType: 'accreditation_remainder',
+          amount: remainder,
+          cycleId: cid,
+          refTable: 'accreditation_ledger',
+          refId: lid,
+          notes: 'باقي بعد الوساطة — استيراد',
+        });
+      }
+    } else {
+      await adjustFundBalance(db, mainFundId, 'USD', bal, 'accreditation_bulk', 'استيراد رصيد معتمد', 'accreditation_ledger', lid);
+      await insertLedgerEntry(db, {
+        userId,
+        bucket: 'main_cash',
+        sourceType: 'accreditation_bulk_import',
+        amount: bal,
+        cycleId: cid,
+        refTable: 'accreditation_ledger',
+        refId: lid,
+      });
+    }
     ok++;
   }
   return { success: true, message: `تم معالجة ${ok} صف`, imported: ok, errors: errs };

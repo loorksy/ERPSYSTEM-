@@ -2,6 +2,7 @@ const { getDb } = require('../db/database');
 const { parseDecimal } = require('../utils/numbers');
 const { normalizeUserId } = require('./payrollSearchService');
 const { insertLedgerEntry } = require('./ledgerService');
+const { replaceDeferredLinesForCycle } = require('./deferredSalaryService');
 const { computeSalaryWithDiscount, getCycleColumns } = require('./payrollSearchService');
 
 function columnLetterToIndex(letter) {
@@ -98,15 +99,28 @@ async function getLocalCycleTables(db, userId, cycleId) {
 }
 
 /**
- * تسجيل أرباح التدقيق (Y+Z و W) في صافي الربح — مرة واحدة لكل دورة.
+ * تسجيل أرباح التدقيق في صافي الربح — قيدان منفصلان (Y+Z) و (W)، مرة واحدة لكل دورة.
+ * القيد القديم audit_cycle_profits يُعتبر مكتملاً ولا يُكرَّر.
  */
 async function applyCycleAuditProfitsToLedger(userId, cycleId) {
   const db = getDb();
-  const dup = (await db.query(
+  const legacy = (await db.query(
     `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
     [userId, cycleId, 'audit_cycle_profits']
   )).rows[0];
-  if (dup) {
+  if (legacy) {
+    return { success: false, message: 'تم تسجيل أرباح هذه الدورة مسبقاً', already: true };
+  }
+
+  const rowYz = (await db.query(
+    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
+    [userId, cycleId, 'audit_management_yz']
+  )).rows[0];
+  const rowW = (await db.query(
+    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
+    [userId, cycleId, 'audit_management_w']
+  )).rows[0];
+  if (rowYz && rowW) {
     return { success: false, message: 'تم تسجيل أرباح هذه الدورة مسبقاً', already: true };
   }
 
@@ -118,15 +132,28 @@ async function applyCycleAuditProfitsToLedger(userId, cycleId) {
   const { sourceFirstSheetW, sourceYZ } = await computeManagementSheetTotalsFromRows(tables.managementData);
   const combined = sourceFirstSheetW + sourceYZ;
 
-  await insertLedgerEntry(db, {
-    userId,
-    bucket: 'net_profit',
-    sourceType: 'audit_cycle_profits',
-    amount: combined,
-    cycleId,
-    notes: `تدقيق: Y+Z=${sourceYZ.toFixed(2)} ، W=${sourceFirstSheetW.toFixed(2)}`,
-    meta: { sourceYZ, sourceFirstSheetW },
-  });
+  if (!rowYz) {
+    await insertLedgerEntry(db, {
+      userId,
+      bucket: 'net_profit',
+      sourceType: 'audit_management_yz',
+      amount: sourceYZ,
+      cycleId,
+      notes: 'تدقيق إدارة: أعمدة Y+Z',
+      meta: { sourceYZ },
+    });
+  }
+  if (!rowW) {
+    await insertLedgerEntry(db, {
+      userId,
+      bucket: 'net_profit',
+      sourceType: 'audit_management_w',
+      amount: sourceFirstSheetW,
+      cycleId,
+      notes: 'تدقيق إدارة: عمود W (مع تقسيم وكالات فرعية)',
+      meta: { sourceFirstSheetW },
+    });
+  }
 
   return { success: true, sourceYZ, sourceFirstSheetW, combined };
 }
@@ -159,11 +186,10 @@ async function rebuildDeferredFromLocalAgentData(userId, cycleId) {
   )).rows;
   const auditedSet = new Set((audited || []).map(r => String(r.member_user_id)));
 
-  await db.query('DELETE FROM deferred_balance_users WHERE cycle_id = $1', [cycleId]);
-
   const dataRows = agentRows.slice(1);
   let totalDeferred = 0;
   const users = [];
+  const lineRows = [];
   let transferDiscountProfit = 0;
 
   for (const row of dataRows) {
@@ -177,18 +203,22 @@ async function rebuildDeferredFromLocalAgentData(userId, cycleId) {
     const memberUserId = normalizeUserId(row[agentIdx]);
     if (!memberUserId || auditedSet.has(memberUserId)) continue;
 
-    const { after } = computeSalaryWithDiscount([row[agentSalaryIdx]], discountPct);
+    const { before, after } = computeSalaryWithDiscount([row[agentSalaryIdx]], discountPct);
     const balanceAfter = Math.round(after * 100) / 100;
     if (balanceAfter === 0) continue;
 
     totalDeferred += balanceAfter;
     users.push({ member_user_id: memberUserId, balance_d: balanceAfter });
-    await db.query(
-      `INSERT INTO deferred_balance_users (cycle_id, member_user_id, extra_id_c, balance_d, sheet_source, synced_at)
-       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
-      [cycleId, memberUserId, (row[2] != null ? String(row[2]) : '').trim(), balanceAfter, 'local_agent_data']
-    );
+    lineRows.push({
+      member_user_id: memberUserId,
+      extra_id_c: (row[2] != null ? String(row[2]) : '').trim(),
+      balance_d: balanceAfter,
+      salary_before_discount: Math.round(before * 100) / 100,
+      sheet_source: 'local_agent_data',
+    });
   }
+
+  await replaceDeferredLinesForCycle(db, userId, cycleId, lineRows);
 
   if (transferDiscountProfit > 0) {
     const dup = (await db.query(

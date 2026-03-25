@@ -26,6 +26,38 @@ router.get('/list', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * وكالات جاهزة للتسليم: رصيد إجمالي > 0.
+ * مع cycleId: فقط من له حركة (sub_agency_transactions) مرتبطة بهذه الدورة — التسليم يصفّر الرصيد الكامل كالسابق.
+ */
+router.get('/delivery-candidates', requireAuth, async (req, res) => {
+  try {
+    const cycleId = req.query.cycleId ? parseInt(req.query.cycleId, 10) : null;
+    const db = getDb();
+    const agencies = (await db.query(`
+      SELECT id, name, commission_percent, created_at
+      FROM shipping_sub_agencies
+      ORDER BY name
+    `)).rows;
+    const out = [];
+    for (const a of agencies) {
+      const bal = await calculateAgencyBalance(db, a.id);
+      if (bal <= 0.0001) continue;
+      if (cycleId) {
+        const hit = (await db.query(
+          `SELECT 1 FROM sub_agency_transactions WHERE sub_agency_id = $1 AND cycle_id = $2 LIMIT 1`,
+          [a.id, cycleId]
+        )).rows[0];
+        if (!hit) continue;
+      }
+      out.push({ ...a, balance: bal });
+    }
+    res.json({ success: true, agencies: out, cycleId });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل', agencies: [] });
+  }
+});
+
 /** حساب رصيد الوكالة: أرباح + مكافآت - خصومات - مستحقات */
 async function calculateAgencyBalance(db, subAgencyId) {
   const rows = (await db.query(`

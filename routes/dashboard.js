@@ -6,6 +6,7 @@ const { calculateCashBoxBalance, fetchDeferredBalanceUsers } = require('../servi
 const { getFundTotalsByCurrency, getMainFundSummary, getMainFundUsdBalance, transferProfitToFund } = require('../services/fundService');
 const { computeDebtBreakdown } = require('../services/debtAggregation');
 const { sumLedgerBucket } = require('../services/ledgerService');
+const { sumDeferredTotalAllCycles, mergeMemberDeferredIntoCycle } = require('../services/deferredSalaryService');
 
 router.get('/', requireAuth, (req, res) => {
   res.render('dashboard', {
@@ -126,12 +127,10 @@ router.get('/stats', requireAuth, async (req, res) => {
         SELECT cash_balance FROM cash_box_snapshot WHERE cycle_id = $1 ORDER BY snapshot_at DESC LIMIT 1
       `, [defaultCycleId])).rows[0];
       snapshotCash = cashSnapshot?.cash_balance ?? 0;
-
-      const deferredRows = (await db.query(`
-        SELECT SUM(balance_d) as total FROM deferred_balance_users WHERE cycle_id = $1
-      `, [defaultCycleId])).rows[0];
-      deferredBalance = deferredRows?.total ?? 0;
     }
+
+    /** إجمالي المؤجل عبر كل الدورات (أرصدة غير مدققة متراكمة) */
+    deferredBalance = await sumDeferredTotalAllCycles(db, userId);
 
     /** بطاقة رصيد الصندوق: الصندوق الرئيسي + لقطة الجداول فقط (لا تُجمع كل الصناديع) */
     cashBalance = (mainFundUsd || 0) + snapshotCash;
@@ -196,8 +195,8 @@ router.post('/refresh-deferred', requireAuth, async (req, res) => {
     const cycle = (await db.query('SELECT id FROM financial_cycles WHERE id = $1 AND user_id = $2', [cid, req.session.userId])).rows[0];
     if (!cycle) return res.json({ success: false, message: 'الدورة غير موجودة' });
     const users = await fetchDeferredBalanceUsers(cid, req.session.userId);
-    const total = users.reduce((s, u) => s + (u.balance_d || 0), 0);
-    res.json({ success: true, users, deferredBalance: total });
+    const deferredBalance = await sumDeferredTotalAllCycles(db, req.session.userId);
+    res.json({ success: true, users, deferredBalance });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }
@@ -280,19 +279,57 @@ router.post('/transfer-profit', requireAuth, async (req, res) => {
   }
 });
 
-/** قائمة المستخدمين غير المدققين (رصيد مؤجل) */
+/** قائمة المؤجل: بدون cycleId = كل الدورات؛ مع cycleId = تلك الدورة فقط */
 router.get('/deferred-users', requireAuth, async (req, res) => {
   try {
-    const { cycleId } = req.query || {};
-    const cid = parseInt(cycleId, 10);
-    if (!cid) return res.json({ success: false, message: 'الدورة مطلوبة', users: [] });
     const db = getDb();
-    const cycle = (await db.query('SELECT id FROM financial_cycles WHERE id = $1 AND user_id = $2', [cid, req.session.userId])).rows[0];
-    if (!cycle) return res.json({ success: false, message: 'الدورة غير موجودة', users: [] });
-    const users = (await db.query('SELECT member_user_id, extra_id_c, balance_d FROM deferred_balance_users WHERE cycle_id = $1 ORDER BY member_user_id', [cid])).rows;
-    res.json({ success: true, users });
+    const userId = req.session.userId;
+    const cidRaw = req.query.cycleId;
+    const cid = cidRaw ? parseInt(cidRaw, 10) : null;
+
+    if (cid) {
+      const cycle = (await db.query('SELECT id FROM financial_cycles WHERE id = $1 AND user_id = $2', [cid, userId])).rows[0];
+      if (!cycle) return res.json({ success: false, message: 'الدورة غير موجودة', users: [] });
+      const users = (await db.query(
+        `SELECT l.member_user_id, l.extra_id_c, l.balance_d, l.salary_before_discount, l.cycle_id, c.name AS cycle_name
+         FROM deferred_salary_lines l
+         JOIN financial_cycles c ON c.id = l.cycle_id AND c.user_id = l.user_id
+         WHERE l.user_id = $1 AND l.cycle_id = $2
+         ORDER BY l.member_user_id`,
+        [userId, cid]
+      )).rows;
+      return res.json({ success: true, mode: 'cycle', cycleId: cid, users });
+    }
+
+    const users = (await db.query(
+      `SELECT l.member_user_id, l.extra_id_c, l.balance_d, l.salary_before_discount, l.cycle_id, c.name AS cycle_name
+       FROM deferred_salary_lines l
+       JOIN financial_cycles c ON c.id = l.cycle_id AND c.user_id = l.user_id
+       WHERE l.user_id = $1
+       ORDER BY c.created_at DESC NULLS LAST, l.member_user_id`,
+      [userId]
+    )).rows;
+    const totalDeferred = await sumDeferredTotalAllCycles(db, userId);
+    res.json({ success: true, mode: 'all', users, totalDeferred });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل', users: [] });
+  }
+});
+
+/** دمج كل رواتب المؤجل لرقم مستخدم في دورة مالية واحدة وتسجيل التدقيق */
+router.post('/deferred-merge', requireAuth, async (req, res) => {
+  try {
+    const { memberUserId, targetCycleId } = req.body || {};
+    const cid = parseInt(targetCycleId, 10);
+    if (!memberUserId || !cid) {
+      return res.json({ success: false, message: 'رقم المستخدم والدورة المستهدفة مطلوبان' });
+    }
+    const db = getDb();
+    const r = await mergeMemberDeferredIntoCycle(db, req.session.userId, String(memberUserId), cid);
+    if (!r.success) return res.json(r);
+    res.json({ success: true, message: 'تم دمج الأرصدة وتسجيل التدقيق في الدورة المختارة', ...r });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
   }
 });
 

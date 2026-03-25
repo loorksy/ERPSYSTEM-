@@ -4,19 +4,44 @@
       <i class="fas fa-clock-rotate-left text-xl text-sky-600"></i>
       <h3 class="text-lg font-bold">رصيد المؤجل</h3>
     </div>
-    <div class="p-6">
-      <p class="text-sm text-slate-600 mb-4">المستخدمون الذين لم يتم تدقيق رواتبهم من جدول الوكيل.</p>
-      <div class="flex flex-wrap gap-3 mb-6">
-        <label class="text-sm font-medium text-slate-600">الدورة المالية:</label>
-        <select id="deferredCycleSelect" class="px-4 py-2 rounded-xl border border-slate-200 text-sm" onchange="deferredLoadUsers()">
-          <option value="">-- اختر الدورة --</option>
-        </select>
-        <button type="button" onclick="deferredRefresh()" class="px-4 py-2 rounded-xl bg-sky-600 text-white text-sm font-medium hover:bg-sky-700">
-          <i class="fas fa-sync-alt ml-1"></i> تحديث من Google
-        </button>
+    <div class="p-6 space-y-8">
+      <p class="text-sm text-slate-600">المستخدمون الذين لم يتم تدقيق رواتبهم من جدول الوكيل. الأرصدة <strong>تُرحَّل بين الدورات</strong> حتى يتم التدقيق أو الدمج.</p>
+
+      <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+        <h4 class="font-semibold text-slate-800 mb-2">بحث عن مستخدم — كل رواتبه المؤجلة</h4>
+        <div class="flex flex-wrap gap-2 items-end">
+          <input type="text" id="deferredMemberSearch" placeholder="رقم المستخدم" class="px-3 py-2 rounded-lg border border-slate-200 text-sm min-w-[140px]">
+          <button type="button" onclick="deferredLoadMemberHistory()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">عرض السجل</button>
+        </div>
+        <div id="deferredMemberHistory" class="mt-3 text-sm text-slate-700 hidden"></div>
       </div>
-      <div id="deferredUsersList" class="space-y-2">
-        <p class="text-slate-400 text-center py-8">اختر الدورة المالية</p>
+
+      <div>
+        <div class="flex flex-wrap gap-3 mb-4 items-center">
+          <label class="text-sm font-medium text-slate-600">الدورة المالية:</label>
+          <select id="deferredCycleSelect" class="px-4 py-2 rounded-xl border border-slate-200 text-sm" onchange="deferredLoadUsers()">
+            <option value="">— كل الدورات —</option>
+          </select>
+          <button type="button" onclick="deferredRefresh()" class="px-4 py-2 rounded-xl bg-sky-600 text-white text-sm font-medium hover:bg-sky-700">
+            <i class="fas fa-sync-alt ml-1"></i> تحديث من Google (الدورة المختارة)
+          </button>
+        </div>
+        <p class="text-xs text-slate-500 mb-2">للمزامنة اختر دورة محددة أولاً. عرض «كل الدورات» يُظهر كل الأسطر المؤجلة.</p>
+        <div id="deferredUsersList" class="space-y-2">
+          <p class="text-slate-400 text-center py-8">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+        <h4 class="font-semibold text-amber-900 mb-2">دمج كل رواتب مستخدم في دورة واحدة</h4>
+        <p class="text-xs text-amber-800 mb-3">يُصفّر المؤجل لذلك الرقم ويُسجَّل تدقيق في الدورة التي تختارها (مجموع الرواتب في السجل).</p>
+        <div class="flex flex-wrap gap-2 items-end">
+          <input type="text" id="deferredMergeMember" placeholder="رقم المستخدم" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+          <select id="deferredMergeCycle" class="px-3 py-2 rounded-lg border border-slate-200 text-sm min-w-[180px]">
+            <option value="">— دورة الدمج —</option>
+          </select>
+          <button type="button" onclick="deferredSubmitMerge()" class="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">دمج وتدقيق</button>
+        </div>
       </div>
     </div>
   </div>
@@ -32,39 +57,62 @@
     if (typeof window.showToast === 'function') window.showToast(msg, type);
     else alert(msg);
   }
+  function fmt(v) {
+    if (typeof window.formatMoney === 'function') return window.formatMoney(v);
+    return (parseFloat(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+  }
+
+  function fillCycleSelects(cycles) {
+    var sel = document.getElementById('deferredCycleSelect');
+    var merge = document.getElementById('deferredMergeCycle');
+    var opts = (cycles || []).map(function(c) {
+      return '<option value="' + c.id + '">' + (c.name || '') + '</option>';
+    }).join('');
+    if (sel) {
+      sel.innerHTML = '<option value="">— كل الدورات —</option>' + opts;
+    }
+    if (merge) {
+      merge.innerHTML = '<option value="">— دورة الدمج —</option>' + opts;
+    }
+  }
+
   window.deferredLoadUsers = function() {
     var sel = document.getElementById('deferredCycleSelect');
     var list = document.getElementById('deferredUsersList');
-    if (!sel || !list) return;
-    var cycleId = sel.value;
-    if (!cycleId) {
-      list.innerHTML = '<p class="text-slate-400 text-center py-8">اختر الدورة المالية</p>';
-      return;
-    }
+    if (!list) return;
     list.innerHTML = '<p class="text-slate-400 text-center py-8">جاري التحميل...</p>';
-    apiCall('/dashboard/deferred-users?cycleId=' + cycleId).then(function(res) {
+    var q = sel && sel.value ? ('?cycleId=' + encodeURIComponent(sel.value)) : '';
+    apiCall('/dashboard/deferred-users' + q).then(function(res) {
       if (!res.success) {
         list.innerHTML = '<p class="text-red-500 text-center py-8">' + (res.message || 'فشل') + '</p>';
         return;
       }
       var users = res.users || [];
+      if (res.mode === 'all' && res.totalDeferred != null) {
+        list.innerHTML = '<p class="text-sm text-slate-600 mb-3">إجمالي المؤجل (كل الدورات): <strong class="text-sky-700">' + fmt(res.totalDeferred) + '</strong></p>';
+      } else {
+        list.innerHTML = '';
+      }
       if (users.length === 0) {
-        list.innerHTML = '<p class="text-slate-400 text-center py-8">لا يوجد مستخدمون غير مدققين</p>';
+        list.innerHTML += '<p class="text-slate-400 text-center py-8">لا يوجد مستخدمون غير مدققين في هذا العرض</p>';
         return;
       }
-      list.innerHTML = users.map(function(u) {
+      list.innerHTML += users.map(function(u) {
+        var cycleInfo = u.cycle_name ? (' · ' + (u.cycle_name || '') + ' #' + (u.cycle_id || '')) : '';
+        var before = u.salary_before_discount != null ? (' · قبل الخصم: ' + fmt(u.salary_before_discount)) : '';
         return '<div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-2">' +
-          '<div><span class="font-semibold text-slate-800">رقم المستخدم: ' + (u.member_user_id || '') + '</span></div>' +
-          '<div class="text-sm text-slate-600">المعرف: ' + (u.extra_id_c || '-') + '</div>' +
-          '<div class="font-bold text-sky-600">الرصيد: ' + (window.formatMoney ? window.formatMoney(u.balance_d || 0) : (u.balance_d || 0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $') + '</div>' +
+          '<div><span class="font-semibold text-slate-800">رقم المستخدم: ' + (u.member_user_id || '') + '</span>' + cycleInfo + '</div>' +
+          '<div class="text-sm text-slate-600">المعرف: ' + (u.extra_id_c || '-') + before + '</div>' +
+          '<div class="font-bold text-sky-600">بعد الخصم: ' + fmt(u.balance_d || 0) + '</div>' +
           '</div>';
       }).join('');
     });
   };
+
   window.deferredRefresh = function() {
     var sel = document.getElementById('deferredCycleSelect');
     if (!sel || !sel.value) {
-      showToast('اختر الدورة أولاً', 'error');
+      showToast('اختر دورة محددة للمزامنة من Google', 'error');
       return;
     }
     apiCall('/dashboard/refresh-deferred', { method: 'POST', body: JSON.stringify({ cycleId: sel.value }) }).then(function(res) {
@@ -72,20 +120,70 @@
       if (res.success) deferredLoadUsers();
     });
   };
-  document.addEventListener('DOMContentLoaded', function() {
-    var urlCycle = (new URLSearchParams(window.location.search)).get('cycleId');
-    apiCall('/dashboard/stats' + (urlCycle ? '?cycleId=' + urlCycle : '')).then(function(res) {
-      var sel = document.getElementById('deferredCycleSelect');
-      if (!sel || !res.success) return;
-      var cycles = res.cycles || [];
-      sel.innerHTML = '<option value="">-- اختر الدورة --</option>' + cycles.map(function(c) {
-        return '<option value="' + c.id + '">' + (c.name || '') + '</option>';
-      }).join('');
-      var cycleId = urlCycle ? parseInt(urlCycle, 10) : res.cycleId;
-      if (cycleId && cycles.some(function(c) { return c.id === cycleId; })) {
-        sel.value = cycleId;
-        deferredLoadUsers();
+
+  window.deferredLoadMemberHistory = function() {
+    var inp = document.getElementById('deferredMemberSearch');
+    var box = document.getElementById('deferredMemberHistory');
+    if (!inp || !box) return;
+    var id = (inp.value || '').trim();
+    if (!id) {
+      showToast('أدخل رقم المستخدم', 'error');
+      return;
+    }
+    box.classList.remove('hidden');
+    box.innerHTML = '<p class="text-slate-400">جاري التحميل...</p>';
+    apiCall('/api/search/member-deferred-history?memberUserId=' + encodeURIComponent(id)).then(function(res) {
+      if (!res.success) {
+        box.innerHTML = '<p class="text-red-600">' + (res.message || 'فشل') + '</p>';
+        return;
       }
+      var lines = res.lines || [];
+      if (!lines.length) {
+        box.innerHTML = '<p class="text-slate-500">لا توجد أسطر مؤجلة لهذا الرقم.</p>';
+        return;
+      }
+      box.innerHTML = '<p class="mb-2 font-semibold">المجموع: ' + fmt(res.totalDeferred) + '</p><ul class="list-disc pr-5 space-y-1">' +
+        lines.map(function(l) {
+          return '<li>' + (l.cycle_name || '') + ': ' + fmt(l.balance_d) + (l.salary_before_discount != null ? ' (قبل الخصم ' + fmt(l.salary_before_discount) + ')' : '') + '</li>';
+        }).join('') + '</ul>';
+    });
+  };
+
+  window.deferredSubmitMerge = function() {
+    var mid = document.getElementById('deferredMergeMember');
+    var cyc = document.getElementById('deferredMergeCycle');
+    if (!mid || !cyc) return;
+    var m = (mid.value || '').trim();
+    var cid = cyc.value;
+    if (!m || !cid) {
+      showToast('أدخل رقم المستخدم واختر دورة الدمج', 'error');
+      return;
+    }
+    if (!confirm('دمج كل رواتب المؤجل لهذا المستخدم في الدورة المختارة وتسجيل التدقيق؟')) return;
+    apiCall('/dashboard/deferred-merge', {
+      method: 'POST',
+      body: JSON.stringify({ memberUserId: m, targetCycleId: parseInt(cid, 10) })
+    }).then(function(res) {
+      showToast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
+      if (res.success) {
+        deferredLoadUsers();
+        var hist = document.getElementById('deferredMemberHistory');
+        if (hist) { hist.classList.add('hidden'); hist.innerHTML = ''; }
+      }
+    });
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    apiCall('/dashboard/stats').then(function(res) {
+      if (!res.success) return;
+      var cycles = res.cycles || [];
+      fillCycleSelects(cycles);
+      var urlCycle = (new URLSearchParams(window.location.search)).get('cycleId');
+      var sel = document.getElementById('deferredCycleSelect');
+      if (sel && urlCycle && cycles.some(function(c) { return String(c.id) === String(urlCycle); })) {
+        sel.value = urlCycle;
+      }
+      deferredLoadUsers();
     });
   });
 })();

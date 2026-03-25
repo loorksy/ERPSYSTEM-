@@ -13,6 +13,7 @@ const {
   saveCycleCache,
   saveUserAuditStatus
 } = require('../services/payrollSearchService');
+const { getMemberDeferredHistory } = require('../services/deferredSalaryService');
 
 function columnLetterToIndex(letter) {
   if (letter == null || letter === '') return null;
@@ -815,6 +816,26 @@ router.post('/execute-audit-advanced', requireAuth, async (req, res) => {
       success: false,
       message: e.message || 'فشل تنفيذ التدقيق الانتقائي من أداة البحث'
     });
+  }
+});
+
+/** سجل رواتب المؤجل لرقم مستخدم (جميع الدورات) */
+router.get('/member-deferred-history', requireAuth, async (req, res) => {
+  try {
+    const memberUserId = req.query.memberUserId || req.query.member_user_id;
+    if (!memberUserId || !String(memberUserId).trim()) {
+      return res.json({ success: false, message: 'رقم المستخدم مطلوب', lines: [] });
+    }
+    const db = getDb();
+    const lines = await getMemberDeferredHistory(db, req.session.userId, memberUserId);
+    const total = lines.reduce((s, r) => s + (parseFloat(r.balance_d) || 0), 0);
+    res.json({
+      success: true,
+      lines,
+      totalDeferred: Math.round(total * 100) / 100,
+    });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل', lines: [] });
   }
 });
 
