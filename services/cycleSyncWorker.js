@@ -7,6 +7,7 @@ const {
   getCycleColumns
 } = require('./payrollSearchService');
 const { syncAgenciesFromManagementTable } = require('./agencySyncService');
+const { fetchSheetValuesBatched, withSheetsRetry } = require('./googleSheetsReadHelpers');
 
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:3000'}/sheets/callback`;
 
@@ -17,28 +18,8 @@ function getOAuth2Client(credentials) {
   return new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
 }
 
-async function fetchSheetValuesBatched(sheets, spreadsheetId, title) {
-  const allRows = [];
-  const SHEET_BATCH_ROWS = 5000;
-  const SHEET_MAX_ROWS = 150000;
-  let startRow = 1;
-  while (startRow <= SHEET_MAX_ROWS) {
-    const endRow = startRow + SHEET_BATCH_ROWS - 1;
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `'${title}'!A${startRow}:ZZ${endRow}`
-    });
-    const batch = res.data.values || [];
-    if (batch.length === 0) break;
-    allRows.push(...batch);
-    if (batch.length < SHEET_BATCH_ROWS) break;
-    startRow = endRow + 1;
-  }
-  return allRows;
-}
-
 async function fetchSheetWithFallback(sheets, spreadsheetId, preferredSheetName) {
-  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const meta = await withSheetsRetry(() => sheets.spreadsheets.get({ spreadsheetId }));
   const sheetList = meta.data.sheets || [];
   const titles = sheetList.map(s => (s.properties && s.properties.title) || '').filter(Boolean);
   if (!titles.length) return { values: [], sheetTitleUsed: null };
@@ -166,13 +147,16 @@ async function runCycleSyncOnce(ttlMinutes = 5) {
   }
 }
 
-function startBackgroundSync(intervalMs = 60000, ttlMinutes = 5) {
-  if (intervalMs <= 0 || process.env.DISABLE_BACKGROUND_SYNC === '1') return;
+function startBackgroundSync(intervalMs, ttlMinutes = 5) {
+  const ms = intervalMs != null && intervalMs > 0
+    ? intervalMs
+    : Number(process.env.CYCLE_SYNC_INTERVAL_MS) || 120000;
+  if (ms <= 0 || process.env.DISABLE_BACKGROUND_SYNC === '1') return;
   setInterval(() => {
     runCycleSyncOnce(ttlMinutes).catch(err => {
       console.error('[cycleSyncWorker] runCycleSyncOnce error:', err.message);
     });
-  }, intervalMs);
+  }, ms);
 }
 
 module.exports = {

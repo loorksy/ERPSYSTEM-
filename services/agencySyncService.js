@@ -2,6 +2,12 @@ const { google } = require('googleapis');
 const { getDb } = require('../db/database');
 const { normalizeUserId } = require('./payrollSearchService');
 const { parseDecimal } = require('../utils/numbers');
+const {
+  withSheetsRetry,
+  fetchSheetValuesBatched,
+  batchGetSheetsFirstChunk,
+  SHEET_BATCH_ROWS,
+} = require('./googleSheetsReadHelpers');
 
 function getOAuth2Client(credentials) {
   const clientId = credentials?.client_id || process.env.GOOGLE_CLIENT_ID;
@@ -20,26 +26,6 @@ function columnLetterToIndex(letter) {
     idx = idx * 26 + (c + 1);
   }
   return idx - 1;
-}
-
-async function fetchSheetValuesBatched(sheets, spreadsheetId, title) {
-  const allRows = [];
-  const BATCH = 5000;
-  const MAX = 150000;
-  let startRow = 1;
-  while (startRow <= MAX) {
-    const endRow = startRow + BATCH - 1;
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `'${title}'!A${startRow}:ZZ${endRow}`
-    });
-    const batch = res.data.values || [];
-    if (batch.length === 0) break;
-    allRows.push(...batch);
-    if (batch.length < BATCH) break;
-    startRow = endRow + 1;
-  }
-  return allRows;
 }
 
 function isHeaderRow(row, colIdx) {
@@ -77,7 +63,7 @@ async function syncAgenciesFromManagementTable(cycleId, userId, sheetsApi) {
   const agentSheetName = sameFileAsAgent && cycle.agent_sheet_name ? String(cycle.agent_sheet_name).trim() : null;
 
   try {
-    const meta = await sheets.spreadsheets.get({ spreadsheetId });
+    const meta = await withSheetsRetry(() => sheets.spreadsheets.get({ spreadsheetId }));
     const sheetList = meta.data.sheets || [];
     const titles = sheetList.map(s => (s.properties && s.properties.title) || '').filter(Boolean);
     if (titles.length < 2) {
@@ -94,6 +80,15 @@ async function syncAgenciesFromManagementTable(cycleId, userId, sheetsApi) {
 
     let totalUsers = 0;
     const seenUserIds = new Set();
+
+    /** جلب أول دفعة لكل ورقات الوكالة دفعة واحدة (batchGet) لتجنب تجاوز حد القراءات/دقيقة من Google */
+    let sheetRowsMap;
+    try {
+      sheetRowsMap = await batchGetSheetsFirstChunk(sheets, spreadsheetId, agencySheetNames);
+    } catch (e) {
+      console.warn('[AgencySync] batchGet agency sheets failed, falling back per-sheet:', e.message);
+      sheetRowsMap = null;
+    }
 
     for (const sheetName of agencySheetNames) {
       let agency = (await db.query('SELECT id, name, commission_percent, company_percent FROM shipping_sub_agencies WHERE name = $1', [sheetName])).rows[0];
@@ -122,7 +117,15 @@ async function syncAgenciesFromManagementTable(cycleId, userId, sheetsApi) {
 
       let rows = [];
       try {
-        rows = await fetchSheetValuesBatched(sheets, spreadsheetId, sheetName);
+        if (sheetRowsMap) {
+          rows = sheetRowsMap.get(sheetName) || [];
+          if (rows.length === SHEET_BATCH_ROWS) {
+            const rest = await fetchSheetValuesBatched(sheets, spreadsheetId, sheetName, SHEET_BATCH_ROWS + 1);
+            rows = rows.concat(rest);
+          }
+        } else {
+          rows = await fetchSheetValuesBatched(sheets, spreadsheetId, sheetName);
+        }
       } catch (e) {
         console.warn('[AgencySync] Failed to fetch sheet', sheetName, ':', e.message);
         continue;
@@ -217,7 +220,7 @@ async function calculateCashBoxBalance(cycleId, userId, sheetsApi) {
   }
 
   const spreadsheetId = String(cycle.management_spreadsheet_id).trim();
-  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const meta = await withSheetsRetry(() => sheets.spreadsheets.get({ spreadsheetId }));
   const titles = meta.data.sheets?.map(s => s.properties?.title || '')?.filter(Boolean) || [];
   const sheetToUse = titles[0];
   if (!sheetToUse) return null;
@@ -293,7 +296,7 @@ async function fetchDeferredBalanceUsers(cycleId, userId, sheetsApi) {
   const spreadsheetId = String(cycle.agent_spreadsheet_id).trim();
   const sheetName = (cycle.agent_sheet_name && String(cycle.agent_sheet_name).trim()) || null;
 
-  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const meta = await withSheetsRetry(() => sheets.spreadsheets.get({ spreadsheetId }));
   const titles = meta.data.sheets?.map(s => s.properties?.title || '')?.filter(Boolean) || [];
   const sheetToUse = sheetName && titles.includes(sheetName) ? sheetName : titles[0];
   if (!sheetToUse) return [];

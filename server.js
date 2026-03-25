@@ -252,8 +252,8 @@ initDatabase()
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`[LorkERP] Server started on http://0.0.0.0:${PORT} (PID ${process.pid})`);
       try {
-        startBackgroundSync(60000, 5);
-        console.log('[LorkERP] Payroll cycle background sync started');
+        startBackgroundSync(undefined, 5);
+        console.log('[LorkERP] Payroll cycle background sync started (interval: env CYCLE_SYNC_INTERVAL_MS or 120s)');
       } catch (e) {
         console.error('[LorkERP] Failed to start background sync', e.message);
       }

@@ -9,6 +9,7 @@ const { getDb } = require('../db/database');
 const { google } = require('googleapis');
 const { syncAgenciesFromManagementTable, fetchDeferredBalanceUsers, calculateCashBoxBalance } = require('../services/agencySyncService');
 const { ensurePrimaryAccreditationAfterCycleCreate } = require('../services/accreditationCycleService');
+const { fetchSheetValuesBatched, withSheetsRetry } = require('../services/googleSheetsReadHelpers');
 
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:3000'}/sheets/callback`;
 
@@ -283,32 +284,10 @@ router.get('/cycles/:id/structure', requireAuth, async (req, res) => {
   }
 });
 
-/** جلب ورقة كاملة على دفعات (لتجنب حد الـ API والوقت عند الملفات الكبيرة +20 ألف صف) */
-const SHEET_BATCH_ROWS = 5000;
-const SHEET_MAX_ROWS = 150000;
-
-async function fetchSheetValuesBatched(sheets, spreadsheetId, title) {
-  const allRows = [];
-  let startRow = 1;
-  while (startRow <= SHEET_MAX_ROWS) {
-    const endRow = startRow + SHEET_BATCH_ROWS - 1;
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `'${title}'!A${startRow}:ZZ${endRow}`
-    });
-    const batch = res.data.values || [];
-    if (batch.length === 0) break;
-    allRows.push(...batch);
-    if (batch.length < SHEET_BATCH_ROWS) break;
-    startRow = endRow + 1;
-  }
-  return allRows;
-}
-
 /** جلب بيانات ورقة من جدول Google مع استبدال ورقة بديلة إن فشل الاسم أو كانت فارغة.
  *  excludeSheetTitle: إن وُجد (نفس الملف للوكيل بعد الإدارة) نستبعد هذه الورقة من المحاولة. */
 async function fetchSheetWithFallback(sheets, spreadsheetId, preferredSheetName, excludeSheetTitle) {
-  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const meta = await withSheetsRetry(() => sheets.spreadsheets.get({ spreadsheetId }));
   const sheetList = meta.data.sheets || [];
   const titles = sheetList.map(s => (s.properties && s.properties.title) || '').filter(Boolean);
   if (!titles.length) return { values: [], sheetTitleUsed: null };
