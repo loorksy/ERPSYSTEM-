@@ -15,7 +15,6 @@ window.navigateQuickAction = function(type) {
     مصاريف: '/expenses-manual',
     'دين-علينا': '/payables-us',
     اعتمادات: '/approvals',
-    'تدقيق-محلي': '/local-audit',
     'وساطة-إدارية': '/admin-brokerage',
     ديون: '/debts',
   };

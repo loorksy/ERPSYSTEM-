@@ -84,64 +84,6 @@ async function ensureFinancialCyclesUserInfoColumns() {
   }
 }
 
-/** جداول تدقيق الرواتب المحلي (ملفات مرفوعة) */
-async function ensurePayrollNativeTables() {
-  if (!pgPool) return;
-  const stmts = [
-    `CREATE TABLE IF NOT EXISTS payroll_native_cycles (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`,
-    `CREATE TABLE IF NOT EXISTS payroll_native_management_workbook (
-      cycle_id INTEGER PRIMARY KEY REFERENCES payroll_native_cycles(id) ON DELETE CASCADE,
-      sheets_json TEXT NOT NULL
-    )`,
-    `CREATE TABLE IF NOT EXISTS payroll_native_agent_workbook (
-      cycle_id INTEGER PRIMARY KEY REFERENCES payroll_native_cycles(id) ON DELETE CASCADE,
-      sheets_json TEXT NOT NULL
-    )`,
-    `CREATE TABLE IF NOT EXISTS payroll_native_userinfo_workbook (
-      cycle_id INTEGER PRIMARY KEY REFERENCES payroll_native_cycles(id) ON DELETE CASCADE,
-      sheets_json TEXT NOT NULL
-    )`,
-    `CREATE TABLE IF NOT EXISTS payroll_native_settings (
-      user_id INTEGER NOT NULL,
-      native_cycle_id INTEGER NOT NULL,
-      mgmt_user_id_col TEXT DEFAULT 'A',
-      agent_user_id_col TEXT DEFAULT 'A',
-      agent_salary_col TEXT DEFAULT 'D',
-      user_info_user_id_col TEXT DEFAULT 'C',
-      user_info_title_col TEXT DEFAULT 'D',
-      user_info_salary_col TEXT DEFAULT 'L',
-      user_info_sheet_index INTEGER DEFAULT 0,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (user_id, native_cycle_id),
-      FOREIGN KEY (native_cycle_id) REFERENCES payroll_native_cycles(id) ON DELETE CASCADE
-    )`,
-    `CREATE TABLE IF NOT EXISTS payroll_native_user_audit (
-      user_id INTEGER NOT NULL,
-      native_cycle_id INTEGER NOT NULL,
-      member_user_id TEXT NOT NULL,
-      audit_status TEXT DEFAULT 'غير مدقق',
-      audit_source TEXT,
-      details_json TEXT,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (user_id, native_cycle_id, member_user_id),
-      FOREIGN KEY (native_cycle_id) REFERENCES payroll_native_cycles(id) ON DELETE CASCADE
-    )`,
-  ];
-  for (const s of stmts) {
-    try {
-      await pgPool.query(s);
-    } catch (e) {
-      console.error('[DB] payroll_native migration:', e.message);
-    }
-  }
-}
-
 async function ensureAdminUser() {
   if (!pgPool) return;
   const r = await query('SELECT * FROM users WHERE username = $1', [process.env.ADMIN_USERNAME || 'admin']);
@@ -166,7 +108,6 @@ async function initDatabase() {
     console.log('[LorkERP] Using PostgreSQL');
     await ensurePgSchema();
     await ensureFinancialCyclesUserInfoColumns();
-    await ensurePayrollNativeTables();
     await ensureAdminUser();
     return getDb();
   }

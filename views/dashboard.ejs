@@ -279,21 +279,9 @@
 
         <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">العمليات</li>
         <li>
-          <a href="/payroll" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'payroll-native' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
-            <i class="fas fa-money-check-alt w-5 text-center <%= page === 'payroll-native' ? 'text-indigo-400' : '' %>"></i>
+          <a href="/payroll" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'payroll-google' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-money-check-alt w-5 text-center <%= page === 'payroll-google' ? 'text-indigo-400' : '' %>"></i>
             <span>تدقيق الرواتب</span>
-          </a>
-        </li>
-        <li>
-          <a href="/payroll-google" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.85rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'payroll-google' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
-            <i class="fab fa-google-drive w-5 text-center <%= page === 'payroll-google' ? 'text-indigo-400' : '' %>"></i>
-            <span>تدقيق الرواتب (Google)</span>
-          </a>
-        </li>
-        <li>
-          <a href="/local-audit" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'local-audit' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
-            <i class="fas fa-clipboard-check w-5 text-center <%= page === 'local-audit' ? 'text-indigo-400' : '' %>"></i>
-            <span>تدقيق محلي</span>
           </a>
         </li>
         <li>
@@ -425,8 +413,6 @@
         <%- include('partials/home') %>
       <% } else if (page === 'sheet') { %>
         <%- include('partials/sheet') %>
-      <% } else if (page === 'payroll-native') { %>
-        <%- include('partials/payroll-native') %>
       <% } else if (page === 'payroll-google') { %>
         <%- include('partials/payroll-google') %>
       <% } else if (page === 'deferred-balance') { %>
@@ -461,8 +447,6 @@
         <%- include('partials/debt-fund') %>
       <% } else if (page === 'fx-spread') { %>
         <%- include('partials/fx-spread') %>
-      <% } else if (page === 'local-audit') { %>
-        <%- include('partials/local-audit') %>
       <% } else if (page === 'expenses-page') { %>
         <%- include('partials/expenses-page') %>
       <% } else if (page === 'profit-sources') { %>
@@ -561,9 +545,6 @@
   <% } %>
   <% if (page === 'profit-sources') { %>
     <script src="/js/profit-sources.js"></script>
-  <% } %>
-  <% if (page === 'payroll-native') { %>
-    <script src="/js/payroll-native.js"></script>
   <% } %>
 </body>
 </html>

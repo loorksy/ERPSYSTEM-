@@ -32,22 +32,17 @@ router.get('/fx-spread', requireAuth, (req, res) => {
   res.render('dashboard', { title: 'فرق التصريف', page: 'fx-spread', user: req.session.user });
 });
 
-/** محرّر دورة الرواتب المحلية — صفحة مستقلة (جدولا إدارة ووكيل معاً) */
-router.get('/payroll/cycle/:id', requireAuth, (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (!id) return res.redirect('/payroll');
-  res.render('payroll-cycle-standalone', {
-    title: 'محرّر الدورة',
-    cycleId: id,
-    user: req.session.user,
-  });
+/** توافق مع الروابط القديمة */
+router.get('/payroll-google', requireAuth, (req, res) => {
+  res.redirect(301, '/payroll');
+});
+router.get('/local-audit', requireAuth, (req, res) => {
+  res.redirect(301, '/dashboard');
 });
 
 const pages = [
   { path: '/sheet', page: 'sheet', title: 'Sheet' },
-  { path: '/payroll', page: 'payroll-native', title: 'تدقيق الرواتب' },
-  { path: '/payroll-google', page: 'payroll-google', title: 'تدقيق الرواتب (Google)' },
-  { path: '/local-audit', page: 'local-audit', title: 'تدقيق محلي' },
+  { path: '/payroll', page: 'payroll-google', title: 'تدقيق الرواتب' },
   { path: '/expenses-manual', page: 'expenses-page', title: 'المصاريف' },
   { path: '/profit-sources', page: 'profit-sources', title: 'مصادر الربح' },
   { path: '/admin-brokerage', page: 'admin-brokerage', title: 'وساطة إدارية' },
