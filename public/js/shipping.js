@@ -337,6 +337,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     loadBalance();
     loadCarrierCards();
+    loadSalarySwapCompanies();
     applyFabDeepLink();
     var sellForm = document.getElementById('shippingSellForm');
     if (sellForm) {
@@ -396,5 +397,43 @@
       });
     }
   });
+
+  function loadSalarySwapCompanies() {
+    var sel = document.getElementById('salarySwapCompany');
+    if (!sel) return;
+    apiCall('/api/transfer-companies/list').then(function(res) {
+      sel.innerHTML = '<option value="">— شركة —</option>';
+      (res.companies || []).forEach(function(c) {
+        sel.innerHTML += '<option value="' + c.id + '">' + (c.name || '') + '</option>';
+      });
+    });
+    var mode = document.getElementById('salarySwapMode');
+    var first = document.getElementById('salarySwapFirst');
+    if (mode && first) {
+      mode.addEventListener('change', function() {
+        first.classList.toggle('hidden', mode.value !== 'installment');
+      });
+    }
+  }
+
+  window.shippingSalarySwapSubmit = function() {
+    var cid = document.getElementById('salarySwapCompany') && document.getElementById('salarySwapCompany').value;
+    var gross = document.getElementById('salarySwapGross') && document.getElementById('salarySwapGross').value;
+    var disc = document.getElementById('salarySwapDisc') && document.getElementById('salarySwapDisc').value;
+    var mode = document.getElementById('salarySwapMode') && document.getElementById('salarySwapMode').value;
+    var first = document.getElementById('salarySwapFirst') && document.getElementById('salarySwapFirst').value;
+    apiCall('/api/shipping/salary-swap', {
+      method: 'POST',
+      body: JSON.stringify({
+        companyId: cid,
+        grossAmount: gross,
+        discountPct: disc,
+        paymentMode: mode,
+        firstInstallment: first || 0
+      })
+    }).then(function(res) {
+      showToast(res.message || '', res.success ? 'success' : 'error');
+    });
+  };
 
 })();

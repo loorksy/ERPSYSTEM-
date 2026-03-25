@@ -249,6 +249,46 @@
     });
   });
 
+  window.subAgenciesOpenDeliveryModal = function() {
+    var m = document.getElementById('subAgencyDeliveryModal');
+    if (!m) return;
+    m.classList.remove('hidden');
+    apiCall('/api/sub-agencies/cycles/list').then(function(res) {
+      var sel = document.getElementById('saDeliveryCycle');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">— اختر —</option>';
+      (res.cycles || []).forEach(function(c) {
+        sel.innerHTML += '<option value="' + c.id + '">' + (c.name || c.id) + '</option>';
+      });
+    });
+    apiCall('/api/sub-agencies/list').then(function(res) {
+      var box = document.getElementById('saDeliveryChecks');
+      if (!box || !res.success) return;
+      box.innerHTML = (res.agencies || []).map(function(a) {
+        return '<label class="flex items-center gap-2 py-1"><input type="checkbox" class="sa-del-cb" value="' + a.id + '"> ' + (a.name || '') + ' — رصيد: ' + (a.balance || 0) + '</label>';
+      }).join('');
+    });
+  };
+  window.subAgenciesCloseDeliveryModal = function() {
+    var m = document.getElementById('subAgencyDeliveryModal');
+    if (m) m.classList.add('hidden');
+  };
+  window.subAgenciesSubmitDelivery = function() {
+    var cids = [];
+    document.querySelectorAll('.sa-del-cb:checked').forEach(function(cb) { cids.push(parseInt(cb.value, 10)); });
+    var cycleId = document.getElementById('saDeliveryCycle') && document.getElementById('saDeliveryCycle').value;
+    apiCall('/api/sub-agencies/delivery-settle', {
+      method: 'POST',
+      body: JSON.stringify({ cycleId: cycleId || null, subAgencyIds: cids })
+    }).then(function(res) {
+      showToast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        subAgenciesCloseDeliveryModal();
+        loadAgencies();
+      }
+    });
+  };
+
   document.addEventListener('DOMContentLoaded', function() {
     loadAgencies();
   });

@@ -3,6 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { computeDebtBreakdown } = require('../services/debtAggregation');
+const { adjustFundBalance, getMainFundId } = require('../services/fundService');
 
 /** ملخص الديون للصفحة الرئيسية للديون */
 router.get('/overview', requireAuth, async (req, res) => {
@@ -52,11 +53,12 @@ router.get('/overview', requireAuth, async (req, res) => {
 /** تسجيل دين صريح (مديونية على حسابنا) */
 router.post('/register', requireAuth, async (req, res) => {
   try {
-    const { entityType, entityId, amount, currency, notes } = req.body || {};
+    const { entityType, entityId, amount, currency, notes, settlementMode } = req.body || {};
     const et = entityType === 'fund' ? 'fund' : 'transfer_company';
     const eid = parseInt(entityId, 10);
     const amt = parseFloat(amount);
     const cur = (currency || 'USD').trim();
+    const sm = settlementMode === 'cash' ? 'cash' : 'payable';
     if (!eid || isNaN(amt) || amt <= 0) {
       return res.json({ success: false, message: 'كيان ومبلغ صالحان مطلوبان' });
     }
@@ -70,11 +72,18 @@ router.post('/register', requireAuth, async (req, res) => {
       if (!ok) return res.json({ success: false, message: 'صندوق غير موجود' });
     }
     const r = await db.query(
-      `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [userId, et, eid, amt, cur, notes || null]
+      `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [userId, et, eid, amt, cur, notes || null, sm]
     );
-    res.json({ success: true, id: r.rows[0].id, message: 'تم تسجيل الدين' });
+    const pid = r.rows[0].id;
+    if (sm === 'cash' && cur === 'USD') {
+      const mainId = await getMainFundId(db, userId);
+      if (mainId) {
+        await adjustFundBalance(db, mainId, cur, amt, 'loan_cash_in', notes || 'سلفة كاش', 'entity_payables', pid);
+      }
+    }
+    res.json({ success: true, id: pid, message: 'تم التسجيل' });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }

@@ -285,6 +285,12 @@
           </a>
         </li>
         <li>
+          <a href="/local-audit" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'local-audit' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-clipboard-check w-5 text-center <%= page === 'local-audit' ? 'text-indigo-400' : '' %>"></i>
+            <span>تدقيق محلي</span>
+          </a>
+        </li>
+        <li>
           <a href="/search" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'search' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-search w-5 text-center <%= page === 'search' ? 'text-indigo-400' : '' %>"></i>
             <span>البحث</span>
@@ -341,6 +347,12 @@
           </a>
         </li>
         <li>
+          <a href="/payables-us" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'payables-us' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-hand-holding-usd w-5 text-center <%= page === 'payables-us' ? 'text-indigo-400' : '' %>"></i>
+            <span>دين علينا</span>
+          </a>
+        </li>
+        <li>
           <a href="/fx-spread" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'fx-spread' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-chart-line w-5 text-center <%= page === 'fx-spread' ? 'text-indigo-400' : '' %>"></i>
             <span>فرق التصريف</span>
@@ -350,6 +362,18 @@
           <a href="/shipping" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'shipping' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-truck w-5 text-center <%= page === 'shipping' ? 'text-indigo-400' : '' %>"></i>
             <span>الشحن</span>
+          </a>
+        </li>
+        <li>
+          <a href="/expenses-manual" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'expenses-manual' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-receipt w-5 text-center <%= page === 'expenses-manual' ? 'text-indigo-400' : '' %>"></i>
+            <span>المصاريف</span>
+          </a>
+        </li>
+        <li>
+          <a href="/admin-brokerage" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'admin-brokerage' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-percent w-5 text-center <%= page === 'admin-brokerage' ? 'text-indigo-400' : '' %>"></i>
+            <span>وساطة إدارية</span>
           </a>
         </li>
 
@@ -423,6 +447,14 @@
         <%- include('partials/debt-fund') %>
       <% } else if (page === 'fx-spread') { %>
         <%- include('partials/fx-spread') %>
+      <% } else if (page === 'local-audit') { %>
+        <%- include('partials/local-audit') %>
+      <% } else if (page === 'expenses-page') { %>
+        <%- include('partials/expenses-page') %>
+      <% } else if (page === 'admin-brokerage') { %>
+        <%- include('partials/admin-brokerage') %>
+      <% } else if (page === 'payables-overview') { %>
+        <%- include('partials/payables-overview') %>
       <% } %>
     </div>
   </main>

@@ -428,3 +428,66 @@ CREATE TABLE IF NOT EXISTS fx_spread_entries (
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- دفتر محاسبي موحّد للوحة والتقارير
+CREATE TABLE IF NOT EXISTS ledger_entries (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  bucket TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  amount REAL NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  direction SMALLINT DEFAULT 1,
+  cycle_id INTEGER REFERENCES financial_cycles(id) ON DELETE SET NULL,
+  ref_table TEXT,
+  ref_id INTEGER,
+  notes TEXT,
+  meta_json TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_user_bucket ON ledger_entries(user_id, bucket);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_cycle ON ledger_entries(user_id, cycle_id);
+
+CREATE TABLE IF NOT EXISTS expense_entries (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  amount REAL NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  category TEXT,
+  notes TEXT,
+  ref_table TEXT,
+  ref_id INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS admin_brokerage_entries (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  cycle_id INTEGER REFERENCES financial_cycles(id) ON DELETE SET NULL,
+  amount REAL NOT NULL,
+  brokerage_pct REAL NOT NULL,
+  profit_amount REAL NOT NULL,
+  main_fund_amount REAL NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS salary_swap_entries (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  company_id INTEGER REFERENCES transfer_companies(id) ON DELETE SET NULL,
+  gross_amount REAL NOT NULL,
+  discount_pct REAL DEFAULT 0,
+  payment_mode TEXT NOT NULL,
+  net_after_discount REAL NOT NULL,
+  first_installment REAL DEFAULT 0,
+  debt_amount REAL DEFAULT 0,
+  main_fund_credit REAL DEFAULT 0,
+  expense_discount REAL DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE financial_cycles ADD COLUMN IF NOT EXISTS transfer_discount_pct REAL DEFAULT 0;
+ALTER TABLE accreditation_entities ADD COLUMN IF NOT EXISTS is_primary INTEGER DEFAULT 0;
+ALTER TABLE entity_payables ADD COLUMN IF NOT EXISTS settlement_mode TEXT DEFAULT 'payable';

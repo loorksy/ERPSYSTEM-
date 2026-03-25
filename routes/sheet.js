@@ -8,6 +8,7 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { google } = require('googleapis');
 const { syncAgenciesFromManagementTable, fetchDeferredBalanceUsers, calculateCashBoxBalance } = require('../services/agencySyncService');
+const { ensurePrimaryAccreditationAfterCycleCreate } = require('../services/accreditationCycleService');
 
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:3000'}/sheets/callback`;
 
@@ -126,7 +127,7 @@ router.get('/cycles', requireAuth, async (req, res) => {
   try {
     const db = getDb();
     const rows = (await db.query(
-      'SELECT id, name, created_at, updated_at, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name FROM financial_cycles WHERE user_id = $1 ORDER BY created_at DESC',
+      'SELECT id, name, created_at, updated_at, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name, transfer_discount_pct FROM financial_cycles WHERE user_id = $1 ORDER BY created_at DESC',
       [req.session.userId]
     )).rows;
     res.json({ success: true, cycles: rows });
@@ -140,7 +141,7 @@ router.get('/cycles/:id', requireAuth, async (req, res) => {
   try {
     const db = getDb();
     const row = (await db.query(
-      'SELECT id, name, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name, created_at, updated_at FROM financial_cycles WHERE id = $1 AND user_id = $2',
+      'SELECT id, name, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name, transfer_discount_pct, created_at, updated_at FROM financial_cycles WHERE id = $1 AND user_id = $2',
       [req.params.id, req.session.userId]
     )).rows[0];
     if (!row) return res.json({ success: false, message: 'الدورة غير موجودة' });
@@ -161,7 +162,8 @@ router.put('/cycles/:id', requireAuth, async (req, res) => {
       managementSpreadsheetId,
       managementSheetName,
       agentSpreadsheetId,
-      agentSheetName
+      agentSheetName,
+      transferDiscountPct
     } = req.body;
     if (!req.session?.userId) {
       return res.status(401).json({ success: false, message: 'انتهت الجلسة. سجّل دخولك مجدداً.' });
@@ -219,6 +221,13 @@ router.put('/cycles/:id', requireAuth, async (req, res) => {
     if (agentSheetName !== undefined) {
       updates.push(`agent_sheet_name = $${idx++}`);
       params.push(agentSn);
+    }
+    if (transferDiscountPct !== undefined && transferDiscountPct !== null) {
+      const tdp = !isNaN(parseFloat(transferDiscountPct))
+        ? Math.max(0, Math.min(100, parseFloat(transferDiscountPct)))
+        : 0;
+      updates.push(`transfer_discount_pct = $${idx++}`);
+      params.push(tdp);
     }
     if (updates.length === 0) return res.json({ success: false, message: 'لا توجد بيانات للتحديث' });
     updates.push('updated_at = CURRENT_TIMESTAMP');
@@ -459,7 +468,8 @@ router.post('/cycles', requireAuth, async (req, res) => {
       managementSpreadsheetId,
       managementSheetName,
       agentSpreadsheetId,
-      agentSheetName
+      agentSheetName,
+      transferDiscountPct
     } = req.body;
     if (!req.session?.userId) {
       return res.status(401).json({ success: false, message: 'انتهت الجلسة. سجّل دخولك مجدداً.' });
@@ -487,14 +497,24 @@ router.post('/cycles', requireAuth, async (req, res) => {
       }
     }
 
+    const tdp = transferDiscountPct != null && !isNaN(parseFloat(transferDiscountPct))
+      ? Math.max(0, Math.min(100, parseFloat(transferDiscountPct)))
+      : 0;
     const result = await db.query(
       `INSERT INTO financial_cycles (user_id, name, management_data, agent_data,
-       management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [req.session.userId, String(name).trim(), managementJson, agentJson, mgmtSs, mgmtSn, agentSs, agentSn]
+       management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name, transfer_discount_pct)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [req.session.userId, String(name).trim(), managementJson, agentJson, mgmtSs, mgmtSn, agentSs, agentSn, tdp]
     );
     const id = result.lastInsertRowid != null ? result.lastInsertRowid : null;
     console.log('[LorkERP] Cycle saved:', { id, name: String(name).trim(), userId: req.session.userId });
+    if (id) {
+      try {
+        await ensurePrimaryAccreditationAfterCycleCreate(db, req.session.userId, id, agentJson);
+      } catch (e) {
+        console.error('[LorkERP] Primary accreditation hook:', e.message);
+      }
+    }
     res.json({ success: true, id, message: 'تم حفظ الدورة المالية' });
   } catch (e) {
     console.error('[LorkERP] Cycle save error:', e.message);

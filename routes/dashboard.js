@@ -3,8 +3,9 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { calculateCashBoxBalance, fetchDeferredBalanceUsers } = require('../services/agencySyncService');
-const { getFundTotalsByCurrency, getMainFundSummary, transferProfitToFund } = require('../services/fundService');
+const { getFundTotalsByCurrency, getMainFundSummary, getMainFundUsdBalance, transferProfitToFund } = require('../services/fundService');
 const { computeDebtBreakdown } = require('../services/debtAggregation');
+const { sumLedgerBucket } = require('../services/ledgerService');
 
 router.get('/', requireAuth, (req, res) => {
   res.render('dashboard', {
@@ -63,7 +64,17 @@ router.get('/stats', requireAuth, async (req, res) => {
       FROM shipping_transactions WHERE type = 'sell'
     `)).rows[0];
     totalRevenue = sellAgg?.revenue_all ?? 0;
-    netProfit = sellAgg?.profit_sum ?? 0;
+    const shippingProfit = sellAgg?.profit_sum ?? 0;
+    let ledgerNetProfit = 0;
+    let totalExpensesLedger = 0;
+    try {
+      ledgerNetProfit = await sumLedgerBucket(db, userId, 'net_profit', 'USD');
+      totalExpensesLedger = await sumLedgerBucket(db, userId, 'expense', 'USD');
+    } catch (_) {
+      ledgerNetProfit = 0;
+      totalExpensesLedger = 0;
+    }
+    netProfit = shippingProfit + ledgerNetProfit - totalExpensesLedger;
     capitalRecovered = sellAgg?.capital_sum ?? 0;
     let shippingDebt = sellAgg?.debt_sell ?? 0;
 
@@ -108,6 +119,7 @@ router.get('/stats', requireAuth, async (req, res) => {
       if (r.currency === 'USD') fundUsd += r.total || 0;
     });
     const mainFund = await getMainFundSummary(db, userId);
+    const { usd: mainFundUsd } = await getMainFundUsdBalance(db, userId);
 
     if (defaultCycleId) {
       const cashSnapshot = (await db.query(`
@@ -121,7 +133,8 @@ router.get('/stats', requireAuth, async (req, res) => {
       deferredBalance = deferredRows?.total ?? 0;
     }
 
-    cashBalance = fundUsd + snapshotCash;
+    /** بطاقة رصيد الصندوق: الصندوق الرئيسي + لقطة الجداول فقط (لا تُجمع كل الصناديع) */
+    cashBalance = (mainFundUsd || 0) + snapshotCash;
 
     res.json({
       success: true,
@@ -145,6 +158,11 @@ router.get('/stats', requireAuth, async (req, res) => {
       companyDebtFromBalance: debtBreakdown.companyDebtFromBalance,
       fundDebtFromBalance: debtBreakdown.fundDebtFromBalance,
       fxSpreadSumUsd: debtBreakdown.fxSpreadSumUsd,
+      mainFundUsd,
+      fundUsdAll: fundUsd,
+      shippingProfit,
+      ledgerNetProfit,
+      totalExpenses: totalExpensesLedger,
     });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل جلب الإحصائيات' });

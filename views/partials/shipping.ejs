@@ -107,6 +107,22 @@
           </div>
         </div>
 
+        <div class="rounded-xl border border-violet-200 bg-violet-50/80 p-4 shadow-sm">
+          <h4 class="text-sm font-bold text-violet-900 mb-3">تبديل راتب (شركة تحويل)</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <select id="salarySwapCompany" class="px-3 py-2 rounded-lg border border-violet-200 bg-white"></select>
+            <input type="number" id="salarySwapGross" step="0.01" placeholder="المبلغ الإجمالي" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
+            <input type="number" id="salarySwapDisc" step="0.1" placeholder="نسبة الخصم %" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
+            <select id="salarySwapMode" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
+              <option value="cash">كاش</option>
+              <option value="installment">تقسيط</option>
+              <option value="debt">دين</option>
+            </select>
+            <input type="number" id="salarySwapFirst" step="0.01" placeholder="الدفعة الأولى (تقسيط)" class="px-3 py-2 rounded-lg border border-violet-200 bg-white sm:col-span-2 hidden">
+          </div>
+          <button type="button" onclick="shippingSalarySwapSubmit()" class="mt-3 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold">بيع</button>
+        </div>
+
         <!-- العمليات: موبايل بيع|شراء ثم السجل؛ من 640px الثلاثة في صف (CSS .shipping-actions-row) -->
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden touch-manipulation">
           <div class="flex h-1 w-full" aria-hidden="true">

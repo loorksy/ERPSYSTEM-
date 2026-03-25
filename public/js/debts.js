@@ -101,6 +101,7 @@
             amount: amt,
             currency: document.getElementById('debtRegCurrency').value,
             notes: document.getElementById('debtRegNotes').value,
+            settlementMode: document.getElementById('debtRegSettlement') ? document.getElementById('debtRegSettlement').value : 'payable',
           }),
         }).then(function(r) { return r.json(); }).then(function(d) {
           if (d.success) {

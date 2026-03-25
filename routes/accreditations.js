@@ -1,16 +1,45 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const XLSX = require('xlsx');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { adjustFundBalance, getMainFundId } = require('../services/fundService');
+const { insertLedgerEntry } = require('../services/ledgerService');
+
+const uploadsDir = path.join(__dirname, '../uploads/temp');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const upload = multer({ dest: uploadsDir, limits: { fileSize: 15 * 1024 * 1024 } });
+
+function parseUploadedRows(filePath, mimetype) {
+  if (!filePath || !fs.existsSync(filePath)) return [];
+  const ext = path.extname(filePath).toLowerCase();
+  let rows = [];
+  try {
+    if (ext === '.csv' || mimetype === 'text/csv') {
+      const buf = fs.readFileSync(filePath, 'utf8');
+      const lines = buf.split(/\r?\n/).filter(l => l.trim());
+      rows = lines.map(line => line.split(/[,\t]/).map(c => c.trim()));
+    } else {
+      const wb = XLSX.readFile(filePath, { cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+    }
+  } finally {
+    try { fs.unlinkSync(filePath); } catch (_) {}
+  }
+  return rows;
+}
 
 router.get('/list', requireAuth, async (req, res) => {
   try {
     const db = getDb();
     const rows = (await db.query(
-      `SELECT id, name, code, balance_amount, pinned, created_at
+      `SELECT id, name, code, balance_amount, pinned, is_primary, created_at
        FROM accreditation_entities WHERE user_id = $1
-       ORDER BY pinned DESC, name`,
+       ORDER BY is_primary DESC, pinned DESC, name`,
       [req.session.userId]
     )).rows;
     res.json({ success: true, list: rows });
@@ -50,7 +79,7 @@ router.post('/:id/pin', requireAuth, async (req, res) => {
   }
 });
 
-/** إضافة مبلغ (راتب لنا/عليه + وساطة + دورة) */
+/** إضافة مبلغ: وساطة → صافي الربح، الباقي → الصندوق الرئيسي */
 router.post('/:id/add-amount', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -58,6 +87,10 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     const amt = parseFloat(amount);
     if (!id || isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'مبلغ غير صالح' });
     const db = getDb();
+    const mainFundId = await getMainFundId(db, req.session.userId);
+    if (!mainFundId) {
+      return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً من قسم الصناديع قبل إضافة مبالغ.' });
+    }
     const ent = (await db.query(
       'SELECT id, balance_amount FROM accreditation_entities WHERE id = $1 AND user_id = $2',
       [id, req.session.userId]
@@ -76,18 +109,34 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     const ledgerId = led.rows[0]?.id;
     const newBal = (ent.balance_amount || 0) + signed;
     await db.query('UPDATE accreditation_entities SET balance_amount = $1 WHERE id = $2', [newBal, id]);
-    const mainFundId = await getMainFundId(db, req.session.userId);
-    if (brokerageAmount > 0 && mainFundId) {
-      await adjustFundBalance(
-        db, mainFundId, 'USD', brokerageAmount, 'accreditation_brokerage',
-        'وساطة معتمد', 'accreditation_ledger', ledgerId
-      );
+
+    if (brokerageAmount > 0) {
+      await insertLedgerEntry(db, {
+        userId: req.session.userId,
+        bucket: 'net_profit',
+        sourceType: 'accreditation_brokerage',
+        amount: brokerageAmount,
+        cycleId: cycleId ? parseInt(cycleId, 10) : null,
+        refTable: 'accreditation_ledger',
+        refId: ledgerId,
+        notes: 'وساطة معتمد',
+      });
     }
-    if (remainder !== 0 && dir === 'to_us' && mainFundId) {
+    if (remainder !== 0 && dir === 'to_us') {
       await adjustFundBalance(
         db, mainFundId, 'USD', remainder, 'accreditation_remainder',
         'باقي بعد الوساطة', 'accreditation_ledger', ledgerId
       );
+      await insertLedgerEntry(db, {
+        userId: req.session.userId,
+        bucket: 'main_cash',
+        sourceType: 'accreditation_remainder',
+        amount: remainder,
+        cycleId: cycleId ? parseInt(cycleId, 10) : null,
+        refTable: 'accreditation_ledger',
+        refId: ledgerId,
+        notes: 'باقي بعد الوساطة',
+      });
     }
     res.json({ success: true, message: 'تم التسجيل', newBalance: newBal });
   } catch (e) {
@@ -95,7 +144,111 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
   }
 });
 
-/** تحويل: تسليم يدوي | صندوق | شركة | شحن (تسجيل فقط) */
+/** رفع أرصدة: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي (كود أو اسم) */
+router.post('/bulk-balance', requireAuth, upload.single('file'), async (req, res) => {
+  try {
+    const { cycleId } = req.body || {};
+    if (!req.file) return res.json({ success: false, message: 'الملف مطلوب' });
+    const rows = parseUploadedRows(req.file.path, req.file.mimetype);
+    if (rows.length < 2) return res.json({ success: false, message: 'ملف فارغ أو غير صالح' });
+    const db = getDb();
+    const mainFundId = await getMainFundId(db, req.session.userId);
+    if (!mainFundId) {
+      return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً أولاً' });
+    }
+    let ok = 0;
+    const errs = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const code = row[0] != null ? String(row[0]).trim() : '';
+      const name = row[1] != null ? String(row[1]).trim() : '';
+      const bal = parseFloat(String(row[2]).replace(/,/g, ''));
+      const parentRef = row[3] != null ? String(row[3]).trim() : '';
+      if (!code || isNaN(bal) || bal <= 0) continue;
+      let ent = (await db.query(
+        'SELECT id, balance_amount FROM accreditation_entities WHERE user_id = $1 AND (code = $2 OR name = $2) LIMIT 1',
+        [req.session.userId, code]
+      )).rows[0];
+      if (!ent && name) {
+        const ins = await db.query(
+          `INSERT INTO accreditation_entities (user_id, name, code) VALUES ($1, $2, $3) RETURNING id, balance_amount`,
+          [req.session.userId, name, code]
+        );
+        ent = { id: ins.rows[0].id, balance_amount: ins.rows[0].balance_amount || 0 };
+      }
+      if (!ent) {
+        errs.push(`صف ${i + 1}: لم يُوجد معتمد`);
+        continue;
+      }
+      const led = await db.query(
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
+         VALUES ($1, 'salary', $2, 'USD', 'to_us', $3, $4) RETURNING id`,
+        [ent.id, bal, cycleId ? parseInt(cycleId, 10) : null, 'استيراد دفعة — ' + (parentRef || '')]
+      );
+      const lid = led.rows[0].id;
+      await db.query('UPDATE accreditation_entities SET balance_amount = balance_amount + $1 WHERE id = $2', [bal, ent.id]);
+      await adjustFundBalance(db, mainFundId, 'USD', bal, 'accreditation_bulk', 'استيراد رصيد معتمد', 'accreditation_ledger', lid);
+      await insertLedgerEntry(db, {
+        userId: req.session.userId,
+        bucket: 'main_cash',
+        sourceType: 'accreditation_bulk_import',
+        amount: bal,
+        cycleId: cycleId ? parseInt(cycleId, 10) : null,
+        refTable: 'accreditation_ledger',
+        refId: lid,
+      });
+      ok++;
+    }
+    res.json({ success: true, message: `تم معالجة ${ok} صف`, imported: ok, errors: errs });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** تسليم: تصفير أرصدة معتمدين (بدون خصم من الصندوق) */
+router.post('/delivery-settle', requireAuth, async (req, res) => {
+  try {
+    const { cycleId, accreditationIds } = req.body || {};
+    const cid = cycleId ? parseInt(cycleId, 10) : null;
+    const ids = Array.isArray(accreditationIds) ? accreditationIds.map(x => parseInt(x, 10)).filter(Boolean) : [];
+    if (!ids.length) return res.json({ success: false, message: 'اختر معتمداً واحداً على الأقل' });
+    const db = getDb();
+    for (const aid of ids) {
+      const ent = (await db.query(
+        'SELECT id, balance_amount FROM accreditation_entities WHERE id = $1 AND user_id = $2',
+        [aid, req.session.userId]
+      )).rows[0];
+      if (!ent) continue;
+      const prev = ent.balance_amount || 0;
+      if (prev === 0) continue;
+      await db.query(
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
+         VALUES ($1, 'delivery', $2, 'USD', 'to_them', $3, $4)`,
+        [aid, Math.abs(prev), cid, 'تسليم راتب — تصفير محاسبي']
+      );
+      await db.query('UPDATE accreditation_entities SET balance_amount = 0 WHERE id = $1', [aid]);
+    }
+    res.json({ success: true, message: 'تم التسليم' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** قائمة معتمدين برصيد لدورة */
+router.get('/with-balance', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const rows = (await db.query(
+      `SELECT id, name, code, balance_amount FROM accreditation_entities
+       WHERE user_id = $1 AND balance_amount > 0.0001 ORDER BY name`,
+      [req.session.userId]
+    )).rows;
+    res.json({ success: true, list: rows });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل', list: [] });
+  }
+});
+
 router.post('/:id/transfer', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -134,9 +287,6 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
       [id, amt, notes || null, metaJson]
     );
     await db.query('UPDATE accreditation_entities SET balance_amount = $1 WHERE id = $2', [newBal, id]);
-    if (prevBal <= 0 && newBal < prevBal) {
-      /* دين عليه إن رُفع الرصيد السالب */
-    }
     res.json({ success: true, message: 'تم التحويل', newBalance: newBal });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });

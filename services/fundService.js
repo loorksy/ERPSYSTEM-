@@ -82,6 +82,16 @@ async function getMainFundSummary(db, userId) {
   return main || null;
 }
 
+async function getMainFundUsdBalance(db, userId) {
+  const mainId = await getMainFundId(db, userId);
+  if (!mainId) return { mainFundId: null, usd: 0 };
+  const row = (await db.query(
+    'SELECT amount FROM fund_balances WHERE fund_id = $1 AND currency = $2',
+    [mainId, 'USD']
+  )).rows[0];
+  return { mainFundId: mainId, usd: row?.amount ?? 0 };
+}
+
 /**
  * ترحيل أرباح إلى صندوق (دفعة واحدة).
  */
@@ -103,5 +113,6 @@ module.exports = {
   debitShippingCashBuy,
   getFundTotalsByCurrency,
   getMainFundSummary,
+  getMainFundUsdBalance,
   transferProfitToFund,
 };

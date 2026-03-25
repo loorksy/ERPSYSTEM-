@@ -29,6 +29,19 @@ function parseJsonSafe(text, fallback) {
   }
 }
 
+/** مطابق لـ columnLetterToIndex في routes/search.js — فهرس عمود من حرف (A…Z, AA…) */
+function columnLetterToIndex(letter) {
+  if (letter == null || letter === '') return null;
+  const s = String(letter).trim().toUpperCase();
+  let idx = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i) - 65;
+    if (c < 0 || c > 25) return null;
+    idx = idx * 26 + (c + 1);
+  }
+  return idx - 1;
+}
+
 function classifyManualStatus({ inMgmt, inAgent, mgmtColored, agentColored }) {
   const hasAnyColor = mgmtColored || agentColored;
   if (!inMgmt && !inAgent) {
@@ -176,6 +189,7 @@ module.exports = {
   normalizeUserId,
   computeSalaryWithDiscount,
   classifyManualStatus,
+  columnLetterToIndex,
   getCycleColumns,
   saveCycleColumns,
   getCycleCache,

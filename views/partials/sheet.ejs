@@ -137,6 +137,11 @@
           <label class="block mb-2 font-semibold text-sm text-slate-800">اسم الدورة المالية</label>
           <input type="text" id="cycleName" placeholder="مثال: دورة يناير 2025" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
         </div>
+        <div class="mb-4">
+          <label class="block mb-2 font-semibold text-sm text-slate-800">نسبة خصم التحويل للدورة (%)</label>
+          <input type="number" id="cycleTransferDiscountPct" min="0" max="100" step="0.1" placeholder="0" class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-indigo-500">
+          <p class="text-xs text-slate-500 mt-1">تُطبّق على جدول الوكيل؛ الجزء المخصوم يُسجّل كربح عند إعادة بناء المؤجل.</p>
+        </div>
       </div>
     </div>
     <!-- زر الحفظ ثابت أسفل النافذة (دائماً ظاهر على الموبايل) -->
@@ -184,6 +189,8 @@
     var footer = document.getElementById('cycleModalFooter');
     if (footer) footer.classList.add('hidden');
     document.getElementById('cycleName').value = '';
+    var tdp = document.getElementById('cycleTransferDiscountPct');
+    if (tdp) tdp.value = '';
     document.getElementById('fileManagement').value = '';
     document.getElementById('fileAgent').value = '';
     currentManagementRows = [];
@@ -251,6 +258,8 @@ async function loadCycleForEdit(cycleId) {
     if (!data.success || !data.cycle) return;
     var c = data.cycle;
     document.getElementById('cycleName').value = c.name || '';
+    var tdpEl = document.getElementById('cycleTransferDiscountPct');
+    if (tdpEl) tdpEl.value = c.transfer_discount_pct != null && c.transfer_discount_pct !== '' ? c.transfer_discount_pct : '';
     if (c.management_spreadsheet_id) {
       document.getElementById('mgmtSpreadsheetId').value = c.management_spreadsheet_id;
       await loadSheetsForSpreadsheet(c.management_spreadsheet_id, 'mgmt');
@@ -403,12 +412,14 @@ async function saveCycle() {
   try {
     var mgmtId = (document.getElementById('mgmtSpreadsheetId')?.value || '').trim();
     var agentId = (document.getElementById('agentSpreadsheetId')?.value || '').trim();
+    var tdpRaw = document.getElementById('cycleTransferDiscountPct')?.value;
     var payload = {
       name: name,
       managementSpreadsheetId: mgmtId || null,
       managementSheetName: (document.getElementById('mgmtSheetName')?.value || '').trim() || null,
       agentSpreadsheetId: agentId || null,
-      agentSheetName: (document.getElementById('agentSheetName')?.value || '').trim() || null
+      agentSheetName: (document.getElementById('agentSheetName')?.value || '').trim() || null,
+      transferDiscountPct: tdpRaw !== undefined && tdpRaw !== '' ? Number(tdpRaw) : 0
     };
     if ((!mgmtId || !agentId) && (currentManagementRows.length || currentAgentRows.length)) {
       payload.managementData = currentManagementRows;
@@ -511,6 +522,7 @@ async function loadCycles() {
             '<div class="space-y-2 text-sm text-slate-600">' +
               '<p class="flex items-center gap-2"><i class="fas fa-calendar text-slate-400 w-4"></i>' + formatDate(c.created_at) + '</p>' +
               (hasGoogle ? '<p class="flex items-center gap-2 text-emerald-600"><i class="fas fa-link w-4"></i> مرتبطة بـ Google</p>' : '<p class="flex items-center gap-2 text-amber-600"><i class="fas fa-file w-4"></i> ملفات محلية</p>') +
+              (c.transfer_discount_pct > 0 ? '<p class="flex items-center gap-2 text-slate-500"><i class="fas fa-percent w-4"></i> خصم تحويل: ' + c.transfer_discount_pct + '%</p>' : '') +
             '</div>' +
           '</div>' +
         '</div>';

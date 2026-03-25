@@ -4,7 +4,8 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { registerShippingForAgency } = require('./subAgencies');
 const { applyBuy, applySell } = require('../services/shippingInventoryService');
-const { creditShippingCashSale, debitShippingCashBuy } = require('../services/fundService');
+const { creditShippingCashSale, debitShippingCashBuy, adjustFundBalance, getMainFundId } = require('../services/fundService');
+const { insertLedgerEntry } = require('../services/ledgerService');
 
 /** المبلغ المدخل في الحقل = إجمالي قيمة الكمية (ليس سعر الوحدة) */
 function lineTotalFromBody(unitPriceField) {
@@ -330,6 +331,110 @@ router.post('/buy', requireAuth, async (req, res) => {
     res.json({ success: true, message: 'تم تسجيل عملية الشراء' });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل تسجيل الشراء' });
+  }
+});
+
+/** تبديل راتب: كاش / تقسيط / دين — خصم يُسجّل مصروفاً */
+router.post('/salary-swap', requireAuth, async (req, res) => {
+  try {
+    const { companyId, grossAmount, discountPct, paymentMode, firstInstallment, notes } = req.body || {};
+    const cid = parseInt(companyId, 10);
+    const gross = parseFloat(grossAmount);
+    const disc = parseFloat(discountPct);
+    if (!cid || isNaN(gross) || gross <= 0) {
+      return res.json({ success: false, message: 'شركة ومبلغ صالحان مطلوبان' });
+    }
+    const d = !isNaN(disc) && disc > 0 ? Math.min(100, disc) : 0;
+    const netAfter = Math.round(gross * (1 - d / 100) * 100) / 100;
+    const expenseDiscount = Math.round((gross - netAfter) * 100) / 100;
+    const mode = paymentMode === 'installment' ? 'installment' : paymentMode === 'debt' ? 'debt' : 'cash';
+    const first = mode === 'installment' ? (parseFloat(firstInstallment) || 0) : 0;
+
+    const db = getDb();
+    const userId = req.session.userId;
+    const co = (await db.query('SELECT id, name FROM transfer_companies WHERE id = $1 AND user_id = $2', [cid, userId])).rows[0];
+    if (!co) return res.json({ success: false, message: 'شركة غير موجودة' });
+
+    const mainFundId = await getMainFundId(db, userId);
+    let mainFundCredit = 0;
+    let debtAmount = 0;
+
+    if (expenseDiscount > 0) {
+      await insertLedgerEntry(db, {
+        userId,
+        bucket: 'expense',
+        sourceType: 'salary_swap_discount',
+        amount: expenseDiscount,
+        notes: 'خصم تبديل راتب — ' + (co.name || ''),
+      });
+    }
+
+    if (mode === 'cash') {
+      mainFundCredit = netAfter;
+      if (mainFundId && mainFundCredit > 0) {
+        await adjustFundBalance(db, mainFundId, 'USD', mainFundCredit, 'salary_swap_cash', 'تبديل راتب كاش', 'transfer_companies', cid);
+        await insertLedgerEntry(db, {
+          userId,
+          bucket: 'main_cash',
+          sourceType: 'salary_swap',
+          amount: mainFundCredit,
+          refTable: 'transfer_companies',
+          refId: cid,
+          notes: 'تبديل راتب كاش',
+        });
+      }
+      debtAmount = 0;
+    } else if (mode === 'installment') {
+      const rest = Math.max(0, netAfter - first);
+      mainFundCredit = Math.min(first, netAfter);
+      debtAmount = rest;
+      if (mainFundId && mainFundCredit > 0) {
+        await adjustFundBalance(db, mainFundId, 'USD', mainFundCredit, 'salary_swap_installment', 'دفعة أولى تبديل راتب', 'transfer_companies', cid);
+        await insertLedgerEntry(db, {
+          userId,
+          bucket: 'main_cash',
+          sourceType: 'salary_swap',
+          amount: mainFundCredit,
+          refTable: 'transfer_companies',
+          refId: cid,
+          notes: 'تبديل راتب — دفعة أولى',
+        });
+      }
+      if (rest > 0) {
+        await db.query(
+          `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes)
+           VALUES ($1, 'transfer_company', $2, $3, 'USD', $4)`,
+          [userId, cid, rest, notes || 'تبديل راتب — باقي تقسيط']
+        );
+      }
+    } else {
+      debtAmount = netAfter;
+      mainFundCredit = 0;
+      if (debtAmount > 0) {
+        await db.query(
+          `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes)
+           VALUES ($1, 'transfer_company', $2, $3, 'USD', $4)`,
+          [userId, cid, debtAmount, notes || 'تبديل راتب — دين']
+        );
+      }
+    }
+
+    await db.query(
+      `INSERT INTO salary_swap_entries (user_id, company_id, gross_amount, discount_pct, payment_mode, net_after_discount, first_installment, debt_amount, main_fund_credit, expense_discount, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [userId, cid, gross, d, mode, netAfter, first, debtAmount, mainFundCredit, expenseDiscount, notes || null]
+    );
+
+    res.json({
+      success: true,
+      message: 'تم تسجيل تبديل الراتب',
+      netAfterDiscount: netAfter,
+      mainFundCredit,
+      debtAmount,
+      expenseDiscount,
+    });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
   }
 });
 

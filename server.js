@@ -154,6 +154,11 @@ const aiRoutes = require('./routes/ai');
 const returnsRoutes = require('./routes/returns');
 const debtsRoutes = require('./routes/debts');
 const fxSpreadRoutes = require('./routes/fxSpread');
+const cycleAccountingRoutes = require('./routes/cycleAccounting');
+const localAuditRoutes = require('./routes/localAudit');
+const expensesRoutes = require('./routes/expenses');
+const adminBrokerageRoutes = require('./routes/adminBrokerage');
+const payablesRoutes = require('./routes/payables');
 
 app.use('/', authRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -169,6 +174,11 @@ app.use('/api/accreditations', accreditationsRoutes);
 app.use('/api/returns', returnsRoutes);
 app.use('/api/debts', debtsRoutes);
 app.use('/api/fx-spread', fxSpreadRoutes);
+app.use('/api/cycle-accounting', cycleAccountingRoutes);
+app.use('/api/local-audit', localAuditRoutes);
+app.use('/api/expenses', expensesRoutes);
+app.use('/api/admin-brokerage', adminBrokerageRoutes);
+app.use('/api/payables', payablesRoutes);
 app.use('/ai', aiRoutes(io));
 app.use('/', pagesRoutes);
 

@@ -12,6 +12,12 @@ window.navigateQuickAction = function(type) {
     صادر: '/shipping?fab=out',
     وارد: '/shipping?fab=in',
     مرتجع: '/transfer-companies?fab=return',
+    مصاريف: '/expenses-manual',
+    'دين-علينا': '/payables-us',
+    اعتمادات: '/approvals',
+    'تدقيق-محلي': '/local-audit',
+    'وساطة-إدارية': '/admin-brokerage',
+    ديون: '/debts',
   };
   var url = map[type];
   if (url) {
@@ -71,6 +77,7 @@ function initHomeStats() {
         setEl('shippingBalance', data.shippingBalance);
         setEl('totalRevenue', data.totalRevenue);
         setEl('netProfit', data.netProfit);
+        setEl('totalExpenses', data.totalExpenses);
         setEl('totalDebts', data.totalDebts);
         setEl('capitalRecovery', data.capitalRecovered);
         var sub = document.getElementById('cashBalanceSub');

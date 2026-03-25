@@ -3,6 +3,8 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { recalculateSyncProfitsForCycle } = require('../services/agencySyncService');
+const { adjustFundBalance, getMainFundId } = require('../services/fundService');
+const { insertLedgerEntry } = require('../services/ledgerService');
 
 /** قائمة الوكالات مع الرصيد */
 router.get('/list', requireAuth, async (req, res) => {
@@ -162,7 +164,30 @@ router.get('/:id/profit', requireAuth, async (req, res) => {
   }
 });
 
-/** إضافة مكافأة */
+/** تسليم: تصفير رصيد وكالة فرعية محاسبياً (بدون خصم من الصندوق) */
+router.post('/delivery-settle', requireAuth, async (req, res) => {
+  try {
+    const { cycleId, subAgencyIds } = req.body || {};
+    const ids = Array.isArray(subAgencyIds) ? subAgencyIds.map(x => parseInt(x, 10)).filter(Boolean) : [];
+    if (!ids.length) return res.json({ success: false, message: 'اختر وكالة واحدة على الأقل' });
+    const db = getDb();
+    const cid = cycleId ? parseInt(cycleId, 10) : null;
+    for (const sid of ids) {
+      const bal = await calculateAgencyBalance(db, sid);
+      if (bal <= 0) continue;
+      await db.query(
+        `INSERT INTO sub_agency_transactions (sub_agency_id, type, amount, notes, cycle_id)
+         VALUES ($1, 'deduction', $2, $3, $4)`,
+        [sid, bal, 'تسليم راتب — تصفير محاسبي', cid]
+      );
+    }
+    res.json({ success: true, message: 'تم التسليم' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** إضافة مكافأة (يُخصم من الصندوق الرئيسي؛ إن كانت الوكالة مدينة لنا يُسجَّل دين) */
 router.post('/:id/reward', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -171,10 +196,24 @@ router.post('/:id/reward', requireAuth, async (req, res) => {
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'المبلغ غير صالح' });
     const db = getDb();
+    const userId = req.session.userId;
     await db.query(`
       INSERT INTO sub_agency_transactions (sub_agency_id, type, amount, notes)
       VALUES ($1, 'reward', $2, $3)
     `, [id, amt, notes || null]);
+    const mainId = await getMainFundId(db, userId);
+    if (mainId) {
+      await adjustFundBalance(db, mainId, 'USD', -amt, 'sub_agency_reward', notes || 'مكافأة وكالة فرعية', 'shipping_sub_agencies', id);
+      await insertLedgerEntry(db, {
+        userId,
+        bucket: 'expense',
+        sourceType: 'sub_agency_reward',
+        amount: amt,
+        refTable: 'shipping_sub_agencies',
+        refId: id,
+        notes: notes || 'مكافأة وكالة فرعية',
+      });
+    }
     res.json({ success: true, message: 'تم إضافة المكافأة' });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل الإضافة' });

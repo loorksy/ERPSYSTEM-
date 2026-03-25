@@ -1,0 +1,19 @@
+<div class="max-w-4xl mx-auto" dir="rtl">
+  <h2 class="text-2xl font-bold text-slate-800 mb-6">دين علينا — ملخص</h2>
+  <div id="payablesBox" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <p class="text-slate-400">جاري التحميل...</p>
+  </div>
+</div>
+<script>
+fetch('/api/payables/overview', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(res) {
+  var box = document.getElementById('payablesBox');
+  if (!box || !res.success) return;
+  var h = '<p class="text-lg font-bold mb-4">إجمالي الديون (من الحاسبة): ' + (res.breakdown && res.breakdown.totalDebts != null ? res.breakdown.totalDebts.toFixed(2) : '0') + '</p>';
+  h += '<h3 class="font-bold text-slate-700 mb-2">ديون مسجّلة (entity_payables)</h3><ul class="text-sm space-y-2">';
+  (res.payables || []).slice(0, 50).forEach(function(p) {
+    h += '<li class="border-b border-slate-100 py-2">' + (p.entity_type || '') + ' #' + p.entity_id + ' — ' + (p.amount || 0) + ' ' + (p.currency || '') + '</li>';
+  });
+  h += '</ul>';
+  box.innerHTML = h;
+});
+</script>

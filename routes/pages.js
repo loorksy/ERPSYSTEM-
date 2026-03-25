@@ -35,6 +35,10 @@ router.get('/fx-spread', requireAuth, (req, res) => {
 const pages = [
   { path: '/sheet', page: 'sheet', title: 'Sheet' },
   { path: '/payroll', page: 'payroll', title: 'تدقيق الرواتب' },
+  { path: '/local-audit', page: 'local-audit', title: 'تدقيق محلي' },
+  { path: '/expenses-manual', page: 'expenses-page', title: 'المصاريف' },
+  { path: '/admin-brokerage', page: 'admin-brokerage', title: 'وساطة إدارية' },
+  { path: '/payables-us', page: 'payables-overview', title: 'دين علينا' },
   { path: '/deferred-balance', page: 'deferred-balance', title: 'رصيد المؤجل' },
   { path: '/search', page: 'search', title: 'البحث' },
   { path: '/clients', page: 'clients', title: 'بيانات العملاء' },
