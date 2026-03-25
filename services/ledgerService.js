@@ -56,8 +56,22 @@ async function sumExpenseEntries(db, userId, currency = 'USD') {
   return row?.t ?? 0;
 }
 
+/** تجميع صافي الربح حسب نوع المصدر (دفتر bucket = net_profit) */
+async function aggregateNetProfitBySource(db, userId, currency = 'USD') {
+  const rows = (await db.query(
+    `SELECT source_type, COALESCE(SUM(amount * direction), 0)::float AS total
+     FROM ledger_entries
+     WHERE user_id = $1 AND bucket = 'net_profit' AND currency = $2
+     GROUP BY source_type
+     ORDER BY ABS(COALESCE(SUM(amount * direction), 0)) DESC`,
+    [userId, currency]
+  )).rows;
+  return rows;
+}
+
 module.exports = {
   insertLedgerEntry,
   sumLedgerBucket,
   sumExpenseEntries,
+  aggregateNetProfitBySource,
 };

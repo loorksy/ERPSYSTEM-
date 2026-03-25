@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
-const { insertLedgerEntry, sumLedgerBucket } = require('../services/ledgerService');
+const { insertLedgerEntry, sumLedgerBucket, aggregateNetProfitBySource } = require('../services/ledgerService');
 const { adjustFundBalance, getMainFundId } = require('../services/fundService');
 
 router.get('/total', requireAuth, async (req, res) => {
@@ -12,6 +12,65 @@ router.get('/total', requireAuth, async (req, res) => {
     res.json({ success: true, total: t });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل', total: 0 });
+  }
+});
+
+/** سجل مصاريف موحّد: قيود الدفتر (expense) + سجلات يدوية بلا قيد مزدوج */
+router.get('/ledger-unified', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.session.userId;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 400, 1), 500);
+    const sourceFilter = (req.query.sourceType && String(req.query.sourceType).trim()) || null;
+
+    const p = [userId];
+    let sql = `
+      SELECT id, created_at, amount, source_type, notes, ref_table, ref_id, direction,
+             'ledger' AS source_kind
+      FROM ledger_entries
+      WHERE user_id = $1 AND bucket = 'expense' AND currency = 'USD'`;
+    if (sourceFilter) {
+      sql += ` AND source_type = $${p.length + 1}`;
+      p.push(sourceFilter);
+    }
+    sql += ` ORDER BY created_at DESC LIMIT $${p.length + 1}`;
+    p.push(limit);
+
+    const ledgerRows = (await db.query(sql, p)).rows;
+
+    const manualRows = (await db.query(
+      `SELECT e.id, e.created_at, e.amount,
+              COALESCE(e.category, 'manual') AS source_type,
+              e.notes, 'expense_entries' AS ref_table, e.id AS ref_id,
+              1 AS direction, 'manual_entry' AS source_kind
+       FROM expense_entries e
+       WHERE e.user_id = $1
+       AND NOT EXISTS (
+         SELECT 1 FROM ledger_entries l
+         WHERE l.user_id = e.user_id AND l.ref_table = 'expense_entries' AND l.ref_id = e.id
+       )
+       ORDER BY e.created_at DESC
+       LIMIT $2`,
+      [userId, limit]
+    )).rows;
+
+    const merged = [...ledgerRows, ...manualRows]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, limit);
+    res.json({ success: true, rows: merged });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل', rows: [] });
+  }
+});
+
+/** تقرير مصادر صافي الربح حسب source_type */
+router.get('/net-profit-by-source', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const rows = await aggregateNetProfitBySource(db, req.session.userId);
+    res.json({ success: true, rows });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل', rows: [] });
   }
 });
 

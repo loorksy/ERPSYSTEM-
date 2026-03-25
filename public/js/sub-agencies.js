@@ -150,6 +150,33 @@
 
   window.subAgenciesOpenRewardModal = function() {
     document.getElementById('subAgencyRewardForm').reset();
+    var hint = document.getElementById('subAgencyRewardBalanceHint');
+    var cb = document.getElementById('subAgencyRewardDeductFromFund');
+    if (!currentAgencyId) {
+      if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
+      if (cb) cb.checked = true;
+    } else {
+      apiCall('/api/sub-agencies/' + currentAgencyId).then(function(res) {
+        if (!res.success || !res.agency) {
+          if (hint) hint.classList.add('hidden');
+          if (cb) cb.checked = true;
+          return;
+        }
+        var bal = res.agency.balance != null ? res.agency.balance : 0;
+        var owesUs = bal < 0;
+        if (cb) cb.checked = !owesUs;
+        if (hint) {
+          hint.classList.remove('hidden');
+          if (owesUs) {
+            hint.className = 'text-sm rounded-lg p-3 mb-3 bg-amber-50 text-amber-900 border border-amber-200';
+            hint.innerHTML = 'رصيد الوكالة <strong>مديون</strong> لنا (رصيد سالب). يُفضَّل عدم خصم من الصندوق: تُسجَّل المكافأة كائتمان محاسبي فقط. يمكنك تفعيل الخصم من الصندوق يدوياً إذا دفعت نقداً.';
+          } else {
+            hint.className = 'text-sm rounded-lg p-3 mb-3 bg-slate-50 text-slate-600 border border-slate-100';
+            hint.innerHTML = 'رصيد الوكالة <strong>دائن</strong> أو متعادل. يُخصم من الصندوق افتراضياً إذا بقي الخيار مفعّلاً.';
+          }
+        }
+      });
+    }
     document.getElementById('subAgencyRewardModal').classList.remove('hidden');
     document.getElementById('subAgencyRewardModal').classList.add('flex');
   };
@@ -237,9 +264,10 @@
     if (!currentAgencyId) return;
     const amount = document.getElementById('subAgencyRewardAmount').value;
     const notes = document.getElementById('subAgencyRewardNotes').value;
+    const deductFromFund = document.getElementById('subAgencyRewardDeductFromFund') && document.getElementById('subAgencyRewardDeductFromFund').checked;
     apiCall('/api/sub-agencies/' + currentAgencyId + '/reward', {
       method: 'POST',
-      body: JSON.stringify({ amount, notes })
+      body: JSON.stringify({ amount, notes, deductFromFund })
     }).then(function(res) {
       showToast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
       if (res.success) {

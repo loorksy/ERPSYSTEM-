@@ -325,18 +325,18 @@
         if (window.shippingOpenSellModal) window.shippingOpenSellModal();
         stripFabParam();
       }, 120);
-    } else     if (fab === 'in') {
+    } else if (fab === 'in') {
       setTimeout(function() {
-        var mainTab = document.querySelector('[onclick*="shipping-main"]');
-        if (mainTab) mainTab.click();
-        if (window.shippingOpenBuyModal) window.shippingOpenBuyModal();
         var focusSwap = '';
         try { focusSwap = new URLSearchParams(window.location.search).get('qaFocus') || ''; } catch (_) {}
         if (focusSwap === 'swap') {
-          setTimeout(function() {
-            var el = document.getElementById('shippingSalarySwapBlock');
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 280);
+          var swapTab = document.querySelector('[onclick*="shipping-salary-swap"]');
+          if (swapTab) swapTab.click();
+          if (window.updateSalarySwapPreview) window.updateSalarySwapPreview();
+        } else {
+          var mainTab = document.querySelector('[onclick*="shipping-main"]');
+          if (mainTab) mainTab.click();
+          if (window.shippingOpenBuyModal) window.shippingOpenBuyModal();
         }
         stripFabParam();
       }, 120);
@@ -347,6 +347,13 @@
     loadBalance();
     loadCarrierCards();
     loadSalarySwapCompanies();
+    try {
+      var tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab === 'swap' || tab === 'salary-swap') {
+        var swapBtn = document.querySelector('[onclick*="shipping-salary-swap"]');
+        if (swapBtn) swapBtn.click();
+      }
+    } catch (_) {}
     applyFabDeepLink();
     var sellForm = document.getElementById('shippingSellForm');
     if (sellForm) {
@@ -407,6 +414,49 @@
     }
   });
 
+  function fmtMoneyPreview(n) {
+    var v = parseFloat(n);
+    if (isNaN(v)) v = 0;
+    if (typeof window.formatMoney === 'function') return window.formatMoney(v);
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+  }
+
+  window.updateSalarySwapPreview = function() {
+    var el = document.getElementById('salarySwapPreview');
+    if (!el) return;
+    var gross = parseFloat(document.getElementById('salarySwapGross') && document.getElementById('salarySwapGross').value);
+    var disc = parseFloat(document.getElementById('salarySwapDisc') && document.getElementById('salarySwapDisc').value);
+    var mode = (document.getElementById('salarySwapMode') && document.getElementById('salarySwapMode').value) || 'cash';
+    var firstRaw = document.getElementById('salarySwapFirst') && document.getElementById('salarySwapFirst').value;
+    var first = parseFloat(firstRaw);
+    if (isNaN(gross) || gross <= 0) {
+      el.innerHTML = '<p class="text-slate-500 text-xs">أدخل المبلغ والنسبة لعرض المعاينة.</p>';
+      return;
+    }
+    var d = !isNaN(disc) && disc > 0 ? Math.min(100, disc) : 0;
+    var netAfter = Math.round(gross * (1 - d / 100) * 100) / 100;
+    var expenseDiscount = Math.round((gross - netAfter) * 100) / 100;
+    var html = [];
+    html.push('<p><span class="font-semibold text-violet-900">بعد الخصم (صافي):</span> ' + fmtMoneyPreview(netAfter) + '</p>');
+    if (expenseDiscount > 0) {
+      html.push('<p class="text-amber-800 text-xs">يُسجَّل كمصروف (خصم): ' + fmtMoneyPreview(expenseDiscount) + '</p>');
+    }
+    if (mode === 'cash') {
+      html.push('<p class="text-slate-700">→ للصندوق الرئيسي: ' + fmtMoneyPreview(netAfter) + '</p>');
+      html.push('<p class="text-xs text-slate-500">دين على الشركة (payables): 0</p>');
+    } else if (mode === 'installment') {
+      var fi = isNaN(first) || first < 0 ? 0 : first;
+      var rest = Math.max(0, netAfter - fi);
+      var mainFundCredit = Math.min(fi, netAfter);
+      html.push('<p class="text-slate-700">→ دفعة أولى للصندوق: ' + fmtMoneyPreview(mainFundCredit) + '</p>');
+      html.push('<p class="text-xs text-slate-600">→ باقي كدين على الشركة: ' + fmtMoneyPreview(rest) + '</p>');
+    } else {
+      html.push('<p class="text-slate-700">→ للصندوق الرئيسي: ' + fmtMoneyPreview(0) + '</p>');
+      html.push('<p class="text-xs text-slate-600">→ كامل الصافي كدين على الشركة: ' + fmtMoneyPreview(netAfter) + '</p>');
+    }
+    el.innerHTML = html.join('');
+  };
+
   function loadSalarySwapCompanies() {
     var sel = document.getElementById('salarySwapCompany');
     if (!sel) return;
@@ -421,8 +471,17 @@
     if (mode && first) {
       mode.addEventListener('change', function() {
         first.classList.toggle('hidden', mode.value !== 'installment');
+        window.updateSalarySwapPreview();
       });
     }
+    ['salarySwapGross', 'salarySwapDisc', 'salarySwapFirst'].forEach(function(id) {
+      var inp = document.getElementById(id);
+      if (inp) {
+        inp.addEventListener('input', function() { window.updateSalarySwapPreview(); });
+        inp.addEventListener('change', function() { window.updateSalarySwapPreview(); });
+      }
+    });
+    window.updateSalarySwapPreview();
   }
 
   window.shippingSalarySwapSubmit = function() {
@@ -442,6 +501,10 @@
       })
     }).then(function(res) {
       showToast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        loadBalance();
+        window.updateSalarySwapPreview();
+      }
     });
   };
 

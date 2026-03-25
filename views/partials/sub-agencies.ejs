@@ -116,9 +116,14 @@
       <button type="button" onclick="subAgenciesCloseRewardModal()" class="modal-close"><i class="fas fa-times"></i></button>
     </div>
     <form id="subAgencyRewardForm" class="modal-form">
+      <p id="subAgencyRewardBalanceHint" class="text-sm rounded-lg p-3 mb-3 bg-slate-50 text-slate-600 border border-slate-100 hidden"></p>
       <div class="form-group">
         <label>مبلغ المكافأة</label>
         <input type="number" id="subAgencyRewardAmount" step="0.01" min="0.01" required>
+      </div>
+      <div class="form-group flex items-start gap-2">
+        <input type="checkbox" id="subAgencyRewardDeductFromFund" class="mt-1">
+        <label for="subAgencyRewardDeductFromFund" class="text-sm leading-relaxed">خصم المبلغ من الصندوق الرئيسي وتسجيله مصروفاً</label>
       </div>
       <div class="form-group">
         <label>ملاحظة</label>

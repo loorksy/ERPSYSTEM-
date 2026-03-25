@@ -8,6 +8,8 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { adjustFundBalance, getMainFundId } = require('../services/fundService');
 const { insertLedgerEntry } = require('../services/ledgerService');
+const { processAccreditationBulkRows, parseCsvTextToRows } = require('../services/accreditationBulkImport');
+const { extractSpreadsheetIdFromUrl, fetchSheetRowsUsingStoredGoogleConfig } = require('../services/googleSheetReadService');
 
 const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -150,58 +152,43 @@ router.post('/bulk-balance', requireAuth, upload.single('file'), async (req, res
     const { cycleId } = req.body || {};
     if (!req.file) return res.json({ success: false, message: 'الملف مطلوب' });
     const rows = parseUploadedRows(req.file.path, req.file.mimetype);
-    if (rows.length < 2) return res.json({ success: false, message: 'ملف فارغ أو غير صالح' });
     const db = getDb();
-    const mainFundId = await getMainFundId(db, req.session.userId);
-    if (!mainFundId) {
-      return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً أولاً' });
-    }
-    let ok = 0;
-    const errs = [];
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      const code = row[0] != null ? String(row[0]).trim() : '';
-      const name = row[1] != null ? String(row[1]).trim() : '';
-      const bal = parseFloat(String(row[2]).replace(/,/g, ''));
-      const parentRef = row[3] != null ? String(row[3]).trim() : '';
-      if (!code || isNaN(bal) || bal <= 0) continue;
-      let ent = (await db.query(
-        'SELECT id, balance_amount FROM accreditation_entities WHERE user_id = $1 AND (code = $2 OR name = $2) LIMIT 1',
-        [req.session.userId, code]
-      )).rows[0];
-      if (!ent && name) {
-        const ins = await db.query(
-          `INSERT INTO accreditation_entities (user_id, name, code) VALUES ($1, $2, $3) RETURNING id, balance_amount`,
-          [req.session.userId, name, code]
-        );
-        ent = { id: ins.rows[0].id, balance_amount: ins.rows[0].balance_amount || 0 };
-      }
-      if (!ent) {
-        errs.push(`صف ${i + 1}: لم يُوجد معتمد`);
-        continue;
-      }
-      const led = await db.query(
-        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
-         VALUES ($1, 'salary', $2, 'USD', 'to_us', $3, $4) RETURNING id`,
-        [ent.id, bal, cycleId ? parseInt(cycleId, 10) : null, 'استيراد دفعة — ' + (parentRef || '')]
-      );
-      const lid = led.rows[0].id;
-      await db.query('UPDATE accreditation_entities SET balance_amount = balance_amount + $1 WHERE id = $2', [bal, ent.id]);
-      await adjustFundBalance(db, mainFundId, 'USD', bal, 'accreditation_bulk', 'استيراد رصيد معتمد', 'accreditation_ledger', lid);
-      await insertLedgerEntry(db, {
-        userId: req.session.userId,
-        bucket: 'main_cash',
-        sourceType: 'accreditation_bulk_import',
-        amount: bal,
-        cycleId: cycleId ? parseInt(cycleId, 10) : null,
-        refTable: 'accreditation_ledger',
-        refId: lid,
-      });
-      ok++;
-    }
-    res.json({ success: true, message: `تم معالجة ${ok} صف`, imported: ok, errors: errs });
+    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId);
+    res.json(out);
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** لصق CSV/TSV كنص (نفس أعمدة الملف) */
+router.post('/bulk-balance-text', requireAuth, async (req, res) => {
+  try {
+    const { csvText, cycleId } = req.body || {};
+    const rows = parseCsvTextToRows(csvText || '');
+    const db = getDb();
+    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId);
+    res.json(out);
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** جلب ورقة من رابط Google Sheet (يتطلب ربط Google في إعدادات الجداول) */
+router.post('/bulk-balance-sheet-url', requireAuth, async (req, res) => {
+  try {
+    const { sheetUrl, sheetName, cycleId } = req.body || {};
+    const sid = extractSpreadsheetIdFromUrl(sheetUrl);
+    if (!sid) return res.json({ success: false, message: 'رابط Google Sheet غير صالح' });
+    const db = getDb();
+    const result = await fetchSheetRowsUsingStoredGoogleConfig(db, sid, sheetName || null);
+    const rows = result.values || [];
+    if (rows.length < 2) {
+      return res.json({ success: false, message: 'الورقة فارغة أو غير قابلة للقراءة', sheetTitleUsed: result.sheetTitleUsed });
+    }
+    const out = await processAccreditationBulkRows(db, req.session.userId, rows, cycleId);
+    res.json({ ...out, sheetTitleUsed: result.sheetTitleUsed });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل جلب الورقة' });
   }
 });
 

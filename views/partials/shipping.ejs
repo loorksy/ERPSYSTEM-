@@ -43,9 +43,9 @@
       </div>
     </header>
 
-    <!-- شريط تبويبات موحّد (segmented) — ثلاثة أعمدة متساوية على كل الشاشات -->
+    <!-- شريط تبويبات — أربعة أقسام (شبكة 2×2 على الموبايل) -->
     <div class="shrink-0 border-b border-slate-100 bg-white px-4 py-3 md:px-6">
-      <nav class="rounded-xl bg-slate-100 p-1 grid grid-cols-3 gap-0 shadow-inner touch-manipulation" role="tablist" aria-label="أقسام الشحن">
+      <nav class="rounded-xl bg-slate-100 p-1 grid grid-cols-2 sm:grid-cols-4 gap-0 shadow-inner touch-manipulation" role="tablist" aria-label="أقسام الشحن">
         <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-carriers')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
           <i class="fas fa-truck-moving shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
           <span class="leading-tight text-center">وكالات الشحن</span>
@@ -53,6 +53,10 @@
         <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-main')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-semibold text-indigo-700 bg-white shadow-sm ring-1 ring-slate-200/90 transition-colors">
           <i class="fas fa-right-left shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
           <span class="leading-tight text-center">الشحن</span>
+        </button>
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-salary-swap')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+          <i class="fas fa-exchange-alt shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
+          <span class="leading-tight text-center">تبديل راتب</span>
         </button>
         <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-packages')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
           <i class="fas fa-box-open shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
@@ -107,22 +111,6 @@
           </div>
         </div>
 
-        <div id="shippingSalarySwapBlock" class="rounded-xl border border-violet-200 bg-violet-50/80 p-4 shadow-sm scroll-mt-24">
-          <h4 class="text-sm font-bold text-violet-900 mb-3">تبديل راتب (شركة تحويل)</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <select id="salarySwapCompany" class="px-3 py-2 rounded-lg border border-violet-200 bg-white"></select>
-            <input type="number" id="salarySwapGross" step="0.01" placeholder="المبلغ الإجمالي" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
-            <input type="number" id="salarySwapDisc" step="0.1" placeholder="نسبة الخصم %" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
-            <select id="salarySwapMode" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
-              <option value="cash">كاش</option>
-              <option value="installment">تقسيط</option>
-              <option value="debt">دين</option>
-            </select>
-            <input type="number" id="salarySwapFirst" step="0.01" placeholder="الدفعة الأولى (تقسيط)" class="px-3 py-2 rounded-lg border border-violet-200 bg-white sm:col-span-2 hidden">
-          </div>
-          <button type="button" onclick="shippingSalarySwapSubmit()" class="mt-3 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold">بيع</button>
-        </div>
-
         <!-- العمليات: موبايل بيع|شراء ثم السجل؛ من 640px الثلاثة في صف (CSS .shipping-actions-row) -->
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden touch-manipulation">
           <div class="flex h-1 w-full" aria-hidden="true">
@@ -168,6 +156,32 @@
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- تبديل راتب (تبويب مستقل) -->
+      <div id="shipping-salary-swap" class="tab-content hidden space-y-4">
+        <div id="shippingSalarySwapBlock" class="rounded-xl border border-violet-200 bg-violet-50/80 p-4 md:p-5 shadow-sm scroll-mt-24">
+          <h4 class="text-sm font-bold text-violet-900 mb-2">تبديل راتب (شركة تحويل)</h4>
+          <p class="text-xs text-violet-800/90 leading-relaxed mb-3 p-3 rounded-lg bg-white/80 border border-violet-100">
+            <strong>المسار المحاسبي:</strong> المبلغ بعد الخصم يُسجَّل نقدياً في <strong>الصندوق الرئيسي</strong> (أو كدين على الشركة)، والخصم يُسجَّل <strong>مصروفاً</strong>.
+            لا يمر هذا النموذج بمخزون ذهب/كرستال؛ لبيع مخزون شحن استخدم تبويب «الشحن» → بيع.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <select id="salarySwapCompany" class="px-3 py-2 rounded-lg border border-violet-200 bg-white"></select>
+            <input type="number" id="salarySwapGross" step="0.01" placeholder="المبلغ الإجمالي" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
+            <input type="number" id="salarySwapDisc" step="0.1" placeholder="نسبة الخصم %" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
+            <select id="salarySwapMode" class="px-3 py-2 rounded-lg border border-violet-200 bg-white">
+              <option value="cash">كاش</option>
+              <option value="installment">تقسيط</option>
+              <option value="debt">دين</option>
+            </select>
+            <input type="number" id="salarySwapFirst" step="0.01" placeholder="الدفعة الأولى (تقسيط)" class="px-3 py-2 rounded-lg border border-violet-200 bg-white sm:col-span-2 hidden">
+          </div>
+          <div id="salarySwapPreview" class="mt-3 p-3 rounded-xl bg-white border border-violet-100 text-sm space-y-1 text-slate-700 min-h-[4rem]">
+            <p class="text-slate-500 text-xs">أدخل المبلغ والنسبة لعرض المعاينة.</p>
+          </div>
+          <button type="button" onclick="shippingSalarySwapSubmit()" class="mt-3 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold">بيع</button>
         </div>
       </div>
 

@@ -37,6 +37,7 @@ const pages = [
   { path: '/payroll', page: 'payroll', title: 'تدقيق الرواتب' },
   { path: '/local-audit', page: 'local-audit', title: 'تدقيق محلي' },
   { path: '/expenses-manual', page: 'expenses-page', title: 'المصاريف' },
+  { path: '/profit-sources', page: 'profit-sources', title: 'مصادر الربح' },
   { path: '/admin-brokerage', page: 'admin-brokerage', title: 'وساطة إدارية' },
   { path: '/payables-us', page: 'payables-overview', title: 'دين علينا' },
   { path: '/deferred-balance', page: 'deferred-balance', title: 'رصيد المؤجل' },

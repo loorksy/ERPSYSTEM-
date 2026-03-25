@@ -187,34 +187,51 @@ router.post('/delivery-settle', requireAuth, async (req, res) => {
   }
 });
 
-/** إضافة مكافأة (يُخصم من الصندوق الرئيسي؛ إن كانت الوكالة مدينة لنا يُسجَّل دين) */
+/** إضافة مكافأة — افتراضياً خصم من الصندوق إذا كان الرصيد غير سالب؛ إذا كانت الوكالة مدينة لنا (رصيد سالب) يُسجَّل الائتمان فقط دون خصم نقدي ما لم يُفعَّل «خصم من الصندوق». */
 router.post('/:id/reward', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { amount, notes } = req.body || {};
+    const { amount, notes, deductFromFund } = req.body || {};
     if (!id || isNaN(id)) return res.json({ success: false, message: 'معرف غير صالح' });
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'المبلغ غير صالح' });
     const db = getDb();
     const userId = req.session.userId;
+    const balanceBefore = await calculateAgencyBalance(db, id);
+    let useFund = deductFromFund;
+    if (useFund === undefined || useFund === null) {
+      useFund = balanceBefore >= 0;
+    } else {
+      useFund = Boolean(useFund);
+    }
     await db.query(`
       INSERT INTO sub_agency_transactions (sub_agency_id, type, amount, notes)
       VALUES ($1, 'reward', $2, $3)
     `, [id, amt, notes || null]);
-    const mainId = await getMainFundId(db, userId);
-    if (mainId) {
-      await adjustFundBalance(db, mainId, 'USD', -amt, 'sub_agency_reward', notes || 'مكافأة وكالة فرعية', 'shipping_sub_agencies', id);
-      await insertLedgerEntry(db, {
-        userId,
-        bucket: 'expense',
-        sourceType: 'sub_agency_reward',
-        amount: amt,
-        refTable: 'shipping_sub_agencies',
-        refId: id,
-        notes: notes || 'مكافأة وكالة فرعية',
-      });
+    if (useFund) {
+      const mainId = await getMainFundId(db, userId);
+      if (mainId) {
+        await adjustFundBalance(db, mainId, 'USD', -amt, 'sub_agency_reward', notes || 'مكافأة وكالة فرعية', 'shipping_sub_agencies', id);
+        await insertLedgerEntry(db, {
+          userId,
+          bucket: 'expense',
+          sourceType: 'sub_agency_reward',
+          amount: amt,
+          refTable: 'shipping_sub_agencies',
+          refId: id,
+          notes: notes || 'مكافأة وكالة فرعية',
+        });
+      }
     }
-    res.json({ success: true, message: 'تم إضافة المكافأة' });
+    const msg = useFund
+      ? 'تم إضافة المكافأة وخصمها من الصندوق الرئيسي'
+      : 'تم تسجيل المكافأة محاسبياً دون خصم من الصندوق (ائتمان للوكالة فقط)';
+    res.json({
+      success: true,
+      message: msg,
+      deductFromFund: useFund,
+      balanceBefore,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل الإضافة' });
   }

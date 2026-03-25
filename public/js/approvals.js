@@ -82,9 +82,60 @@
         if (res.success) {
           accCloseBulk();
           f.value = '';
+          var p = document.getElementById('accBulkPaste');
+          if (p) p.value = '';
           accLoad();
         }
       });
+  };
+
+  window.accSubmitBulkText = function() {
+    var t = document.getElementById('accBulkPaste');
+    var txt = t && t.value ? t.value.trim() : '';
+    if (!txt) {
+      toast('الصق النص أولاً', 'error');
+      return;
+    }
+    var cid = document.getElementById('accBulkCycle').value;
+    apiCall('/api/accreditations/bulk-balance-text', {
+      method: 'POST',
+      body: JSON.stringify({ csvText: txt, cycleId: cid || null })
+    }).then(function(res) {
+      toast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        accCloseBulk();
+        if (t) t.value = '';
+        accLoad();
+      }
+    });
+  };
+
+  window.accSubmitBulkSheetUrl = function() {
+    var u = document.getElementById('accBulkSheetUrl');
+    var sn = document.getElementById('accBulkSheetName');
+    var url = u && u.value ? u.value.trim() : '';
+    if (!url) {
+      toast('أدخل رابط الجدول', 'error');
+      return;
+    }
+    var cid = document.getElementById('accBulkCycle').value;
+    apiCall('/api/accreditations/bulk-balance-sheet-url', {
+      method: 'POST',
+      body: JSON.stringify({
+        sheetUrl: url,
+        sheetName: sn && sn.value ? sn.value.trim() : null,
+        cycleId: cid || null
+      })
+    }).then(function(res) {
+      var msg = res.message || '';
+      if (res.sheetTitleUsed) msg += ' — ورقة: ' + res.sheetTitleUsed;
+      toast(msg, res.success ? 'success' : 'error');
+      if (res.success) {
+        accCloseBulk();
+        if (u) u.value = '';
+        accLoad();
+      }
+    });
   };
 
   window.accOpenDelivery = function() {

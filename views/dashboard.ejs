@@ -371,6 +371,12 @@
           </a>
         </li>
         <li>
+          <a href="/profit-sources" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'profit-sources' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-chart-pie w-5 text-center <%= page === 'profit-sources' ? 'text-indigo-400' : '' %>"></i>
+            <span>مصادر الربح</span>
+          </a>
+        </li>
+        <li>
           <a href="/admin-brokerage" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'admin-brokerage' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-percent w-5 text-center <%= page === 'admin-brokerage' ? 'text-indigo-400' : '' %>"></i>
             <span>وساطة إدارية</span>
@@ -451,6 +457,8 @@
         <%- include('partials/local-audit') %>
       <% } else if (page === 'expenses-page') { %>
         <%- include('partials/expenses-page') %>
+      <% } else if (page === 'profit-sources') { %>
+        <%- include('partials/profit-sources') %>
       <% } else if (page === 'admin-brokerage') { %>
         <%- include('partials/admin-brokerage') %>
       <% } else if (page === 'payables-overview') { %>
@@ -539,6 +547,12 @@
   <% } %>
   <% if (page === 'fx-spread') { %>
     <script src="/js/fx-spread.js"></script>
+  <% } %>
+  <% if (page === 'expenses-page') { %>
+    <script src="/js/expenses-page.js"></script>
+  <% } %>
+  <% if (page === 'profit-sources') { %>
+    <script src="/js/profit-sources.js"></script>
   <% } %>
 </body>
 </html>

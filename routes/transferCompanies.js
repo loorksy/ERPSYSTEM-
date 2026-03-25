@@ -3,6 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { adjustFundBalance, getMainFundId, getMainFundUsdBalance } = require('../services/fundService');
+const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
 
 const DEFAULT_TYPES = ['شام كاش', 'هرم', 'فؤاد', 'USDT', 'سرياتيل كاش', 'العالمية'];
 
@@ -56,7 +57,7 @@ router.post('/add', requireAuth, async (req, res) => {
 router.post('/:id/payout-from-main', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { amount, notes, mode } = req.body || {};
+    const { amount, notes, mode, applyToPayables } = req.body || {};
     const amt = parseFloat(amount);
     if (!id || isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'مبلغ غير صالح' });
     const db = getDb();
@@ -87,16 +88,38 @@ router.post('/:id/payout-from-main', requireAuth, async (req, res) => {
       });
     }
 
+    let payablesSettled = 0;
+    const doPayables = applyToPayables !== false;
+    if (doPayables) {
+      const open = await sumOpenPayables(db, uid, 'transfer_company', id);
+      const settleBudget = Math.min(amt, open);
+      if (settleBudget > 0) {
+        const r = await settleOpenPayablesFifo(db, uid, 'transfer_company', id, settleBudget);
+        payablesSettled = r.settled;
+      }
+    }
+
+    const cashPortion = Math.max(0, amt - payablesSettled);
+
     await adjustFundBalance(db, mainId, 'USD', -amt, 'company_payout', notes || 'صرف لشركة تحويل', 'transfer_companies', id);
-    await db.query(
-      `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, 'USD', $3)`,
-      [id, amt, notes || 'صرف من الصندوق الرئيسي']
-    );
-    await db.query(
-      'UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3',
-      [amt, id, uid]
-    );
-    res.json({ success: true, message: 'تم الصرف من الصندوق الرئيسي' });
+    if (cashPortion > 0) {
+      await db.query(
+        `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, 'USD', $3)`,
+        [id, cashPortion, (notes || 'صرف من الصندوق الرئيسي') + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '')]
+      );
+      await db.query(
+        'UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3',
+        [cashPortion, id, uid]
+      );
+    }
+    res.json({
+      success: true,
+      message: payablesSettled > 0
+        ? `تم الصرف: تسوية ديون مسجّلة ${payablesSettled.toFixed(2)} $` + (cashPortion > 0 ? `، وإيداع ${cashPortion.toFixed(2)} $ لرصيد الشركة` : '')
+        : 'تم الصرف من الصندوق الرئيسي',
+      payablesSettled,
+      cashToCompany: cashPortion,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }

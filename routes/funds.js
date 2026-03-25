@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
+const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
 const { adjustFundBalance, getMainFundId, getMainFundUsdBalance } = require('../services/fundService');
 
 router.get('/transfer-companies/list', requireAuth, async (req, res) => {
@@ -121,7 +122,7 @@ router.post('/:id/set-main', requireAuth, async (req, res) => {
 router.post('/:id/receive-from-main', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { amount, notes, mode } = req.body || {};
+    const { amount, notes, mode, applyToPayables } = req.body || {};
     const amt = parseFloat(amount);
     if (!id || isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'مبلغ غير صالح' });
     const db = getDb();
@@ -150,9 +151,31 @@ router.post('/:id/receive-from-main', requireAuth, async (req, res) => {
       });
     }
 
+    let payablesSettled = 0;
+    const doPayables = applyToPayables !== false;
+    if (doPayables) {
+      const open = await sumOpenPayables(db, uid, 'fund', id);
+      const settleBudget = Math.min(amt, open);
+      if (settleBudget > 0) {
+        const r = await settleOpenPayablesFifo(db, uid, 'fund', id, settleBudget);
+        payablesSettled = r.settled;
+      }
+    }
+
+    const creditPortion = Math.max(0, amt - payablesSettled);
+
     await adjustFundBalance(db, mainId, 'USD', -amt, 'fund_allocation', notes || 'تحويل لصندوق', 'funds', id);
-    await adjustFundBalance(db, id, 'USD', amt, 'fund_receive_from_main', notes || 'وارد من الصندوق الرئيسي', 'funds', mainId);
-    res.json({ success: true, message: 'تم التحويل إلى الصندوق' });
+    if (creditPortion > 0) {
+      await adjustFundBalance(db, id, 'USD', creditPortion, 'fund_receive_from_main', (notes || 'وارد من الصندوق الرئيسي') + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : ''), 'funds', mainId);
+    }
+    res.json({
+      success: true,
+      message: payablesSettled > 0
+        ? `تم التحويل: تسوية ديون مسجّلة ${payablesSettled.toFixed(2)} $` + (creditPortion > 0 ? `، وإيداع ${creditPortion.toFixed(2)} $ في الصندوق` : '')
+        : 'تم التحويل إلى الصندوق',
+      payablesSettled,
+      creditedToFund: creditPortion,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }
