@@ -10,8 +10,8 @@
       </div>
     </div>
     <div class="flex flex-wrap gap-2">
-      <button type="button" onclick="accOpenBulk()" class="px-4 py-2.5 rounded-xl bg-slate-700 text-white text-sm font-semibold shadow-md hover:bg-slate-800 active:scale-[0.99] transition">رفع أرصدة</button>
-      <button type="button" onclick="accOpenDelivery()" class="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold shadow-md hover:bg-teal-700 active:scale-[0.99] transition">تسليم</button>
+      <button type="button" onclick="accOpenBulk()" class="px-4 py-2.5 rounded-xl bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-700 active:scale-[0.99] transition">رفع أرصدة</button>
+      <button type="button" onclick="accOpenDelivery()" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition">تسليم</button>
       <button type="button" onclick="accOpenAdd()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-md hover:bg-indigo-700 active:scale-[0.99] transition">
         <i class="fas fa-plus ml-2"></i> إضافة معتمد
       </button>
@@ -73,7 +73,7 @@
     <select id="accDelCycle" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200 text-sm"><option value="">— دورة —</option></select>
     <div id="accDelList" class="text-sm space-y-2 mb-3 max-h-48 overflow-y-auto"></div>
     <div class="flex gap-2">
-      <button type="button" onclick="accSubmitDelivery()" class="flex-1 py-2 rounded-lg bg-teal-600 text-white text-sm">تسليم</button>
+      <button type="button" onclick="accSubmitDelivery()" class="flex-1 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">تسليم</button>
       <button type="button" onclick="accCloseDelivery()" class="px-4 py-2 rounded-lg bg-slate-100">إلغاء</button>
     </div>
   </div>
@@ -104,7 +104,7 @@
     </div>
     <div class="flex gap-2 mb-4">
       <button type="button" onclick="accShowAddAmount()" class="flex-1 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold">إضافة مبلغ</button>
-      <button type="button" onclick="accShowTransfer()" class="flex-1 py-2 rounded-xl bg-slate-700 text-white text-sm font-semibold">تحويل</button>
+      <button type="button" onclick="accShowTransfer()" class="flex-1 py-2 rounded-xl bg-slate-600 text-white text-sm font-semibold hover:bg-slate-700">تحويل</button>
       <button type="button" id="accPinBtn" onclick="accTogglePin()" class="py-2 px-3 rounded-xl bg-amber-100 text-amber-800 text-sm">تثبيت</button>
     </div>
     <div id="accAddAmountPanel" class="hidden space-y-2 mb-4 p-4 rounded-xl bg-slate-50">
