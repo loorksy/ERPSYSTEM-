@@ -934,12 +934,10 @@ router.post('/payroll-audit-local', requireAuth, async (req, res) => {
 
     /** تسجيل أرباح W+Y+Z في الصندوق الرئيسي تلقائياً */
     let auditProfits = null;
-    if (appliedCount > 0) {
-      try {
-        auditProfits = await applyCycleAuditProfitsToLedger(req.session.userId, cycleId);
-      } catch (profitErr) {
-        console.error('[payroll-audit-local] audit profits error:', profitErr.message);
-      }
+    try {
+      auditProfits = await applyCycleAuditProfitsToLedger(req.session.userId, cycleId);
+    } catch (profitErr) {
+      console.error('[payroll-audit-local] audit profits error:', profitErr.message);
     }
 
     res.json({
@@ -1477,12 +1475,10 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
 
     /** تسجيل أرباح W+Y+Z في الصندوق الرئيسي تلقائياً */
     let auditProfits = null;
-    if (appliedCount > 0) {
-      try {
-        auditProfits = await applyCycleAuditProfitsToLedger(req.session.userId, cycleId);
-      } catch (profitErr) {
-        console.error('[payroll-execute] audit profits error:', profitErr.message);
-      }
+    try {
+      auditProfits = await applyCycleAuditProfitsToLedger(req.session.userId, cycleId);
+    } catch (profitErr) {
+      console.error('[payroll-execute] audit profits error:', profitErr.message);
     }
 
     res.json({

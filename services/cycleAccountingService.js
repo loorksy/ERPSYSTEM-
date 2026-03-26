@@ -105,25 +105,6 @@ async function getLocalCycleTables(db, userId, cycleId) {
  */
 async function applyCycleAuditProfitsToLedger(userId, cycleId) {
   const db = getDb();
-  const legacy = (await db.query(
-    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
-    [userId, cycleId, 'audit_cycle_profits']
-  )).rows[0];
-  if (legacy) {
-    return { success: false, message: 'تم تسجيل أرباح هذه الدورة مسبقاً', already: true };
-  }
-
-  const rowYz = (await db.query(
-    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
-    [userId, cycleId, 'audit_management_yz']
-  )).rows[0];
-  const rowW = (await db.query(
-    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
-    [userId, cycleId, 'audit_management_w']
-  )).rows[0];
-  if (rowYz && rowW) {
-    return { success: false, message: 'تم تسجيل أرباح هذه الدورة مسبقاً', already: true };
-  }
 
   const tables = await getLocalCycleTables(db, userId, cycleId);
   if (!tables || !tables.managementData || tables.managementData.length < 2) {
@@ -133,7 +114,21 @@ async function applyCycleAuditProfitsToLedger(userId, cycleId) {
   const { sourceFirstSheetW, sourceYZ } = await computeManagementSheetTotalsFromRows(tables.managementData);
   const combined = sourceFirstSheetW + sourceYZ;
 
-  if (!rowYz && sourceYZ !== 0) {
+  const legacy = (await db.query(
+    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
+    [userId, cycleId, 'audit_cycle_profits']
+  )).rows[0];
+
+  const rowYz = (await db.query(
+    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
+    [userId, cycleId, 'audit_management_yz']
+  )).rows[0];
+  const rowW = (await db.query(
+    `SELECT id FROM ledger_entries WHERE user_id = $1 AND cycle_id = $2 AND source_type = $3 LIMIT 1`,
+    [userId, cycleId, 'audit_management_w']
+  )).rows[0];
+
+  if (!legacy && !rowYz && sourceYZ !== 0) {
     await insertLedgerEntry(db, {
       userId,
       bucket: 'net_profit',
@@ -144,7 +139,7 @@ async function applyCycleAuditProfitsToLedger(userId, cycleId) {
       meta: { sourceYZ },
     });
   }
-  if (!rowW && sourceFirstSheetW !== 0) {
+  if (!legacy && !rowW && sourceFirstSheetW !== 0) {
     await insertLedgerEntry(db, {
       userId,
       bucket: 'net_profit',
@@ -156,6 +151,7 @@ async function applyCycleAuditProfitsToLedger(userId, cycleId) {
     });
   }
 
+  /** إضافة المبلغ للصندوق الرئيسي — دائماً يتحقق حتى لو الأرباح سُجلت مسبقاً في الدفتر */
   const mainFundId = await getMainFundId(db, userId);
   if (mainFundId && combined !== 0) {
     const dupFundCredit = (await db.query(
@@ -168,7 +164,8 @@ async function applyCycleAuditProfitsToLedger(userId, cycleId) {
     }
   }
 
-  return { success: true, sourceYZ, sourceFirstSheetW, combined };
+  const ledgerAlready = !!(legacy || (rowYz && rowW));
+  return { success: true, sourceYZ, sourceFirstSheetW, combined, ledgerAlready };
 }
 
 /**
