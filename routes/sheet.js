@@ -782,15 +782,19 @@ router.post('/payroll-audit-local', requireAuth, async (req, res) => {
       }
     } catch (_) {}
 
-    /** مزامنة الوكالات الفرعية من جدول الإدارة */
+    /** مزامنة الوكالات الفرعية من جدول الإدارة (يتطلب اتصال Google) */
     let agencySync = null;
-    if (mgmtSsId && localSheets) {
-      try {
-        const syncResult = await syncAgenciesFromManagementTable(cycleId, req.session.userId, localSheets);
-        agencySync = { success: syncResult.success, usersCount: syncResult.usersCount ?? 0, agenciesCount: syncResult.agenciesCount ?? 0, error: syncResult.error };
-      } catch (agencySyncErr) {
-        console.error('[payroll-audit-local][AgencySync]', agencySyncErr.message);
-        agencySync = { success: false, error: agencySyncErr.message };
+    if (mgmtSsId) {
+      if (localSheets) {
+        try {
+          const syncResult = await syncAgenciesFromManagementTable(cycleId, req.session.userId, localSheets);
+          agencySync = { success: syncResult.success, usersCount: syncResult.usersCount ?? 0, agenciesCount: syncResult.agenciesCount ?? 0, error: syncResult.error };
+        } catch (agencySyncErr) {
+          console.error('[payroll-audit-local][AgencySync]', agencySyncErr.message);
+          agencySync = { success: false, error: agencySyncErr.message };
+        }
+      } else {
+        agencySync = { success: false, error: 'اتصال Google غير متوفر — استخدم «تطبيق على Google» لمزامنة الوكالات، أو تأكد من ربط حساب Google من الإعدادات.' };
       }
     }
 

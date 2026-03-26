@@ -300,24 +300,34 @@ router.get('/:id/users', requireAuth, async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (!id || isNaN(id)) return res.json({ success: false, message: 'معرف غير صالح' });
     const db = getDb();
-    const { cycleId } = req.query || {};
+    const cycleId = req.query.cycleId ? parseInt(req.query.cycleId, 10) : null;
 
-    const syncedUsers = (await db.query(
-      cycleId
-        ? `SELECT member_user_id AS user_id, user_name AS name, base_profit_w FROM agency_cycle_users WHERE sub_agency_id = $1 AND cycle_id = $2 ORDER BY member_user_id`
-        : `SELECT DISTINCT ON (member_user_id) member_user_id AS user_id, user_name AS name, base_profit_w FROM agency_cycle_users WHERE sub_agency_id = $1 ORDER BY member_user_id, synced_at DESC`,
-      cycleId ? [id, parseInt(cycleId, 10)] : [id]
-    )).rows;
+    let syncedUsers = [];
+    try {
+      syncedUsers = (await db.query(
+        cycleId
+          ? `SELECT member_user_id AS user_id, user_name AS name, base_profit_w FROM agency_cycle_users WHERE sub_agency_id = $1 AND cycle_id = $2 ORDER BY member_user_id`
+          : `SELECT member_user_id AS user_id, user_name AS name, base_profit_w FROM agency_cycle_users WHERE sub_agency_id = $1 ORDER BY synced_at DESC`,
+        cycleId ? [id, cycleId] : [id]
+      )).rows;
+    } catch (_) {
+      syncedUsers = [];
+    }
 
     if (syncedUsers.length > 0) {
       return res.json({ success: true, users: syncedUsers, source: 'sync' });
     }
 
-    const shippingUsers = (await db.query(`
-      SELECT DISTINCT buyer_user_id as user_id
-      FROM shipping_transactions
-      WHERE buyer_type = 'sub_agent' AND buyer_sub_agency_id = $1 AND buyer_user_id IS NOT NULL
-    `, [id])).rows;
+    let shippingUsers = [];
+    try {
+      shippingUsers = (await db.query(`
+        SELECT DISTINCT buyer_user_id as user_id
+        FROM shipping_transactions
+        WHERE buyer_type = 'sub_agent' AND buyer_sub_agency_id = $1 AND buyer_user_id IS NOT NULL
+      `, [id])).rows;
+    } catch (_) {
+      shippingUsers = [];
+    }
     const users = shippingUsers.map(r => ({ id: r.user_id, name: r.user_id }));
     res.json({ success: true, users, source: 'shipping' });
   } catch (e) {
