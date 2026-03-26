@@ -106,6 +106,7 @@
           document.getElementById('fxAmountUsd').value = '';
           preview();
           loadList();
+          if (typeof window.homeLoadStats === 'function') window.homeLoadStats();
         }
       });
     });

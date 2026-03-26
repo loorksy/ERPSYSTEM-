@@ -64,6 +64,7 @@
           if (res.success) {
             e.target.reset();
             if (window.expensesLoadUnified) window.expensesLoadUnified();
+            if (typeof window.homeLoadStats === 'function') window.homeLoadStats();
           }
         });
       });

@@ -3,7 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
-const { adjustFundBalance, getMainFundId, getMainFundUsdBalance } = require('../services/fundService');
+const { adjustFundBalance, getMainFundId, getMainFundUsdBalance, ensureDefaultMainFund } = require('../services/fundService');
 
 router.get('/transfer-companies/list', requireAuth, async (req, res) => {
   try {
@@ -18,9 +18,38 @@ router.get('/transfer-companies/list', requireAuth, async (req, res) => {
   }
 });
 
+router.post('/update-main', requireAuth, async (req, res) => {
+  try {
+    const { name, fundNumber } = req.body || {};
+    const db = getDb();
+    const uid = req.session.userId;
+    await ensureDefaultMainFund(db, uid);
+    const main = (await db.query('SELECT id FROM funds WHERE user_id = $1 AND is_main = 1 LIMIT 1', [uid])).rows[0];
+    if (!main) return res.json({ success: false, message: 'لا يوجد صندوق رئيسي' });
+    const updates = [];
+    const params = [];
+    let idx = 1;
+    if (name != null && String(name).trim()) {
+      updates.push(`name = $${idx++}`);
+      params.push(String(name).trim());
+    }
+    if (fundNumber !== undefined) {
+      updates.push(`fund_number = $${idx++}`);
+      params.push(fundNumber ? String(fundNumber).trim() : null);
+    }
+    if (updates.length === 0) return res.json({ success: false, message: 'لا توجد بيانات للتحديث' });
+    params.push(main.id);
+    await db.query(`UPDATE funds SET ${updates.join(', ')} WHERE id = $${idx}`, params);
+    res.json({ success: true, message: 'تم تحديث الصندوق الرئيسي' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
 router.get('/list', requireAuth, async (req, res) => {
   try {
     const db = getDb();
+    await ensureDefaultMainFund(db, req.session.userId);
     const rows = (await db.query(
       `SELECT id, name, fund_number, country, region_syria, is_main, transfer_company_id, created_at
        FROM funds WHERE user_id = $1 ORDER BY is_main DESC, name`,

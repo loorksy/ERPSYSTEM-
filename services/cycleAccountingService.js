@@ -4,6 +4,7 @@ const { normalizeUserId } = require('./payrollSearchService');
 const { insertLedgerEntry } = require('./ledgerService');
 const { replaceDeferredLinesForCycle } = require('./deferredSalaryService');
 const { computeSalaryWithDiscount, getCycleColumns } = require('./payrollSearchService');
+const { getMainFundId, adjustFundBalance } = require('./fundService');
 
 function columnLetterToIndex(letter) {
   if (letter == null || letter === '') return null;
@@ -132,27 +133,39 @@ async function applyCycleAuditProfitsToLedger(userId, cycleId) {
   const { sourceFirstSheetW, sourceYZ } = await computeManagementSheetTotalsFromRows(tables.managementData);
   const combined = sourceFirstSheetW + sourceYZ;
 
-  if (!rowYz) {
+  if (!rowYz && sourceYZ !== 0) {
     await insertLedgerEntry(db, {
       userId,
       bucket: 'net_profit',
       sourceType: 'audit_management_yz',
       amount: sourceYZ,
       cycleId,
-      notes: 'تدقيق إدارة: أعمدة Y+Z',
+      notes: 'أرباح الإدارة: أعمدة Y+Z',
       meta: { sourceYZ },
     });
   }
-  if (!rowW) {
+  if (!rowW && sourceFirstSheetW !== 0) {
     await insertLedgerEntry(db, {
       userId,
       bucket: 'net_profit',
       sourceType: 'audit_management_w',
       amount: sourceFirstSheetW,
       cycleId,
-      notes: 'تدقيق إدارة: عمود W (مع تقسيم وكالات فرعية)',
+      notes: 'أرباح الإدارة: عمود W (مع تقسيم وكالات فرعية)',
       meta: { sourceFirstSheetW },
     });
+  }
+
+  const mainFundId = await getMainFundId(db, userId);
+  if (mainFundId && combined !== 0) {
+    const dupFundCredit = (await db.query(
+      `SELECT id FROM fund_ledger WHERE fund_id = $1 AND type = 'audit_profit_credit' AND notes LIKE $2 LIMIT 1`,
+      [mainFundId, `%دورة ${cycleId}%`]
+    )).rows[0];
+    if (!dupFundCredit) {
+      await adjustFundBalance(db, mainFundId, 'USD', combined, 'audit_profit_credit',
+        `أرباح التدقيق (W+Y+Z) — دورة ${cycleId}`, 'financial_cycles', cycleId);
+    }
   }
 
   return { success: true, sourceYZ, sourceFirstSheetW, combined };

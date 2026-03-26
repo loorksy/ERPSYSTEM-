@@ -160,7 +160,7 @@
           body: JSON.stringify({ amount: amt, notes: document.getElementById('qaSubNotes').value })
         }).then(function (r) {
           toast(r.message || '', r.success ? 'success' : 'error');
-          if (r.success) hideCascade();
+          if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
         });
       });
     });
@@ -196,7 +196,7 @@
             return;
           }
           toast(r.message || '', r.success ? 'success' : 'error');
-          if (r.success) hideCascade();
+          if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
         });
       });
     });
@@ -232,7 +232,7 @@
             return;
           }
           toast(r.message || '', r.success ? 'success' : 'error');
-          if (r.success) hideCascade();
+          if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
         });
       });
     });
@@ -261,7 +261,7 @@
         })
       }).then(function (r) {
         toast(r.message || '', r.success ? 'success' : 'error');
-        if (r.success) hideCascade();
+        if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
       });
     });
   }
@@ -295,7 +295,7 @@
           })
         }).then(function (r) {
           toast(r.message || '', r.success ? 'success' : 'error');
-          if (r.success) hideCascade();
+          if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
         });
       });
     });
@@ -310,41 +310,46 @@
         '<div class="flex justify-between items-center mb-3"><h3 class="font-bold">فرق تصريف → صافي الربح</h3><button type="button" class="text-slate-400" id="qaBack"><i class="fas fa-arrow-right"></i></button></div>' +
         '<label class="block text-sm font-medium mb-1">الدورة (اختياري)</label><select id="qaFxCyc" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200"><option value="">— —</option>' + cyc + '</select>' +
         '<label class="block text-sm font-medium mb-1">العملة</label><input type="text" id="qaFxCur" value="TRY" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200">' +
-        '<label class="block text-sm font-medium mb-1">مبلغ بالعملة الأجنبية</label><input type="number" id="qaFxAmt" step="0.01" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200">' +
-        '<label class="block text-sm font-medium mb-1">سعر داخلي (وحدة عملة / 1 USD)</label><input type="number" id="qaFxIn" step="0.0001" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200">' +
-        '<label class="block text-sm font-medium mb-1">سعر تسليم</label><input type="number" id="qaFxOut" step="0.0001" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200">' +
+        '<label class="block text-sm font-medium mb-1">المبلغ بالدولار</label><input type="number" id="qaFxAmtUsd" step="0.01" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200" placeholder="1000">' +
+        '<label class="block text-sm font-medium mb-1">السعر المثبت (وحدة/USD)</label><input type="number" id="qaFxIn" step="0.0001" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200" placeholder="45">' +
+        '<label class="block text-sm font-medium mb-1">سعر الشراء الفعلي (وحدة/USD)</label><input type="number" id="qaFxOut" step="0.0001" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200" placeholder="46">' +
         '<p id="qaFxPrev" class="text-sm text-indigo-700 mb-2 min-h-[1.25rem]"></p>' +
         '<input type="text" id="qaFxNotes" placeholder="ملاحظات" class="w-full mb-3 px-3 py-2 rounded-lg border border-slate-200">' +
         '<button type="button" id="qaFxGo" class="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold">إضافة ربح</button>'
       );
       document.getElementById('qaBack').addEventListener('click', openInMenu);
       function prev() {
-        var amt = parseFloat(document.getElementById('qaFxAmt').value);
+        var amtUsd = parseFloat(document.getElementById('qaFxAmtUsd').value);
         var a = parseFloat(document.getElementById('qaFxIn').value);
         var b = parseFloat(document.getElementById('qaFxOut').value);
         var el = document.getElementById('qaFxPrev');
-        if (!(amt > 0) || !(a > 0) || !(b > 0)) { el.textContent = ''; return; }
-        var usd = Math.abs(amt / a - amt / b);
-        el.textContent = 'الربح التقديري: ≈ ' + usd.toFixed(2) + ' USD';
+        if (!(amtUsd > 0) || !(a > 0) || !(b > 0)) { el.textContent = ''; return; }
+        var profitUsd = amtUsd * Math.abs(b - a) / b;
+        el.textContent = 'الربح التقديري: ≈ ' + profitUsd.toFixed(2) + ' USD';
       }
-      ['qaFxAmt', 'qaFxIn', 'qaFxOut'].forEach(function (id) {
+      ['qaFxAmtUsd', 'qaFxIn', 'qaFxOut'].forEach(function (id) {
         var n = document.getElementById(id);
         if (n) n.addEventListener('input', prev);
       });
       document.getElementById('qaFxGo').addEventListener('click', function () {
+        var amtUsd = parseFloat(document.getElementById('qaFxAmtUsd').value);
+        var fixedRate = parseFloat(document.getElementById('qaFxIn').value);
+        var purchaseRate = parseFloat(document.getElementById('qaFxOut').value);
+        if (!(amtUsd > 0) || !(fixedRate > 0) || !(purchaseRate > 0)) { toast('أدخل المبلغ والسعرين', 'error'); return; }
+        var amountForeign = amtUsd * fixedRate;
         apiCall('/api/fx-spread/add', {
           method: 'POST',
           body: JSON.stringify({
             cycleId: document.getElementById('qaFxCyc').value || null,
             currency: document.getElementById('qaFxCur').value,
-            amountForeign: document.getElementById('qaFxAmt').value,
-            internalRate: document.getElementById('qaFxIn').value,
-            settlementRate: document.getElementById('qaFxOut').value,
+            amountForeign: amountForeign,
+            internalRate: fixedRate,
+            settlementRate: purchaseRate,
             notes: document.getElementById('qaFxNotes').value
           })
         }).then(function (r) {
           toast(r.message || '', r.success ? 'success' : 'error');
-          if (r.success) hideCascade();
+          if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
         });
       });
     });

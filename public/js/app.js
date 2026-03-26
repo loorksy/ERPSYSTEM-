@@ -96,7 +96,15 @@ function initHomeStats() {
           if (el) el.textContent = formatMoney(val != null ? val : 0);
         }
         setEl('cashBalance', data.cashBalance);
-        setEl('deferredBalance', data.deferredBalance);
+        var defEl = document.getElementById('deferredBalance');
+        if (defEl) {
+          var dv = data.deferredBalance;
+          if (dv != null && dv !== 0) {
+            defEl.textContent = formatMoney(dv);
+          } else {
+            defEl.textContent = formatMoney(0);
+          }
+        }
         setEl('shippingBalance', data.shippingBalance);
         setEl('totalRevenue', data.totalRevenue);
         setEl('netProfit', data.netProfit);

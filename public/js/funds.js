@@ -130,6 +130,7 @@
     apiCall('/api/funds/' + currentFundId + '/set-main', { method: 'POST', body: '{}' }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
       fundsLoadList();
+      if (typeof window.homeLoadStats === 'function') window.homeLoadStats();
     });
   };
   function fundsToggleReturnTarget() {
@@ -211,6 +212,38 @@
       }
     });
   });
+
+  window.fundsEditMain = function() {
+    apiCall('/api/funds/list').then(function(res) {
+      var main = (res.funds || []).find(function(f) { return f.is_main; });
+      if (main) {
+        document.getElementById('fundMainEditName').value = main.name || '';
+        document.getElementById('fundMainEditNumber').value = main.fund_number || '';
+      }
+      document.getElementById('fundEditMainModal').classList.remove('hidden');
+      document.getElementById('fundEditMainModal').classList.add('flex');
+    });
+  };
+  window.fundsCloseEditMain = function() {
+    document.getElementById('fundEditMainModal').classList.add('hidden');
+    document.getElementById('fundEditMainModal').classList.remove('flex');
+  };
+  window.fundsSubmitEditMain = function() {
+    apiCall('/api/funds/update-main', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('fundMainEditName').value,
+        fundNumber: document.getElementById('fundMainEditNumber').value
+      })
+    }).then(function(res) {
+      toast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        fundsCloseEditMain();
+        fundsLoadList();
+        if (typeof window.homeLoadStats === 'function') window.homeLoadStats();
+      }
+    });
+  };
 
   function applyFabDeepLink() {
     var fab = '';

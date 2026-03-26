@@ -767,24 +767,47 @@ router.post('/payroll-audit-local', requireAuth, async (req, res) => {
       });
     }
 
-    /** مزامنة الوكالات الفرعية من جدول الإدارة (لقطات محلية) */
-    let agencySync = null;
-    if (mgmtSsId) {
-      try {
-        const config = (await db.query('SELECT token, credentials FROM google_sheets_config WHERE id = 1')).rows[0];
-        if (config?.token) {
-          const credentials = config.credentials ? JSON.parse(config.credentials) : null;
-          const lOAuth = getOAuth2Client(credentials);
-          if (lOAuth) {
-            lOAuth.setCredentials(typeof config.token === 'string' ? JSON.parse(config.token) : config.token);
-            const lSheets = google.sheets({ version: 'v4', auth: lOAuth });
-            const syncResult = await syncAgenciesFromManagementTable(cycleId, req.session.userId, lSheets);
-            agencySync = { success: syncResult.success, usersCount: syncResult.usersCount ?? 0, agenciesCount: syncResult.agenciesCount ?? 0, error: syncResult.error };
-          }
+    /** إعداد اتصال Google للمزامنة الجانبية */
+    let localSheets = null;
+    try {
+      const config = (await db.query('SELECT token, credentials FROM google_sheets_config WHERE id = 1')).rows[0];
+      if (config?.token) {
+        const credentials = config.credentials ? JSON.parse(config.credentials) : null;
+        const lOAuth = getOAuth2Client(credentials);
+        if (lOAuth) {
+          lOAuth.setCredentials(typeof config.token === 'string' ? JSON.parse(config.token) : config.token);
+          localSheets = google.sheets({ version: 'v4', auth: lOAuth });
         }
+      }
+    } catch (_) {}
+
+    /** مزامنة الوكالات الفرعية من جدول الإدارة */
+    let agencySync = null;
+    if (mgmtSsId && localSheets) {
+      try {
+        const syncResult = await syncAgenciesFromManagementTable(cycleId, req.session.userId, localSheets);
+        agencySync = { success: syncResult.success, usersCount: syncResult.usersCount ?? 0, agenciesCount: syncResult.agenciesCount ?? 0, error: syncResult.error };
       } catch (agencySyncErr) {
         console.error('[payroll-audit-local][AgencySync]', agencySyncErr.message);
         agencySync = { success: false, error: agencySyncErr.message };
+      }
+    }
+
+    /** تحديث رصيد المؤجل من جدول الوكيل */
+    if (agentSsId && localSheets) {
+      try {
+        await fetchDeferredBalanceUsers(cycleId, req.session.userId, localSheets);
+      } catch (deferredErr) {
+        console.error('[payroll-audit-local][Deferred]', deferredErr.message);
+      }
+    }
+
+    /** حساب رصيد الصندوق */
+    if (mgmtSsId && localSheets) {
+      try {
+        await calculateCashBoxBalance(cycleId, req.session.userId, localSheets);
+      } catch (cashErr) {
+        console.error('[payroll-audit-local][CashBox]', cashErr.message);
       }
     }
 
@@ -1243,49 +1266,6 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
         }
       } catch (pasteErr) {
         throw new Error('فشل نسخ الصفوف إلى ورقة «' + sheetName + '» في جدول الإدارة: ' + (pasteErr.message || ''));
-      }
-      const sheetId = sheetIdByName[sheetName];
-      if (sheetId != null) {
-        /** تلوين الصفوف الملصوقة فقط — صف البداية من استجابة append (أدق من إعادة القراءة) */
-        let startRow = 0;
-        if (sheetExisted && appendResponse && appendResponse.data && appendResponse.data.updates && appendResponse.data.updates.updatedRange) {
-          startRow = parseRangeStartRowIndex0(appendResponse.data.updates.updatedRange);
-        } else if (sheetExisted) {
-          try {
-            await sleep(parseInt(process.env.SHEETS_APPEND_STABILIZE_MS || '400', 10) || 400);
-            const curr = await withSheetsRetry(() => sheets.spreadsheets.values.get({
-              spreadsheetId: cycleMgmtSsId,
-              range: `'${sheetName}'!A:ZZ`
-            }));
-            const rowCount = (curr.data.values || []).length;
-            startRow = Math.max(0, rowCount - values.length);
-          } catch (_) {}
-        }
-        const formatReqs = values.map((_, idx) => {
-          const rgb = hexToRgb(itemsToPaste[idx].color);
-          return {
-            repeatCell: {
-              range: {
-                sheetId,
-                startRowIndex: startRow + idx,
-                endRowIndex: startRow + idx + 1,
-                startColumnIndex: 0,
-                endColumnIndex: 200
-              },
-              cell: {
-                userEnteredFormat: {
-                  backgroundColor: rgb
-                }
-              },
-              fields: 'userEnteredFormat.backgroundColor'
-            }
-          };
-        });
-        try {
-          await batchUpdateRequestsInChunks(sheets, cycleMgmtSsId, formatReqs);
-        } catch (colorErr) {
-          throw new Error('فشل تلوين الصفوف في ورقة «' + sheetName + '»: ' + (colorErr.message || ''));
-        }
       }
     }
 

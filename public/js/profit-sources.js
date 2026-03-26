@@ -4,14 +4,25 @@
   /** تسميات عربية لـ source_type في دفتر صافي الربح (وما قد يُضاف لاحقاً) */
   var NET_PROFIT_SOURCE_LABELS = {
     fx_spread_profit: 'ربح فرق التصريف',
-    audit_cycle_profits: 'أرباح تدقيق الدورة (Y+Z و W) — قيد قديم',
-    audit_management_yz: 'تدقيق إدارة: أعمدة Y+Z',
-    audit_management_w: 'تدقيق إدارة: عمود W',
+    audit_cycle_profits: 'أرباح تدقيق الدورة (Y+Z و W)',
+    audit_management_yz: 'أرباح الإدارة: أعمدة Y+Z',
+    audit_management_w: 'أرباح الإدارة: عمود W',
     transfer_discount_profit: 'ربح نسبة خصم التحويل',
+    cycle_creation_discount_profit: 'ربح خصم التحويل (إنشاء دورة)',
     accreditation_brokerage: 'وساطة معتمدين',
     admin_brokerage: 'وساطة إدارية',
     shipping_sale_profit: 'ربح بيع شحن',
     sub_agency_share: 'حصة وكالة فرعية',
+    manual_expense: 'مصروف يدوي',
+    sub_agency_reward: 'مكافأة وكالة فرعية',
+    agent_table_primary_seed: 'جدول الوكيل (رأس مال)',
+    primary_agent_seed: 'رأس مال من جدول الوكيل',
+    profit_transfer: 'ترحيل أرباح',
+    fx_spread_disbursement: 'تصريف عملات',
+    company_payout: 'صرف لشركة تحويل',
+    fund_allocation: 'تحويل لصندوق',
+    shipping_sale_cash: 'بيع شحن نقدي',
+    shipping_buy_cash: 'شراء شحن نقدي',
   };
 
   function labelForSourceType(code) {

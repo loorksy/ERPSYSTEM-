@@ -280,9 +280,16 @@ async function getBrowser() {
   if (!browserSingleton) {
     const execPath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
     browserSingleton = await puppeteer.launch({
-      headless: true,
+      headless: 'new',
       executablePath: execPath,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--font-render-hinting=none',
+      ],
+      timeout: 60000,
     });
   }
   return browserSingleton;
@@ -293,10 +300,16 @@ async function getBrowser() {
  * @returns {Promise<Buffer>}
  */
 async function htmlToPdfBuffer(html) {
-  const browser = await getBrowser();
+  let browser;
+  try {
+    browser = await getBrowser();
+  } catch (e) {
+    browserSingleton = null;
+    throw new Error('فشل تشغيل المتصفح لتوليد PDF: ' + (e.message || ''));
+  }
   const page = await browser.newPage();
   try {
-    await page.setContent(html, { waitUntil: 'load', timeout: 120000 });
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
     await page.emulateMediaType('screen');
     const pdf = await page.pdf({
       format: 'A4',
@@ -304,8 +317,10 @@ async function htmlToPdfBuffer(html) {
       margin: { top: '12mm', bottom: '14mm', left: '12mm', right: '12mm' },
     });
     return Buffer.from(pdf);
+  } catch (e) {
+    throw new Error('فشل توليد PDF: ' + (e.message || ''));
   } finally {
-    await page.close();
+    await page.close().catch(() => {});
   }
 }
 

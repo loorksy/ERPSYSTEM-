@@ -4,7 +4,23 @@ async function getMainFundId(db, userId) {
   const r = (await db.query('SELECT id FROM funds WHERE user_id = $1 AND is_main = 1 LIMIT 1', [userId])).rows[0];
   if (r) return r.id;
   const r2 = (await db.query('SELECT id FROM funds WHERE user_id = $1 ORDER BY id ASC LIMIT 1', [userId])).rows[0];
-  return r2?.id || null;
+  if (r2) return r2.id;
+  return await ensureDefaultMainFund(db, userId);
+}
+
+async function ensureDefaultMainFund(db, userId) {
+  const existing = (await db.query('SELECT id FROM funds WHERE user_id = $1 AND is_main = 1 LIMIT 1', [userId])).rows[0];
+  if (existing) return existing.id;
+  const r = await db.query(
+    `INSERT INTO funds (user_id, name, fund_number, is_main) VALUES ($1, 'الصندوق الرئيسي', 'MAIN-001', 1) RETURNING id`,
+    [userId]
+  );
+  const fundId = r.rows[0].id;
+  await db.query(
+    `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, 'USD', 0) ON CONFLICT (fund_id, currency) DO NOTHING`,
+    [fundId]
+  );
+  return fundId;
 }
 
 async function adjustFundBalance(db, fundId, currency, delta, type, notes, refTable, refId) {
@@ -106,6 +122,7 @@ async function transferProfitToFund(db, userId, fundId, amount, currency, cycleI
 
 module.exports = {
   getMainFundId,
+  ensureDefaultMainFund,
   creditFundBalance,
   adjustFundBalance,
   debitFundBalance,
