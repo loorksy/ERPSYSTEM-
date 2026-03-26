@@ -275,20 +275,6 @@ async function calculateCashBoxBalance(cycleId, userId, sheetsApi) {
     [cycleId, cashBalance, sourceFirstSheetW, sourceYZ, companyProfit, JSON.stringify(details)]
   );
 
-  if (cashBalance !== 0) {
-    const mainFundId = await getMainFundId(db, userId);
-    if (mainFundId) {
-      const dupCredit = (await db.query(
-        `SELECT id FROM fund_ledger WHERE fund_id = $1 AND type = 'cash_box_profit' AND notes LIKE $2 LIMIT 1`,
-        [mainFundId, `%دورة ${cycleId}%`]
-      )).rows[0];
-      if (!dupCredit) {
-        await adjustFundBalance(db, mainFundId, 'USD', cashBalance, 'cash_box_profit',
-          `أرباح جداول الإدارة (W+Y+Z) — دورة ${cycleId}`, 'cash_box_snapshot', cycleId);
-      }
-    }
-  }
-
   return { cashBalance, sourceFirstSheetW, sourceYZ, companyProfit };
 }
 
