@@ -14,9 +14,18 @@
   function accSyncBulkStep() {
     var modal = document.getElementById('accBulkModal');
     if (!modal) return;
-    var st = document.getElementById('accBulkStaging');
-    var reviewing = !!(st && !st.classList.contains('hidden') && accBulkStagingItems.length > 0);
+    var reviewing = accBulkStagingItems.length > 0;
     modal.setAttribute('data-acc-step', reviewing ? 'review' : 'import');
+    var st = document.getElementById('accBulkStaging');
+    if (st) {
+      if (reviewing) {
+        st.classList.remove('hidden');
+        st.style.display = 'flex';
+      } else {
+        st.classList.add('hidden');
+        st.style.display = 'none';
+      }
+    }
   }
 
   function accScrollBulkModalToStaging() {
@@ -143,8 +152,8 @@
       '</tr></thead>';
 
     tb.innerHTML =
-      '<div class="acc-bulk-scroll w-full h-full max-h-[50vh] sm:max-h-[60vh] overflow-y-auto overflow-x-hidden sm:overflow-x-auto overscroll-contain">' +
-      '<table class="acc-bulk-review w-full min-w-0 sm:min-w-[800px] text-right border-collapse text-sm">' +
+      '<div class="acc-bulk-scroll w-full h-full overflow-y-auto overflow-x-hidden sm:overflow-x-auto overscroll-contain flex-1 relative">' +
+      '<table class="acc-bulk-review w-full min-w-0 sm:min-w-[800px] text-right border-collapse text-sm pb-10">' +
       colgroup +
       thead +
       '<tbody class="bg-white">' + rows + '</tbody></table></div>';
