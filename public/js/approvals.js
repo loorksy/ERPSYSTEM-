@@ -101,17 +101,17 @@
         '<td class="acc-bulk-td p-2 sm:p-3 align-middle font-medium text-slate-900 min-w-0" data-label="الاسم"><span class="acc-bulk-val line-clamp-3 break-words inline-block max-w-full">' + escHtml(row.name) + '</span></td>' +
         '<td class="acc-bulk-td p-2 sm:p-3 align-middle text-indigo-700 font-semibold tabular-nums whitespace-nowrap" data-label="المبلغ"><span class="acc-bulk-val">' + escHtml(row.amount) + '</span></td>' +
         '<td class="acc-bulk-td p-2 sm:p-3 align-middle" data-label="وساطة %">' +
-        '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full max-w-full sm:max-w-[5.5rem] min-h-[44px] sm:min-h-[40px] px-3 py-2.5 sm:py-1.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '" value="' + escHtml(accBulkBpInputValue(r.bpVal, defB)) + '"></td>' +
+        '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full max-w-full sm:max-w-[5.5rem] min-h-[40px] sm:min-h-[40px] px-3 py-2 sm:py-1.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '" value="' + escHtml(accBulkBpInputValue(r.bpVal, defB)) + '"></td>' +
         '<td class="acc-bulk-td p-2 sm:p-3 align-middle" data-label="الاتجاه">' +
-        '<select class="acc-bulk-dir w-full max-w-full min-w-0 min-h-[44px] sm:min-h-[40px] px-3 py-2.5 sm:py-2 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '">' +
+        '<select class="acc-bulk-dir w-full max-w-full min-w-0 min-h-[40px] sm:min-h-[40px] px-3 py-2 sm:py-2 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '">' +
         '<option value="to_us"' + (row.salaryDirection === 'to_us' ? ' selected' : '') + '>راتب لنا</option>' +
         '<option value="to_them"' + (row.salaryDirection === 'to_them' ? ' selected' : '') + '>راتب علينا</option></select></td>' +
         '<td class="acc-bulk-td p-2 sm:p-3 align-middle" data-label="النوع">' +
-        '<select class="acc-bulk-kind w-full max-w-full min-w-0 min-h-[44px] sm:min-h-[40px] px-3 py-2.5 sm:py-2 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '">' +
+        '<select class="acc-bulk-kind w-full max-w-full min-w-0 min-h-[40px] sm:min-h-[40px] px-3 py-2 sm:py-2 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '">' +
         '<option value="salary"' + (row.amountKind === 'salary' ? ' selected' : '') + '>راتب</option>' +
         '<option value="debt_to_us"' + (row.amountKind === 'debt_to_us' ? ' selected' : '') + '>دين لنا</option></select></td>' +
         '<td class="acc-bulk-td acc-bulk-td-actions p-2 sm:p-3 align-middle whitespace-nowrap" data-label="إجراء">' +
-        '<button type="button" class="min-h-[44px] sm:min-h-0 w-full sm:w-auto px-4 py-2.5 sm:py-0 rounded-xl border border-red-100 sm:border-0 bg-red-50/80 sm:bg-transparent text-red-600 text-sm font-semibold hover:bg-red-100 sm:hover:bg-transparent sm:hover:underline" data-acc-delete="' + idx + '">حذف</button></td></tr>'
+        '<button type="button" class="min-h-[40px] sm:min-h-0 w-full sm:w-auto px-4 py-2 sm:py-0 rounded-xl border border-red-100 sm:border-0 bg-red-50/80 sm:bg-transparent text-red-600 text-sm font-semibold hover:bg-red-100 sm:hover:bg-transparent sm:hover:underline" data-acc-delete="' + idx + '">حذف</button></td></tr>'
       );
     }).join('');
 
@@ -141,7 +141,7 @@
       '</tr></thead>';
 
     tb.innerHTML =
-      '<div class="acc-bulk-scroll max-h-[min(50vh,28rem)] sm:max-h-[min(60vh,38rem)] overflow-y-auto overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">' +
+      '<div class="acc-bulk-scroll max-h-[min(38vh,18rem)] sm:max-h-[min(52vh,30rem)] lg:max-h-[min(60vh,38rem)] overflow-y-auto overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">' +
       '<table class="acc-bulk-review w-full min-w-0 text-right border-collapse text-sm">' +
       colgroup +
       thead +

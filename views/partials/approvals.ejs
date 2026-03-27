@@ -1,4 +1,5 @@
 <style>
+  /* ثيم LorkERP: slate + indigo + emerald — يبقى CSS للحالات التي لا تغطيها Tailwind (جدول موبايل، sticky) */
   #accBulkModal {
     overscroll-behavior: contain;
     padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
@@ -48,14 +49,14 @@
   }
   /* معاينة الجدول (موبايل) + عمود نموذج مريح على الشاشات العريضة */
   .acc-bulk-form-narrow {
-    max-width: 28rem;
+    max-width: min(100%, 26rem);
     margin-left: auto;
     margin-right: auto;
     width: 100%;
   }
   @media (min-width: 640px) {
     .acc-bulk-form-narrow {
-      max-width: 32rem;
+      max-width: min(100%, 36rem);
     }
   }
   #accBulkModal select,
@@ -65,7 +66,7 @@
     min-height: 2.75rem;
   }
   .acc-bulk-modal-shell {
-    max-height: min(92dvh, calc(100dvh - 1rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
   }
   #accBulkModal[data-acc-step="review"] .acc-bulk-modal-shell {
     max-width: min(100vw - 1.5rem, 72rem);
@@ -78,8 +79,8 @@
     position: sticky;
     top: 0;
     z-index: 30;
-    background-color: rgb(248 250 252);
-    box-shadow: 0 1px 0 0 rgb(241 245 249);
+    background-color: rgb(248 250 252); /* slate-50 */
+    box-shadow: 0 1px 0 0 rgb(241 245 249); /* slate-100 */
   }
   .acc-bulk-review {
     table-layout: fixed;
@@ -119,8 +120,8 @@
       flex-direction: column;
       align-items: stretch;
       justify-content: flex-start;
-      gap: 0.35rem;
-      padding: 0.65rem 0.9rem !important;
+      gap: 0.25rem;
+      padding: 0.5rem 0.75rem !important;
       border-bottom: 1px solid rgb(241 245 249);
       width: 100%;
       max-width: 100%;
@@ -147,14 +148,14 @@
       text-align: start;
     }
   }
-  /* مسافة فوق شريط التنقل الثابت على الموبايل (65px + زر +) */
+  /* مسافة فوق شريط التنقل الثابت + زر + العائم (~72px) */
   @media (max-width: 1023px) {
     #accBulkModalBody {
-      padding-bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom, 0px)));
+      padding-bottom: max(6.5rem, calc(5.25rem + env(safe-area-inset-bottom, 0px)));
     }
   }
 </style>
-<div class="w-full max-w-6xl mx-auto" dir="rtl">
+<div class="w-full max-w-6xl mx-auto min-w-0" dir="rtl">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
     <div class="flex items-center gap-3 min-w-0">
       <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
@@ -178,31 +179,31 @@
   </div>
 </div>
 
-<div id="accBulkModal" class="fixed inset-0 z-[11000] hidden items-center justify-center px-3 sm:px-4 bg-slate-900/50 backdrop-blur-[2px] overscroll-y-contain overflow-hidden" dir="rtl" data-acc-step="import">
-  <div class="acc-bulk-modal-shell bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-[min(100vw-1.5rem,52rem)] overflow-hidden flex flex-col min-h-0 min-w-0">
-    <div class="px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 shrink-0 bg-white">
+<div id="accBulkModal" class="fixed inset-0 z-[9990] hidden items-start sm:items-center justify-center px-2.5 sm:px-4 py-3 sm:py-6 bg-slate-900/50 backdrop-blur-[2px] overscroll-y-contain overflow-hidden" dir="rtl" data-acc-step="import">
+  <div class="acc-bulk-modal-shell bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-[min(100vw-1.25rem,52rem)] overflow-hidden flex flex-col min-h-0 min-w-0">
+    <div class="px-4 sm:px-6 py-3.5 sm:py-5 border-b border-slate-100 shrink-0 bg-white">
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 border border-slate-100 shadow-sm">
-          <i class="fas fa-file-circle-plus text-lg"></i>
+        <div class="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 border border-slate-100 shadow-sm">
+          <i class="fas fa-file-circle-plus text-base sm:text-lg"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <h4 class="text-lg font-bold text-slate-900 tracking-tight">إضافة أرصدة (دفعة)</h4>
-          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">أعمدة الملف: A كود، B اسم، C رصيد، D معتمد رئيسي — تُعرض المعاينة قبل الحفظ.</p>
+          <h4 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">إضافة أرصدة (دفعة)</h4>
+          <p class="text-[0.7rem] sm:text-xs text-slate-500 mt-1 sm:mt-1.5 leading-relaxed break-words">أعمدة الملف: A كود، B اسم، C رصيد، D معتمد رئيسي — تُعرض المعاينة قبل الحفظ.</p>
         </div>
       </div>
     </div>
-    <div id="accBulkStepper" class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-4 px-3 sm:px-4 py-3 border-b border-slate-100 bg-slate-50/90 shrink-0" aria-hidden="true">
-      <div class="flex items-center gap-2.5 min-w-0 max-w-[min(100%,11rem)] sm:max-w-none">
+    <div id="accBulkStepper" class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-x-4 sm:gap-y-2 px-4 py-3 border-b border-slate-100 bg-slate-50/90 shrink-0" aria-hidden="true">
+      <div class="flex w-full sm:w-auto items-center justify-center gap-2.5 min-w-0">
         <span class="acc-bulk-step-dot-1 flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border-2 border-indigo-200 bg-white text-xs sm:text-sm font-bold text-indigo-600">1</span>
-        <span class="acc-bulk-step-label-1 text-[0.7rem] leading-tight sm:text-sm font-semibold text-slate-800 sm:truncate">استيراد</span>
+        <span class="acc-bulk-step-label-1 text-xs sm:text-sm font-semibold text-slate-800">استيراد</span>
       </div>
-      <div class="h-px w-6 sm:w-14 shrink-0 bg-gradient-to-l from-slate-200 to-slate-300 max-[360px]:hidden" role="presentation"></div>
-      <div class="flex items-center gap-2.5 min-w-0 max-w-[min(100%,13rem)] sm:max-w-none">
+      <div class="hidden sm:block h-px w-12 md:w-14 shrink-0 bg-gradient-to-l from-slate-200 to-slate-300" role="presentation"></div>
+      <div class="flex w-full sm:w-auto items-center justify-center gap-2.5 min-w-0">
         <span class="acc-bulk-step-dot-2 flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-xs sm:text-sm font-bold text-slate-500">2</span>
-        <span class="acc-bulk-step-label-2 text-[0.7rem] leading-tight sm:text-sm font-semibold text-slate-500 sm:truncate">مراجعة وحفظ</span>
+        <span class="acc-bulk-step-label-2 text-xs sm:text-sm font-semibold text-slate-500">مراجعة وحفظ</span>
       </div>
     </div>
-    <div id="accBulkModalBody" class="acc-bulk-modal-body p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 min-h-0 overscroll-contain bg-slate-50/40">
+    <div id="accBulkModalBody" class="acc-bulk-modal-body p-3.5 sm:p-6 space-y-3 sm:space-y-5 overflow-y-auto flex-1 min-h-0 overscroll-contain bg-slate-50/40">
       <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm acc-bulk-form-narrow">
         <div class="flex flex-wrap items-center gap-3 mb-3 sm:mb-4">
           <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
@@ -310,7 +311,7 @@
     </div>
   </div>
 </div>
-<div id="accDeliveryModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]" dir="rtl">
+<div id="accDeliveryModal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]" dir="rtl">
   <div class="bg-white rounded-2xl border border-slate-100 shadow-xl p-6 max-w-md w-full max-h-[85vh] overflow-y-auto">
     <div class="flex items-start gap-3 mb-4">
       <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-100">
@@ -331,7 +332,7 @@
   </div>
 </div>
 
-<div id="accAddModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]" dir="rtl">
+<div id="accAddModal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]" dir="rtl">
   <div class="bg-white rounded-2xl border border-slate-100 shadow-xl p-6 max-w-md w-full">
     <div class="flex items-start gap-3 mb-5">
       <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 border border-slate-100">
@@ -359,7 +360,7 @@
   </div>
 </div>
 
-<div id="accDetailModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
+<div id="accDetailModal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4 bg-black/50">
   <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-start mb-4">
       <div>
