@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
 const { adjustFundBalance, getMainFundId, getMainFundUsdBalance, ensureDefaultMainFund } = require('../services/fundService');
+const { labelFundLedgerType, movementColorCategory } = require('../services/accountingLabelsAr');
 
 router.get('/transfer-companies/list', requireAuth, async (req, res) => {
   try {
@@ -126,6 +127,14 @@ router.get('/:id', requireAuth, async (req, res) => {
       'SELECT * FROM fund_ledger WHERE fund_id = $1 ORDER BY created_at DESC LIMIT 200',
       [id]
     )).rows;
+    const chron = [...ledger].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    let runUsd = 0;
+    chron.forEach((l) => {
+      if ((l.currency || 'USD') === 'USD') runUsd += Number(l.amount) || 0;
+      l.balanceAfterUsd = runUsd;
+      l.labelAr = labelFundLedgerType(l.type);
+      l.colorCategory = movementColorCategory({ fundLedgerType: l.type, amount: l.amount });
+    });
     res.json({ success: true, fund: f, balances: bals, ledger });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });

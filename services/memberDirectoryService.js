@@ -222,7 +222,15 @@ async function getMemberDetail(db, userId, memberUserId) {
      LIMIT 50`,
     [userId, mid]
   )).rows;
-  return { profile, deferredHistory, auditRows: auditRowsEnriched, events, adjustments };
+  const shippingTransactions = (await db.query(
+    `SELECT id, type, item_type, quantity, total, profit_amount, payment_method, status, created_at
+     FROM shipping_transactions
+     WHERE buyer_type = 'user' AND buyer_user_id = $1
+     ORDER BY created_at DESC
+     LIMIT 50`,
+    [mid]
+  )).rows;
+  return { profile, deferredHistory, auditRows: auditRowsEnriched, events, adjustments, shippingTransactions };
 }
 
 module.exports = {

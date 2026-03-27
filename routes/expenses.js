@@ -74,6 +74,59 @@ router.get('/net-profit-by-source', requireAuth, async (req, res) => {
   }
 });
 
+/** تفصيل قيود مصدر واحد (أو مبيعات الشحن لـ shipping_sale_profit) */
+router.get('/net-profit-by-source/:sourceType/detail', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.session.userId;
+    const st = decodeURIComponent(String(req.params.sourceType || '').trim());
+    if (!st) return res.json({ success: false, message: 'مصدر غير صالح', rows: [] });
+    if (st === 'shipping_sale_profit') {
+      const rows = (
+        await db.query(
+          `SELECT id, type, item_type, quantity, total, profit_amount, payment_method, status, buyer_type, created_at
+           FROM shipping_transactions WHERE type = 'sell' ORDER BY created_at DESC LIMIT 300`
+        )
+      ).rows;
+      return res.json({ success: true, kind: 'shipping', rows });
+    }
+    const rows = (
+      await db.query(
+        `SELECT id, created_at, amount, direction, cycle_id, notes, ref_table, ref_id, source_type
+         FROM ledger_entries
+         WHERE user_id = $1 AND bucket = 'net_profit' AND currency = 'USD' AND source_type = $2
+         ORDER BY created_at DESC LIMIT 300`,
+        [userId, st]
+      )
+    ).rows;
+    res.json({ success: true, kind: 'ledger', rows });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل', rows: [] });
+  }
+});
+
+/** سجل مصروفات قسم الوسائط المالية (تصنيف media_finance أو ملاحظات «وسائط») */
+router.get('/media-finance-ledger', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.session.userId;
+    const rows = (
+      await db.query(
+        `SELECT id, amount, category, notes, created_at
+         FROM expense_entries
+         WHERE user_id = $1
+         AND (category = 'media_finance' OR COALESCE(notes, '') ILIKE '%وسائط%')
+         ORDER BY created_at DESC
+         LIMIT 200`,
+        [userId]
+      )
+    ).rows;
+    res.json({ success: true, rows });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل', rows: [] });
+  }
+});
+
 router.post('/add', requireAuth, async (req, res) => {
   try {
     const { amount, category, notes, debitMainFund } = req.body || {};

@@ -69,8 +69,7 @@ async function computeDebtBreakdown(db, userId) {
 }
 
 /**
- * تجميع «ديين لنا»: فقط مديونية الوكالات الفرعية لنا من حركات المعاملات (شحن/مكافآت/خصومات…).
- * لا يُضمّن: أرصدة الصناديق، الاعتمادات، شركات التحويل، أو أرباح الإدارة/الجدول — تلك لها بطاقاتها.
+ * تجميع «ديين لنا»: وكالات فرعية (رصيد سالب)، معتمدين (رصيد موجب)، مستخدمون (دين على العضو)، مرتجعات معلّقة لدى الكيان.
  */
 async function computeReceivablesToUs(db, userId) {
   const subAgencyRows = (await db.query(`
@@ -89,9 +88,33 @@ async function computeReceivablesToUs(db, userId) {
 
   let totalUsd = 0;
   subAgencyRows.forEach((r) => {
-    const owed = Math.abs(r.balance || 0);
-    totalUsd += owed;
+    totalUsd += Math.abs(r.balance || 0);
   });
+
+  const accreditations = (await db.query(
+    `SELECT id, name, balance_amount FROM accreditation_entities WHERE user_id = $1 AND balance_amount > 0.0001 ORDER BY name`,
+    [userId]
+  )).rows;
+  accreditations.forEach((r) => {
+    totalUsd += Number(r.balance_amount) || 0;
+  });
+
+  const members = (await db.query(
+    `SELECT member_user_id, debt_to_company_usd FROM member_profiles
+     WHERE user_id = $1 AND COALESCE(debt_to_company_usd, 0) > 0.0001
+     ORDER BY member_user_id`,
+    [userId]
+  )).rows;
+  members.forEach((r) => {
+    totalUsd += Number(r.debt_to_company_usd) || 0;
+  });
+
+  const retRow = (await db.query(
+    `SELECT COALESCE(SUM(amount), 0)::float AS t FROM financial_returns WHERE user_id = $1 AND disposition = 'remain_at_entity'`,
+    [userId]
+  )).rows[0];
+  const returnsPendingUsd = retRow?.t ?? 0;
+  totalUsd += returnsPendingUsd;
 
   return {
     totalUsd,
@@ -102,6 +125,16 @@ async function computeReceivablesToUs(db, userId) {
       balanceRaw: r.balance,
       amountOwedToUs: Math.abs(r.balance || 0),
     })),
+    accreditations: accreditations.map((r) => ({
+      id: r.id,
+      name: r.name,
+      amountOwedToUs: Number(r.balance_amount) || 0,
+    })),
+    members: members.map((r) => ({
+      memberUserId: r.member_user_id,
+      amountOwedToUs: Number(r.debt_to_company_usd) || 0,
+    })),
+    returnsPendingUsd,
   };
 }
 

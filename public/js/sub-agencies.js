@@ -100,6 +100,8 @@
       (res.cycles || []).forEach(function(c) {
         sel.innerHTML += '<option value="' + c.id + '">' + (c.name || '') + '</option>';
       });
+      var list = res.cycles || [];
+      if (list[0] && list[0].id) sel.value = String(list[0].id);
     });
   };
 
@@ -339,6 +341,8 @@
       (res.cycles || []).forEach(function(c) {
         sel.innerHTML += '<option value="' + c.id + '">' + (c.name || c.id) + '</option>';
       });
+      var list = res.cycles || [];
+      if (list[0] && list[0].id) sel.value = String(list[0].id);
     });
   }
 

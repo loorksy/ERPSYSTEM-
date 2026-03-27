@@ -125,10 +125,74 @@ async function mergeMemberDeferredIntoCycle(db, userId, memberUserId, targetCycl
   };
 }
 
+/**
+ * خصم من أسطر المؤجل الفعلية (FIFO حسب أقدم دورة) بعد خصم من الرصيد في member_profiles.
+ */
+async function reduceDeferredLinesForMember(db, userId, memberUserId, amountToReduce) {
+  let rem = Math.round(Number(amountToReduce) * 100) / 100;
+  if (rem <= 0) return;
+  const mid = String(memberUserId || '').trim();
+  const lines = (
+    await db.query(
+      `SELECT l.id, l.balance_d
+       FROM deferred_salary_lines l
+       JOIN financial_cycles c ON c.id = l.cycle_id AND c.user_id = l.user_id
+       WHERE l.user_id = $1 AND l.member_user_id = $2 AND l.balance_d > 0.00001
+       ORDER BY c.created_at ASC NULLS LAST, l.cycle_id ASC`,
+      [userId, mid]
+    )
+  ).rows;
+  for (const line of lines) {
+    if (rem <= 0) break;
+    const bal = Number(line.balance_d) || 0;
+    const take = Math.min(rem, bal);
+    const newBal = Math.round((bal - take) * 100) / 100;
+    rem = Math.round((rem - take) * 100) / 100;
+    if (newBal <= 0.0001) {
+      await db.query('DELETE FROM deferred_salary_lines WHERE id = $1', [line.id]);
+    } else {
+      await db.query(
+        'UPDATE deferred_salary_lines SET balance_d = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [newBal, line.id]
+      );
+    }
+  }
+}
+
+/**
+ * إضافة إلى المؤجل عبر deferred_salary_lines ثم تُحدَّث اللقطة في member_profiles بالمزامنة.
+ */
+async function addDeferredAdjustmentToMemberLines(db, userId, memberUserId, amount, cycleIdOpt) {
+  const amt = Math.round(Number(amount) * 100) / 100;
+  if (amt <= 0) return;
+  const mid = String(memberUserId || '').trim();
+  let cycleId = cycleIdOpt != null ? parseInt(cycleIdOpt, 10) : null;
+  if (!cycleId || Number.isNaN(cycleId)) {
+    const r = (await db.query(
+      'SELECT id FROM financial_cycles WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [userId]
+    )).rows[0];
+    cycleId = r?.id;
+  }
+  if (!cycleId) {
+    throw new Error('لا توجد دورة مالية لربط المؤجل — أنشئ دورة أو اختر الدورة في النموذج');
+  }
+  await db.query(
+    `INSERT INTO deferred_salary_lines (user_id, cycle_id, member_user_id, balance_d, sheet_source, updated_at)
+     VALUES ($1, $2, $3, $4, 'member_adjustment', CURRENT_TIMESTAMP)
+     ON CONFLICT (user_id, cycle_id, member_user_id) DO UPDATE SET
+       balance_d = deferred_salary_lines.balance_d + EXCLUDED.balance_d,
+       updated_at = CURRENT_TIMESTAMP`,
+    [userId, cycleId, mid, amt]
+  );
+}
+
 module.exports = {
   replaceDeferredLinesForCycle,
   sumDeferredTotalAllCycles,
   removeDeferredLineForAuditedUser,
   getMemberDeferredHistory,
   mergeMemberDeferredIntoCycle,
+  reduceDeferredLinesForMember,
+  addDeferredAdjustmentToMemberLines,
 };

@@ -46,6 +46,34 @@
             }).join('') + '</ul>';
           }
         }
+
+        var ac = document.getElementById('recvAccred');
+        if (ac) {
+          var alist = d.accreditations || [];
+          ac.innerHTML = alist.length
+            ? '<ul class="divide-y divide-slate-100">' + alist.map(function(x) {
+              return '<li class="py-2 flex justify-between gap-4"><span>' + esc(x.name) +
+                '</span><span class="font-semibold tabular-nums text-emerald-700">' + fmt(x.amountOwedToUs) + '</span></li>';
+            }).join('') + '</ul>'
+            : listEmpty('لا أرصدة معتمدين لنا');
+        }
+
+        var mb = document.getElementById('recvMembers');
+        if (mb) {
+          var mlist = d.members || [];
+          mb.innerHTML = mlist.length
+            ? '<ul class="divide-y divide-slate-100">' + mlist.map(function(x) {
+              return '<li class="py-2 flex justify-between gap-4"><span class="font-mono">' + esc(x.memberUserId) +
+                '</span><span class="font-semibold tabular-nums text-emerald-700">' + fmt(x.amountOwedToUs) + '</span></li>';
+            }).join('') + '</ul>'
+            : listEmpty('لا ديون مستخدمين على العضو');
+        }
+
+        var rt = document.getElementById('recvReturns');
+        if (rt) {
+          var rp = d.returnsPendingUsd != null ? d.returnsPendingUsd : 0;
+          rt.textContent = rp > 0.0001 ? 'إجمالي مرتجعات معلّقة: ' + fmt(rp) : 'لا مرتجعات معلّقة مسجّلة.';
+        }
       })
       .catch(function() {
         totalEl.textContent = '—';

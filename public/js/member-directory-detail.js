@@ -8,6 +8,7 @@
   const auditBlock = document.getElementById('mdAuditBlock');
   const eventsBlock = document.getElementById('mdEventsBlock');
   const adjBlock = document.getElementById('mdAdjBlock');
+  const shippingBlock = document.getElementById('mdShippingBlock');
 
   function esc(s) {
     const d = document.createElement('div');
@@ -131,6 +132,32 @@
           )
           .join('')
       : '<p class="text-slate-500">لا تعديلات بعد.</p>';
+
+    const ship = data.shippingTransactions || [];
+    if (shippingBlock) {
+      shippingBlock.innerHTML = ship.length
+        ? '<table class="min-w-full text-xs"><thead><tr class="text-slate-500"><th class="py-1 px-2">#</th><th class="py-1 px-2">الصنف</th><th class="py-1 px-2">الكمية</th><th class="py-1 px-2">الإجمالي</th><th class="py-1 px-2">الربح</th><th class="py-1 px-2">الحالة</th></tr></thead><tbody>' +
+          ship
+            .map(
+              (s) =>
+                '<tr><td class="py-1 px-2 font-mono">' +
+                esc(s.id) +
+                '</td><td class="py-1 px-2">' +
+                esc(s.item_type) +
+                '</td><td class="py-1 px-2 font-mono">' +
+                esc(s.quantity) +
+                '</td><td class="py-1 px-2 font-mono">' +
+                esc(Number(s.total || 0).toFixed(2)) +
+                '</td><td class="py-1 px-2 font-mono text-emerald-700">' +
+                esc(s.profit_amount != null ? Number(s.profit_amount).toFixed(2) : '—') +
+                '</td><td class="py-1 px-2">' +
+                esc(s.status || '') +
+                '</td></tr>'
+            )
+            .join('') +
+          '</tbody></table>'
+        : '<p class="text-slate-500">لا مبيعات شحن مسجّلة لهذا الرقم كمستخدم.</p>';
+    }
   }
 
   load();

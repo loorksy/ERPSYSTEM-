@@ -16,8 +16,13 @@
       if (res.success) {
         var g = document.getElementById('shippingGoldBalance');
         var c = document.getElementById('shippingCrystalBalance');
-        if (g) g.textContent = (window.formatMoney || function(n){ return (n||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $'; })(res.goldBalance || 0);
-        if (c) c.textContent = (window.formatMoney || function(n){ return (n||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $'; })(res.crystalBalance || 0);
+        var fmt = window.formatMoney || function(n){ return (n||0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $'; };
+        var gUsd = res.goldCostUsd != null ? res.goldCostUsd : 0;
+        var cUsd = res.crystalCostUsd != null ? res.crystalCostUsd : 0;
+        var gQty = res.goldBalance != null ? res.goldBalance : 0;
+        var cQty = res.crystalBalance != null ? res.crystalBalance : 0;
+        if (g) g.innerHTML = '<span class="block">' + fmt(gUsd) + '</span><span class="text-xs font-normal text-amber-800/80">كمية: ' + (gQty||0).toLocaleString('en-US') + '</span>';
+        if (c) c.innerHTML = '<span class="block">' + fmt(cUsd) + '</span><span class="text-xs font-normal text-indigo-800/80">كمية: ' + (cQty||0).toLocaleString('en-US') + '</span>';
       }
     });
   }

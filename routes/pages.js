@@ -72,6 +72,19 @@ router.get('/member-directory/member/:memberUserId', requireAuth, (req, res) => 
   });
 });
 
+router.get('/profit-sources/:sourceType/detail', requireAuth, (req, res) => {
+  res.render('dashboard', {
+    title: 'تفاصيل مصدر الربح',
+    page: 'profit-source-detail',
+    profitSourceType: decodeURIComponent(req.params.sourceType || ''),
+    user: req.session.user,
+  });
+});
+
+router.get('/media-finance', requireAuth, (req, res) => {
+  res.render('dashboard', { title: 'الوسائط المالية', page: 'media-finance', user: req.session.user });
+});
+
 pages.forEach(({ path, page, title }) => {
   router.get(path, requireAuth, (req, res) => {
     res.render('dashboard', { title, page, user: req.session.user });

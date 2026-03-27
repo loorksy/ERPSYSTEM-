@@ -3,7 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { registerShippingForAgency } = require('./subAgencies');
-const { applyBuy, applySell } = require('../services/shippingInventoryService');
+const { applyBuy, applySell, getInventoryRow } = require('../services/shippingInventoryService');
 const { creditShippingCashSale, debitShippingCashBuy, adjustFundBalance, getMainFundId } = require('../services/fundService');
 const { insertLedgerEntry } = require('../services/ledgerService');
 
@@ -17,6 +17,7 @@ function lineTotalFromBody(unitPriceField) {
 router.get('/balance', requireAuth, async (req, res) => {
   try {
     const db = getDb();
+    const userId = req.session.userId;
     const rows = (await db.query(`
       SELECT type, item_type, SUM(quantity) as sum_qty
       FROM shipping_transactions
@@ -34,7 +35,15 @@ router.get('/balance', requireAuth, async (req, res) => {
         else crystalBalance -= qty;
       }
     });
-    res.json({ success: true, goldBalance, crystalBalance });
+    const invGold = await getInventoryRow(db, userId, 'gold');
+    const invCrystal = await getInventoryRow(db, userId, 'crystal');
+    res.json({
+      success: true,
+      goldBalance,
+      crystalBalance,
+      goldCostUsd: Number(invGold.total_cost_basis) || 0,
+      crystalCostUsd: Number(invCrystal.total_cost_basis) || 0,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل جلب الرصيد' });
   }
@@ -294,6 +303,8 @@ router.post('/buy', requireAuth, async (req, res) => {
     }
     const userId = req.session.userId;
     const db = getDb();
+    const invBefore = await getInventoryRow(db, userId, itemType);
+    const qohBefore = invBefore.quantity_on_hand || 0;
     let finalCompanyName = null;
     let finalCompanyId = null;
     if (purchaseSource === 'company') {
@@ -325,6 +336,13 @@ router.post('/buy', requireAuth, async (req, res) => {
       lineTotal, 0, lineTotal,
     ]);
     const txId = r.lastInsertRowid;
+    if (paymentMethod === 'debt' && purchaseSource === 'company' && finalCompanyId && qohBefore <= 0) {
+      await db.query(
+        `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes)
+         VALUES ($1, 'shipping_company', $2, $3, 'USD', $4)`,
+        [userId, finalCompanyId, lineTotal, (notes || 'شراء شحن دين — مخزون صفر') + ' #' + txId]
+      );
+    }
     if (paymentMethod === 'cash') {
       await debitShippingCashBuy(db, userId, lineTotal, notes, txId);
     }

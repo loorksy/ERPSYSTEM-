@@ -3,6 +3,7 @@
  */
 
 const puppeteer = require('puppeteer');
+const { labelNetProfitSource } = require('../accountingLabelsAr');
 
 function escapeHtml(s) {
   if (s == null) return '';
@@ -263,7 +264,7 @@ function renderComprehensive(d) {
   inner += '<h3>ledger_entries</h3>';
   inner += tableHtml(
     ['#', 'دلو', 'مصدر', 'مبلغ'],
-    d.movements.ledgerEntries.slice(0, 80).map((r) => [String(r.id), r.bucket, r.source_type, fmtNum(r.amount)])
+    d.movements.ledgerEntries.slice(0, 80).map((r) => [String(r.id), r.bucket, labelNetProfitSource(r.source_type), fmtNum(r.amount)])
   );
   inner += '<h3>الاعتمادات</h3>';
   inner += tableHtml(

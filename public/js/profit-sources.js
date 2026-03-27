@@ -4,8 +4,8 @@
   /** تسميات عربية لـ source_type في دفتر صافي الربح (وما قد يُضاف لاحقاً) */
   var NET_PROFIT_SOURCE_LABELS = {
     fx_spread_profit: 'ربح فرق التصريف',
-    audit_cycle_profits: 'أرباح تدقيق الدورة (Y+Z و إيداع W في الصندوق)',
-    audit_management_yz: 'أرباح الإدارة: أعمدة Y+Z',
+    audit_cycle_profits: 'أرباح تدقيق الدورة (مكافات شهرية وإيداع W في الصندوق)',
+    audit_management_yz: 'أرباح المكافات الشهرية',
     audit_management_w: 'أرباح الإدارة: عمود W (أرشيف — لا يُنشأ قيد جديد)',
     transfer_discount_profit: 'ربح نسبة خصم التحويل',
     cycle_creation_discount_profit: 'ربح خصم التحويل (إنشاء دورة)',
@@ -72,8 +72,9 @@
         rows.map(function(r) {
           var code = r.source_type || '';
           var title = labelForSourceType(code);
-          return '<tr class="border-b border-slate-100 hover:bg-slate-50/80">' +
-            '<td class="px-4 py-2.5 text-sm text-slate-800" title="' + escapeHtml(code) + '">' + escapeHtml(title) + '</td>' +
+          var detailUrl = '/profit-sources/' + encodeURIComponent(code) + '/detail';
+          return '<tr class="border-b border-slate-100 hover:bg-slate-50/80 cursor-pointer mv-border-balance" onclick="window.location.href=\'' + detailUrl + '\'">' +
+            '<td class="px-4 py-2.5 text-sm text-indigo-800 underline-offset-2 hover:underline" title="' + escapeHtml(code) + '">' + escapeHtml(title) + '</td>' +
             '<td class="px-4 py-2.5 font-semibold tabular-nums text-indigo-700">' + fmt(r.total) + '</td></tr>';
         }).join('') +
         '</tbody></table></div>';

@@ -44,6 +44,16 @@
         z-index: 1004;
       }
     }
+    :root {
+      --mv-refund: #b91c1c;
+      --mv-debt: #c2410c;
+      --mv-payout: #9a3412;
+      --mv-balance: #047857;
+    }
+    .mv-border-refund { border-left: 3px solid var(--mv-refund); }
+    .mv-border-debt { border-left: 3px solid var(--mv-debt); }
+    .mv-border-payout { border-left: 3px solid var(--mv-payout); }
+    .mv-border-balance { border-left: 3px solid var(--mv-balance); }
     /* زر إجراءات شعاعي (مستوحى من Uiverse — ألوان LorkERP) */
     .quick-action-radial {
       position: relative;
@@ -383,9 +393,15 @@
           </a>
         </li>
         <li>
-          <a href="/profit-sources" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'profit-sources' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
-            <i class="fas fa-chart-pie w-5 text-center <%= page === 'profit-sources' ? 'text-indigo-400' : '' %>"></i>
+          <a href="/profit-sources" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'profit-sources' || page === 'profit-source-detail' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-chart-pie w-5 text-center <%= page === 'profit-sources' || page === 'profit-source-detail' ? 'text-indigo-400' : '' %>"></i>
             <span>مصادر الربح</span>
+          </a>
+        </li>
+        <li>
+          <a href="/media-finance" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'media-finance' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
+            <i class="fas fa-photo-video w-5 text-center <%= page === 'media-finance' ? 'text-indigo-400' : '' %>"></i>
+            <span>الوسائط المالية</span>
           </a>
         </li>
         <li>
@@ -469,6 +485,10 @@
         <%- include('partials/expenses-page') %>
       <% } else if (page === 'profit-sources') { %>
         <%- include('partials/profit-sources') %>
+      <% } else if (page === 'profit-source-detail') { %>
+        <%- include('partials/profit-source-detail') %>
+      <% } else if (page === 'media-finance') { %>
+        <%- include('partials/media-finance') %>
       <% } else if (page === 'admin-brokerage') { %>
         <%- include('partials/admin-brokerage') %>
       <% } else if (page === 'payables-overview') { %>
@@ -571,6 +591,12 @@
   <% } %>
   <% if (page === 'profit-sources') { %>
     <script src="/js/profit-sources.js"></script>
+  <% } %>
+  <% if (page === 'profit-source-detail') { %>
+    <script src="/js/profit-source-detail.js"></script>
+  <% } %>
+  <% if (page === 'media-finance') { %>
+    <script src="/js/media-finance.js"></script>
   <% } %>
   <% if (page === 'receivables-to-us') { %>
     <script src="/js/receivables-to-us.js"></script>

@@ -1,4 +1,5 @@
-const { getMemberProfileRow } = require('./memberDirectoryService');
+const { getMemberProfileRow, refreshMemberDeferredSnapshot } = require('./memberDirectoryService');
+const { reduceDeferredLinesForMember, addDeferredAdjustmentToMemberLines } = require('./deferredSalaryService');
 
 async function ensureMemberProfileExists(db, userId, memberUserId) {
   const mid = String(memberUserId).trim();
@@ -51,6 +52,7 @@ async function processAdjustment(db, userId, { memberUserId, kind, amount, notes
   if (!['deduct', 'add', 'reward'].includes(k)) return { success: false, message: 'نوع غير صالح' };
 
   await ensureMemberProfileExists(db, userId, mid);
+  await refreshMemberDeferredSnapshot(db, userId, mid);
   const profile = await getMemberProfileRow(db, userId, mid);
   let def = Number(profile?.deferred_balance_usd || 0);
   let sal = Number(profile?.total_salary_audited_usd || 0);
@@ -78,6 +80,8 @@ async function processAdjustment(db, userId, { memberUserId, kind, amount, notes
          WHERE user_id = $4 AND member_user_id = $5`,
         [def, sal, debt, userId, mid]
       );
+      await reduceDeferredLinesForMember(db, userId, mid, takeDef);
+      await refreshMemberDeferredSnapshot(db, userId, mid);
       await db.query(
         `INSERT INTO member_profile_events (user_id, member_user_id, event_type, amount, cycle_id, notes, status, meta_json)
          VALUES ($1, $2, 'adjustment_deduct', $3, $4, $5, 'done', $6)`,
@@ -91,11 +95,8 @@ async function processAdjustment(db, userId, { memberUserId, kind, amount, notes
         ]
       );
     } else {
-      def = Math.round((def + amt) * 100) / 100;
-      await db.query(
-        `UPDATE member_profiles SET deferred_balance_usd = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2 AND member_user_id = $3`,
-        [def, userId, mid]
-      );
+      await addDeferredAdjustmentToMemberLines(db, userId, mid, amt, cycleId);
+      await refreshMemberDeferredSnapshot(db, userId, mid);
       const ev = k === 'reward' ? 'adjustment_reward' : 'adjustment_add';
       await db.query(
         `INSERT INTO member_profile_events (user_id, member_user_id, event_type, amount, cycle_id, notes, status, meta_json)

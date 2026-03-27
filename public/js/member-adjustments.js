@@ -4,6 +4,27 @@
   const amount = document.getElementById('maAmount');
   const cycleId = document.getElementById('maCycleId');
   const notes = document.getElementById('maNotes');
+
+  async function loadCycles() {
+    if (!cycleId) return;
+    try {
+      const res = await fetch('/api/sheet/cycles', { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!data.success || !data.cycles || !data.cycles.length) {
+        cycleId.innerHTML = '<option value="">— لا توجد دورات —</option>';
+        return;
+      }
+      cycleId.innerHTML =
+        '<option value="">— اختر الدورة —</option>' +
+        data.cycles.map(function (c) {
+          return '<option value="' + c.id + '">' + (c.name || 'دورة #' + c.id) + '</option>';
+        }).join('');
+      if (data.cycles[0] && data.cycles[0].id) cycleId.value = String(data.cycles[0].id);
+    } catch (_) {
+      cycleId.innerHTML = '<option value="">— خطأ في التحميل —</option>';
+    }
+  }
+  loadCycles();
   const syncSheet = document.getElementById('maSyncSheet');
   const uiUidCol = document.getElementById('maUiUidCol');
   const uiSalCol = document.getElementById('maUiSalCol');
@@ -20,7 +41,7 @@
 
   btn.addEventListener('click', async () => {
     msg.textContent = '';
-    const cidRaw = (cycleId.value || '').trim();
+    const cidRaw = cycleId ? (cycleId.value || '').trim() : '';
     const cid = cidRaw ? parseInt(cidRaw, 10) : null;
     const body = {
       memberUserId: (memberId.value || '').trim(),

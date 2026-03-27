@@ -140,6 +140,8 @@ async function applyAdjustmentToUserInfoGoogleSheet(db, userId, options) {
   const cur = parseCellNumber(row[salCol]);
   const next = Math.round((cur + delta) * 100) / 100;
   const finalVal = Math.max(0, next);
+  /** نص عشري صريح يمنع عرض/تخزين الشيت كعدد صحيح (مثال: 90.65 + 10 → 100.65) */
+  const cellForApi = String(Number(finalVal.toFixed(2)));
 
   const sheetRow1 = found + 1;
   const letter = columnIndexToLetter(salCol);
@@ -151,7 +153,7 @@ async function applyAdjustmentToUserInfoGoogleSheet(db, userId, options) {
       spreadsheetId: ssId,
       range,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[finalVal]] },
+      requestBody: { values: [[cellForApi]] },
     })
   );
 

@@ -2,7 +2,7 @@
   <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
     <div>
       <h2 class="text-2xl font-bold text-slate-800">ديين لنا</h2>
-      <p class="text-sm text-slate-500 mt-1">يقتصر على مديونية الوكالات الفرعية لنا من الحركات المسجّلة (شحن وغيره). لا يشمل رصيد الصندوق، أو الاعتمادات، أو أرباح/جدول الإدارة، أو أرصدة شركات التحويل.</p>
+      <p class="text-sm text-slate-500 mt-1">يشمل: وكالات فرعية (رصيد سالب)، معتمدين (رصيد موجب)، مستخدمين (دين على العضو)، ومرتجعات معلّقة لدى الكيان.</p>
     </div>
     <a href="/dashboard" class="text-sm text-indigo-600 font-semibold hover:underline">← لوحة التحكم</a>
   </div>
@@ -15,8 +15,20 @@
   <div class="space-y-6">
     <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
       <h3 class="text-lg font-bold text-slate-800 mb-1">وكالات فرعية — دين لنا</h3>
-      <p class="text-xs text-slate-500 mb-4">يُعرض المبلغ عندما يكون رصيد الوكالة المحاسبي سالباً (مديونية الوكالة لنا)، من سجل المعاملات فقط.</p>
+      <p class="text-xs text-slate-500 mb-4">رصيد الوكالة سالب (مديونية لنا) من سجل المعاملات.</p>
       <div id="recvAgencies" class="text-sm text-slate-500">جاري التحميل...</div>
+    </section>
+    <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <h3 class="text-lg font-bold text-slate-800 mb-1">معتمدون — لنا</h3>
+      <div id="recvAccred" class="text-sm text-slate-500">جاري التحميل...</div>
+    </section>
+    <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <h3 class="text-lg font-bold text-slate-800 mb-1">مستخدمون — دين على العضو</h3>
+      <div id="recvMembers" class="text-sm text-slate-500">جاري التحميل...</div>
+    </section>
+    <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <h3 class="text-lg font-bold text-slate-800 mb-1">مرتجعات معلّقة (لدى الكيان)</h3>
+      <p id="recvReturns" class="text-sm text-slate-600">—</p>
     </section>
   </div>
 </div>

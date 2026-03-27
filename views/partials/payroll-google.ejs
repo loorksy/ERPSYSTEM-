@@ -232,6 +232,9 @@ async function payrollLoadCycles() {
     sel.innerHTML = '<option value="">— اختر الدورة —</option>' + data.cycles.map(function(c) {
       return '<option value="' + c.id + '">' + (c.name || 'دورة #' + c.id) + '</option>';
     }).join('');
+    if (data.cycles[0] && data.cycles[0].id) {
+      sel.value = String(data.cycles[0].id);
+    }
   } catch (_) {
     sel.innerHTML = '<option value="">— خطأ في التحميل —</option>';
     if (hint) hint.classList.remove('hidden');

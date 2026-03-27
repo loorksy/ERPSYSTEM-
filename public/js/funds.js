@@ -97,8 +97,20 @@
           (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '') + '</span>';
       }).join(' ');
       document.getElementById('fundDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
-        return '<div class="py-2 border-b border-slate-50 flex justify-between"><span>' + (l.type || '') + '</span><span>' +
-          (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (l.currency || '') + '</span></div>';
+        var cat = l.colorCategory || 'balance';
+        var border = 'mv-border-balance';
+        if (cat === 'refund') border = 'mv-border-refund';
+        else if (cat === 'debt') border = 'mv-border-debt';
+        else if (cat === 'payout') border = 'mv-border-payout';
+        var after = l.balanceAfterUsd != null && !isNaN(l.balanceAfterUsd)
+          ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
+          : '—';
+        return '<div class="py-2.5 px-2 -mx-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 border-b border-slate-50 ' + border + '">' +
+          '<div class="min-w-0"><span class="text-sm font-medium text-slate-800">' + (l.labelAr || l.type || '') + '</span>' +
+          '<span class="block text-[0.7rem] text-slate-500 truncate">' + (l.notes || '') + '</span></div>' +
+          '<div class="text-left shrink-0"><span class="font-semibold tabular-nums">' +
+          (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (l.currency || '') + '</span>' +
+          '<span class="block text-[0.65rem] text-slate-500">الرصيد بعد: ' + after + '</span></div></div>';
       }).join('') || '<p class="text-slate-400">لا سجل</p>';
       apiCall('/api/funds/list').then(function(r2) {
         var sel = document.getElementById('fundTransferTo');

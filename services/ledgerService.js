@@ -115,7 +115,16 @@ async function aggregateNetProfitBySource(db, userId, currency = 'USD') {
      ORDER BY ABS(COALESCE(SUM(le.amount * le.direction), 0)) DESC`,
     [userId, currency]
   )).rows;
-  return rows;
+  const shipRow = (await db.query(
+    `SELECT COALESCE(SUM(profit_amount), 0)::float AS t FROM shipping_transactions WHERE type = 'sell'`
+  )).rows[0];
+  const shippingTotal = Math.round((Number(shipRow?.t) || 0) * 100) / 100;
+  const merged = [...rows];
+  const idx = merged.findIndex((r) => r.source_type === 'shipping_sale_profit');
+  if (idx >= 0) merged[idx] = { source_type: 'shipping_sale_profit', total: shippingTotal };
+  else if (shippingTotal !== 0) merged.push({ source_type: 'shipping_sale_profit', total: shippingTotal });
+  merged.sort((a, b) => Math.abs(Number(b.total) || 0) - Math.abs(Number(a.total) || 0));
+  return merged;
 }
 
 module.exports = {

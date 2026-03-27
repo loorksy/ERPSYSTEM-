@@ -134,7 +134,7 @@ async function applyCycleAuditProfitsToLedger(userId, cycleId) {
       sourceType: 'audit_management_yz',
       amount: sourceYZ,
       cycleId,
-      notes: 'أرباح الإدارة: أعمدة Y+Z',
+      notes: 'أرباح المكافات الشهرية (تدقيق الإدارة)',
       meta: { sourceYZ },
     });
   }
