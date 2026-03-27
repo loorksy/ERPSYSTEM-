@@ -37,45 +37,87 @@
   function accRenderStagingTable() {
     var tb = document.getElementById('accBulkStagingTable');
     if (!tb) return;
+    var badge = document.getElementById('accBulkStagingBadge');
+    if (badge) badge.textContent = accBulkStagingItems.length + ' صف';
     var br = document.getElementById('accBulkBroker');
     var defB = br && br.value !== '' && br.value != null ? br.value : '0';
-    var html = '<table class="min-w-full text-right border-collapse text-xs"><thead><tr class="border-b bg-slate-50">' +
-      '<th class="p-2">#</th><th class="p-2">كود</th><th class="p-2">اسم</th><th class="p-2">مبلغ</th><th class="p-2">وساطة %</th><th class="p-2">اتجاه</th><th class="p-2">نوع</th><th class="p-2"></th></tr></thead><tbody>';
-    accBulkStagingItems.forEach(function(row, idx) {
+    if (!accBulkStagingItems.length) {
+      tb.innerHTML = '';
+      return;
+    }
+
+    function rowBp(row, idx) {
       var bpVal = row.brokeragePct !== '' && row.brokeragePct != null && row.brokeragePct !== undefined ? row.brokeragePct : defB;
-      html += '<tr class="border-b border-slate-100">' +
-        '<td class="p-1">' + (row.lineIndex != null ? row.lineIndex : idx + 1) + '</td>' +
-        '<td class="p-1">' + escHtml(row.code) + '</td>' +
-        '<td class="p-1">' + escHtml(row.name) + '</td>' +
-        '<td class="p-1">' + escHtml(row.amount) + '</td>' +
-        '<td class="p-1"><input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-20 px-1 py-1 border rounded" data-idx="' + idx + '" value="' + escHtml(bpVal) + '"></td>' +
-        '<td class="p-1"><select class="acc-bulk-dir w-28 px-1 py-1 border rounded" data-idx="' + idx + '">' +
+      return { bpVal: bpVal, lineNum: row.lineIndex != null ? row.lineIndex : idx + 1 };
+    }
+
+    var rows = accBulkStagingItems.map(function(row, idx) {
+      var r = rowBp(row, idx);
+      return (
+        '<tr class="acc-bulk-tr border-b border-slate-100 hover:bg-indigo-50/25 transition-colors">' +
+        '<td class="acc-bulk-td p-3 align-middle text-slate-600 tabular-nums whitespace-nowrap" data-label="#"><span class="acc-bulk-val">' + escHtml(r.lineNum) + '</span></td>' +
+        '<td class="acc-bulk-td p-3 align-middle font-mono text-sm text-slate-800" data-label="كود"><span class="acc-bulk-val">' + escHtml(row.code) + '</span></td>' +
+        '<td class="acc-bulk-td p-3 align-middle font-medium text-slate-900" data-label="الاسم"><span class="acc-bulk-val line-clamp-3 break-words inline-block max-w-full">' + escHtml(row.name) + '</span></td>' +
+        '<td class="acc-bulk-td p-3 align-middle text-indigo-700 font-semibold tabular-nums whitespace-nowrap" data-label="المبلغ"><span class="acc-bulk-val">' + escHtml(row.amount) + '</span></td>' +
+        '<td class="acc-bulk-td p-3 align-middle" data-label="وساطة %">' +
+        '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full max-w-[8rem] sm:w-24 min-h-[44px] sm:min-h-[40px] px-3 sm:px-2 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm" data-idx="' + idx + '" value="' + escHtml(r.bpVal) + '"></td>' +
+        '<td class="acc-bulk-td p-3 align-middle" data-label="الاتجاه">' +
+        '<select class="acc-bulk-dir w-full max-w-full sm:min-w-[9rem] min-h-[44px] sm:min-h-[40px] px-2 py-2 rounded-lg border border-slate-200 text-sm bg-white" data-idx="' + idx + '">' +
         '<option value="to_us"' + (row.salaryDirection === 'to_us' ? ' selected' : '') + '>راتب لنا</option>' +
-        '<option value="to_them"' + (row.salaryDirection === 'to_them' ? ' selected' : '') + '>علينا</option></select></td>' +
-        '<td class="p-1"><select class="acc-bulk-kind w-32 px-1 py-1 border rounded" data-idx="' + idx + '">' +
+        '<option value="to_them"' + (row.salaryDirection === 'to_them' ? ' selected' : '') + '>راتب علينا</option></select></td>' +
+        '<td class="acc-bulk-td p-3 align-middle" data-label="النوع">' +
+        '<select class="acc-bulk-kind w-full max-w-full sm:min-w-[9rem] min-h-[44px] sm:min-h-[40px] px-2 py-2 rounded-lg border border-slate-200 text-sm bg-white" data-idx="' + idx + '">' +
         '<option value="salary"' + (row.amountKind === 'salary' ? ' selected' : '') + '>راتب</option>' +
         '<option value="debt_to_us"' + (row.amountKind === 'debt_to_us' ? ' selected' : '') + '>دين لنا</option></select></td>' +
-        '<td class="p-1"><button type="button" class="text-red-600" onclick="accRemoveStagingRow(' + idx + ')">حذف</button></td></tr>';
+        '<td class="acc-bulk-td acc-bulk-td-actions p-3 align-middle whitespace-nowrap" data-label="إجراء">' +
+        '<button type="button" class="min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-0 rounded-lg sm:rounded-none text-red-600 text-sm font-semibold hover:bg-red-50 sm:hover:bg-transparent sm:hover:underline" data-acc-delete="' + idx + '">حذف</button></td></tr>'
+      );
+    }).join('');
+
+    var thead =
+      '<thead class="acc-bulk-thead sticky top-0 z-20 shadow-sm">' +
+      '<tr class="border-b border-slate-200 bg-slate-100 text-slate-800">' +
+      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">#</th>' +
+      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">كود</th>' +
+      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap min-w-[7rem]">الاسم</th>' +
+      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">المبلغ</th>' +
+      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">وساطة %</th>' +
+      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">الاتجاه</th>' +
+      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">النوع</th>' +
+      '<th class="p-3 text-xs sm:text-sm font-bold w-20"></th>' +
+      '</tr></thead>';
+
+    tb.innerHTML =
+      '<div class="acc-bulk-scroll max-h-[min(52vh,26rem)] sm:max-h-[min(58vh,34rem)] overflow-y-auto overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">' +
+      '<table class="acc-bulk-review w-full min-w-[52rem] text-right border-collapse text-sm">' +
+      thead +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function wireAccBulkStagingDelegation() {
+    var c = document.getElementById('accBulkStagingTable');
+    if (!c || c.dataset.accBulkBound) return;
+    c.dataset.accBulkBound = '1';
+    c.addEventListener('change', function(e) {
+      var t = e.target;
+      var idx = parseInt(t.getAttribute('data-idx'), 10);
+      if (isNaN(idx) || !accBulkStagingItems[idx]) return;
+      if (t.classList.contains('acc-bulk-dir')) accBulkStagingItems[idx].salaryDirection = t.value;
+      if (t.classList.contains('acc-bulk-kind')) accBulkStagingItems[idx].amountKind = t.value;
     });
-    html += '</tbody></table>';
-    tb.innerHTML = html;
-    tb.querySelectorAll('.acc-bulk-bp').forEach(function(inp) {
-      inp.addEventListener('change', function() {
-        var i = parseInt(inp.getAttribute('data-idx'), 10);
-        if (!isNaN(i) && accBulkStagingItems[i]) accBulkStagingItems[i].brokeragePct = inp.value;
-      });
+    c.addEventListener('input', function(e) {
+      var t = e.target;
+      if (!t.classList.contains('acc-bulk-bp')) return;
+      var idx = parseInt(t.getAttribute('data-idx'), 10);
+      if (isNaN(idx) || !accBulkStagingItems[idx]) return;
+      accBulkStagingItems[idx].brokeragePct = t.value;
     });
-    tb.querySelectorAll('.acc-bulk-dir').forEach(function(sel) {
-      sel.addEventListener('change', function() {
-        var i = parseInt(sel.getAttribute('data-idx'), 10);
-        if (!isNaN(i) && accBulkStagingItems[i]) accBulkStagingItems[i].salaryDirection = sel.value;
-      });
-    });
-    tb.querySelectorAll('.acc-bulk-kind').forEach(function(sel) {
-      sel.addEventListener('change', function() {
-        var i = parseInt(sel.getAttribute('data-idx'), 10);
-        if (!isNaN(i) && accBulkStagingItems[i]) accBulkStagingItems[i].amountKind = sel.value;
-      });
+    c.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-acc-delete]');
+      if (!btn) return;
+      e.preventDefault();
+      var idx = parseInt(btn.getAttribute('data-acc-delete'), 10);
+      if (!isNaN(idx)) window.accRemoveStagingRow(idx);
     });
   }
 
@@ -478,6 +520,7 @@
   });
 
   document.addEventListener('DOMContentLoaded', function() {
+    wireAccBulkStagingDelegation();
     accLoad();
     accAmountKindChange();
   });
