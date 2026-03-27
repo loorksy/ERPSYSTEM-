@@ -4,6 +4,9 @@
   const amount = document.getElementById('maAmount');
   const cycleId = document.getElementById('maCycleId');
   const notes = document.getElementById('maNotes');
+  const syncSheet = document.getElementById('maSyncSheet');
+  const uiUidCol = document.getElementById('maUiUidCol');
+  const uiSalCol = document.getElementById('maUiSalCol');
   const btn = document.getElementById('maSubmitBtn');
   const pasteBtn = document.getElementById('maPasteBtn');
   const msg = document.getElementById('maMsg');
@@ -25,6 +28,9 @@
       amount: parseFloat(amount.value),
       notes: (notes.value || '').trim() || null,
       cycleId: cid && !Number.isNaN(cid) ? cid : null,
+      syncUserInfoSheet: syncSheet ? syncSheet.checked : true,
+      userInfoUserIdCol: (uiUidCol && uiUidCol.value ? uiUidCol.value : 'C').trim() || 'C',
+      userInfoSalaryCol: (uiSalCol && uiSalCol.value ? uiSalCol.value : 'L').trim() || 'L',
     };
     if (!body.memberUserId) {
       msg.textContent = 'أدخل رقم المستخدم';

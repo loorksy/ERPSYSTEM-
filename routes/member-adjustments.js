@@ -7,7 +7,16 @@ const { processAdjustment } = require('../services/memberAdjustmentsService');
 router.post('/apply', requireAuth, async (req, res) => {
   try {
     const db = getDb();
-    const { memberUserId, kind, amount, notes, cycleId } = req.body || {};
+    const {
+      memberUserId,
+      kind,
+      amount,
+      notes,
+      cycleId,
+      syncUserInfoSheet,
+      userInfoUserIdCol,
+      userInfoSalaryCol,
+    } = req.body || {};
     let cid = null;
     if (cycleId != null && cycleId !== '') {
       const n = parseInt(cycleId, 10);
@@ -19,9 +28,20 @@ router.post('/apply', requireAuth, async (req, res) => {
       amount,
       notes,
       cycleId: cid,
+      syncUserInfoSheet,
+      userInfoUserIdCol,
+      userInfoSalaryCol,
     });
     if (!r.success) return res.json(r);
-    res.json({ success: true, message: 'تم التسجيل', id: r.id });
+    let msg = 'تم التسجيل في النظام';
+    if (r.sheetMessage) msg += ' — ' + r.sheetMessage;
+    res.json({
+      success: true,
+      message: msg,
+      id: r.id,
+      sheetSynced: r.sheetSynced,
+      sheetMessage: r.sheetMessage || null,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }

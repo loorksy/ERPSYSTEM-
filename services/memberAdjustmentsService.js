@@ -42,7 +42,7 @@ async function applyDebtAgainstCycleSalary(db, userId, cycleId, memberUserId, cy
   return repay;
 }
 
-async function processAdjustment(db, userId, { memberUserId, kind, amount, notes, cycleId }) {
+async function processAdjustment(db, userId, { memberUserId, kind, amount, notes, cycleId, syncUserInfoSheet, userInfoUserIdCol, userInfoSalaryCol }) {
   const amt = Math.abs(Number(amount));
   if (!amt || Number.isNaN(amt)) return { success: false, message: 'مبلغ غير صالح' };
   const mid = String(memberUserId || '').trim();
@@ -115,7 +115,29 @@ async function processAdjustment(db, userId, { memberUserId, kind, amount, notes
       `UPDATE member_adjustments SET status = 'done', processed_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [adjId]
     );
-    return { success: true, id: adjId };
+
+    let sheetSynced = false;
+    let sheetMessage = '';
+    const doSheet = syncUserInfoSheet !== false;
+    if (doSheet) {
+      try {
+        const { applyAdjustmentToUserInfoGoogleSheet } = require('./memberAdjustmentSheetsSync');
+        const sr = await applyAdjustmentToUserInfoGoogleSheet(db, userId, {
+          cycleId,
+          memberUserId: mid,
+          kind: k,
+          amount: amt,
+          userInfoUserIdCol: userInfoUserIdCol || 'C',
+          userInfoSalaryCol: userInfoSalaryCol || 'L',
+        });
+        sheetSynced = sr.sheetSynced;
+        sheetMessage = sr.sheetMessage || '';
+      } catch (sheetErr) {
+        sheetMessage = sheetErr.message || String(sheetErr);
+      }
+    }
+
+    return { success: true, id: adjId, sheetSynced, sheetMessage };
   } catch (e) {
     await db.query(`UPDATE member_adjustments SET status = 'failed' WHERE id = $1`, [adjId]);
     throw e;

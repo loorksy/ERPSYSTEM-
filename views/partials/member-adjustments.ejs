@@ -5,6 +5,10 @@
       إضافات وخصومات ومكافآت
     </h2>
     <p class="text-xs text-slate-500">أدخل رقم المستخدم، المبلغ، والنوع. الخصم يستهلك المؤجل ثم الرصيد المسجّل ثم يُسجَّل الدين.</p>
+    <p class="text-xs text-indigo-700 bg-indigo-50/80 border border-indigo-100 rounded-xl px-3 py-2">
+      <strong>Google Sheets:</strong> عند تفعيل «تحديث جدول معلومات المستخدمين» يُعدَّل <strong>عمود الراتب</strong> (افتراضي L) في الشيت المرتبط بالدورة.
+      حدد <strong>رقم الدورة</strong> نفسها المستخدمة في تدقيق الرواتب بعد مزامنة جدول المعلومات.
+    </p>
 
     <div class="space-y-2">
       <label class="block text-xs font-semibold text-slate-600">رقم المستخدم</label>
@@ -33,9 +37,27 @@
     </div>
 
     <div class="space-y-2">
-      <label class="block text-xs font-semibold text-slate-600">دورة مالية (اختياري)</label>
+      <label class="block text-xs font-semibold text-slate-600">دورة مالية (مُستحسَن لتحديث Google)</label>
       <input type="number" id="maCycleId" placeholder="رقم الدورة"
         class="w-full py-2.5 px-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+    </div>
+
+    <label class="flex items-center gap-2 sm:gap-3 cursor-pointer text-sm text-slate-700">
+      <input type="checkbox" id="maSyncSheet" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" checked>
+      <span>تحديث عمود الراتب في جدول معلومات المستخدمين (Google Sheet)</span>
+    </label>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="space-y-1">
+        <label class="block text-[0.65rem] font-semibold text-slate-500">عمود رقم المستخدم</label>
+        <input type="text" id="maUiUidCol" value="C" maxlength="3"
+          class="w-full py-2 px-2 border-2 border-slate-200 rounded-lg text-sm text-center uppercase">
+      </div>
+      <div class="space-y-1">
+        <label class="block text-[0.65rem] font-semibold text-slate-500">عمود الراتب</label>
+        <input type="text" id="maUiSalCol" value="L" maxlength="3"
+          class="w-full py-2 px-2 border-2 border-slate-200 rounded-lg text-sm text-center uppercase">
+      </div>
     </div>
 
     <div class="space-y-2">
