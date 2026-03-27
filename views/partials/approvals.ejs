@@ -4,6 +4,10 @@
     overscroll-behavior: contain;
     padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    touch-action: manipulation;
+    isolation: isolate;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
   }
   .acc-bulk-dropzone.acc-bulk-dropzone-drag {
     border-color: rgb(129 140 248);
@@ -65,8 +69,14 @@
   #accBulkModal input[type="text"] {
     min-height: 2.75rem;
   }
+  /* ارتفاع النافذة: vh للمتصفحات القديمة، dvh عند التوفر (Safari iOS 15.4+، Chrome) */
   .acc-bulk-modal-shell {
-    max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    max-height: min(92vh, calc(100vh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+  }
+  @supports (height: 100dvh) {
+    .acc-bulk-modal-shell {
+      max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    }
   }
   /* استيراد: نمط لوحة الإجراء السريع (ضيق) — مراجعة: نمط بطاقة العملاء (عرض max-w-5xl) */
   #accBulkModal[data-acc-step="import"] .acc-bulk-modal-shell {
@@ -86,6 +96,28 @@
   }
   .acc-bulk-modal-body {
     -webkit-overflow-scrolling: touch;
+  }
+  .acc-bulk-scroll {
+    overscroll-behavior: contain;
+  }
+  @media (max-width: 767px) {
+    .acc-bulk-scroll {
+      touch-action: pan-y;
+    }
+  }
+  /* iOS Safari: تجنّب تكبير الصفحة عند التركيز على حقول أصغر من 16px */
+  @media (max-width: 639px) {
+    #accBulkModal input:not(.sr-only),
+    #accBulkModal select,
+    #accBulkModal textarea {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #accBulkModal .acc-bulk-src-btn {
+      transition: none;
+    }
   }
   /* رأس الجدول ثابت داخل منطقة التمرير الأفقية */
   .acc-bulk-scroll .acc-bulk-thead th {
@@ -169,11 +201,21 @@
   }
   /* مساحة قائمة المعتمدين: تعبئة عرض المحتوى وارتفاع يشبه بطاقة لوحة التحكم */
   .acc-approvals-list-shell {
-    min-height: min(72vh, calc(100dvh - 11rem));
+    min-height: min(72vh, calc(100vh - 11rem));
+  }
+  @supports (height: 100dvh) {
+    .acc-approvals-list-shell {
+      min-height: min(72dvh, calc(100dvh - 11rem));
+    }
   }
   @media (max-width: 1023px) {
     .acc-approvals-list-shell {
-      min-height: min(58vh, calc(100dvh - 13rem));
+      min-height: min(58vh, calc(100vh - 13rem));
+    }
+    @supports (height: 100dvh) {
+      .acc-approvals-list-shell {
+        min-height: min(58dvh, calc(100dvh - 13rem));
+      }
     }
   }
   /* حالة فارغة / تحميل داخل البطاقة — يعمل دون الاعتماد على فئات Tailwind في JS */
@@ -188,9 +230,19 @@
     padding-right: 1rem;
     text-align: center;
   }
+  @supports (height: 100dvh) {
+    .acc-approvals-empty {
+      min-height: min(58dvh, 24rem);
+    }
+  }
   @media (min-width: 640px) {
     .acc-approvals-empty {
       min-height: min(64vh, 28rem);
+    }
+    @supports (height: 100dvh) {
+      .acc-approvals-empty {
+        min-height: min(64dvh, 28rem);
+      }
     }
   }
 </style>

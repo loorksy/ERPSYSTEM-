@@ -115,42 +115,6 @@
       );
     }).join('');
 
-    var mobileCards = accBulkStagingItems.map(function(row, idx) {
-      var r = rowBp(row, idx);
-      var bpVal = accBulkBpInputValue(r.bpVal, defB);
-      return (
-        '<div class="acc-bulk-mobile-card rounded-2xl border border-slate-100 bg-white shadow-sm p-4 space-y-3 min-w-0">' +
-        '<div class="flex items-start justify-between gap-2">' +
-        '<div class="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">' +
-        '<span class="inline-flex items-center gap-1 text-xs font-bold text-slate-500 tabular-nums"><span class="text-slate-400">#</span>' + escHtml(r.lineNum) + '</span>' +
-        '<span class="font-mono text-base text-slate-800">' + escHtml(row.code) + '</span>' +
-        '</div></div>' +
-        '<p class="text-base font-medium text-slate-900 leading-snug break-words">' + escHtml(row.name) + '</p>' +
-        '<div class="rounded-xl bg-indigo-50 border border-indigo-100/80 px-4 py-3 text-center shadow-inner">' +
-        '<span class="text-xs font-semibold text-indigo-600 block mb-1">المبلغ</span>' +
-        '<span class="text-lg font-bold text-indigo-700 tabular-nums">' + escHtml(row.amount) + '</span>' +
-        '</div>' +
-        '<div class="space-y-1.5">' +
-        '<label class="block text-xs font-semibold text-slate-600">وساطة %</label>' +
-        '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full min-h-[40px] px-3 py-2.5 rounded-xl border border-slate-200 text-base focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '" value="' + escHtml(bpVal) + '">' +
-        '</div>' +
-        '<div class="space-y-1.5">' +
-        '<label class="block text-xs font-semibold text-slate-600">الاتجاه</label>' +
-        '<select class="acc-bulk-dir w-full min-h-[40px] min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 text-base bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '">' +
-        '<option value="to_us"' + (row.salaryDirection === 'to_us' ? ' selected' : '') + '>راتب لنا</option>' +
-        '<option value="to_them"' + (row.salaryDirection === 'to_them' ? ' selected' : '') + '>راتب علينا</option></select>' +
-        '</div>' +
-        '<div class="space-y-1.5">' +
-        '<label class="block text-xs font-semibold text-slate-600">النوع</label>' +
-        '<select class="acc-bulk-kind w-full min-h-[40px] min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 text-base bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" data-idx="' + idx + '">' +
-        '<option value="salary"' + (row.amountKind === 'salary' ? ' selected' : '') + '>راتب</option>' +
-        '<option value="debt_to_us"' + (row.amountKind === 'debt_to_us' ? ' selected' : '') + '>دين لنا</option></select>' +
-        '</div>' +
-        '<button type="button" class="w-full min-h-[44px] rounded-xl border border-red-200 bg-red-50 text-red-700 text-base font-semibold hover:bg-red-100 active:scale-[0.99] transition" data-acc-delete="' + idx + '">حذف</button>' +
-        '</div>'
-      );
-    }).join('');
-
     var colgroup =
       '<colgroup>' +
       '<col style="width:3%">' +
@@ -177,13 +141,11 @@
       '</tr></thead>';
 
     tb.innerHTML =
-      '<div class="acc-bulk-scroll max-h-[min(38vh,18rem)] sm:max-h-[min(52vh,30rem)] lg:max-h-[min(60vh,38rem)] overflow-y-auto overflow-x-hidden sm:overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">' +
-      '<div class="hidden sm:block overflow-x-auto">' +
+      '<div class="acc-bulk-scroll max-h-[min(38vh,18rem)] sm:max-h-[min(52vh,30rem)] lg:max-h-[min(60vh,38rem)] overflow-y-auto overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">' +
       '<table class="acc-bulk-review w-full min-w-0 text-right border-collapse text-sm">' +
       colgroup +
       thead +
-      '<tbody>' + rows + '</tbody></table></div>' +
-      '<div class="sm:hidden space-y-3 px-0.5 pb-1">' + mobileCards + '</div></div>';
+      '<tbody>' + rows + '</tbody></table></div>';
   }
 
   function wireAccBulkStagingDelegation() {
