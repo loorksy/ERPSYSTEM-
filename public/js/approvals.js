@@ -76,7 +76,7 @@
 
     var thead =
       '<thead class="acc-bulk-thead sticky top-0 z-20 shadow-sm">' +
-      '<tr class="border-b border-slate-200 bg-slate-100 text-slate-800">' +
+      '<tr class="border-b border-slate-100 bg-slate-50 text-slate-700">' +
       '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">#</th>' +
       '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap">كود</th>' +
       '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap min-w-[7rem]">الاسم</th>' +
