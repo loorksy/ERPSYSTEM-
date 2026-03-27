@@ -19,6 +19,23 @@
     modal.setAttribute('data-acc-step', reviewing ? 'review' : 'import');
   }
 
+  function accScrollBulkModalToStaging() {
+    var body = document.getElementById('accBulkModalBody');
+    var st = document.getElementById('accBulkStaging');
+    if (!body || !st) return;
+    var rect = st.getBoundingClientRect();
+    var bodyRect = body.getBoundingClientRect();
+    var top = rect.top - bodyRect.top + body.scrollTop;
+    body.scrollTop = Math.max(0, top - 4);
+  }
+
+  function accResetBulkStagingTableScroll() {
+    var wrap = document.querySelector('#accBulkStagingTable .acc-bulk-scroll');
+    if (!wrap) return;
+    wrap.scrollTop = 0;
+    wrap.scrollLeft = 0;
+  }
+
   function accShowStagingFromPreview(preview) {
     var valid = (preview || []).filter(function(r) { return r.valid; });
     if (!valid.length) {
@@ -41,13 +58,13 @@
     var st = document.getElementById('accBulkStaging');
     if (st) st.classList.remove('hidden');
     accSyncBulkStep();
-    if (st) {
-      try {
-        st.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } catch (e) {
-        st.scrollIntoView(true);
-      }
-    }
+    accResetBulkStagingTableScroll();
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        accScrollBulkModalToStaging();
+        accResetBulkStagingTableScroll();
+      });
+    });
   }
 
   function accRenderStagingTable() {
@@ -73,41 +90,54 @@
       var r = rowBp(row, idx);
       return (
         '<tr class="acc-bulk-tr border-b border-slate-100 hover:bg-indigo-50/25 transition-colors">' +
-        '<td class="acc-bulk-td p-3 align-middle text-slate-600 tabular-nums whitespace-nowrap" data-label="#"><span class="acc-bulk-val">' + escHtml(r.lineNum) + '</span></td>' +
-        '<td class="acc-bulk-td p-3 align-middle font-mono text-sm text-slate-800" data-label="كود"><span class="acc-bulk-val">' + escHtml(row.code) + '</span></td>' +
-        '<td class="acc-bulk-td p-3 align-middle font-medium text-slate-900" data-label="الاسم"><span class="acc-bulk-val line-clamp-3 break-words inline-block max-w-full">' + escHtml(row.name) + '</span></td>' +
-        '<td class="acc-bulk-td p-3 align-middle text-indigo-700 font-semibold tabular-nums whitespace-nowrap" data-label="المبلغ"><span class="acc-bulk-val">' + escHtml(row.amount) + '</span></td>' +
-        '<td class="acc-bulk-td p-3 align-middle" data-label="وساطة %">' +
-        '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full max-w-[8rem] sm:w-24 min-h-[44px] sm:min-h-[40px] px-3 sm:px-2 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm" data-idx="' + idx + '" value="' + escHtml(r.bpVal) + '"></td>' +
-        '<td class="acc-bulk-td p-3 align-middle" data-label="الاتجاه">' +
-        '<select class="acc-bulk-dir w-full max-w-full sm:min-w-[9rem] min-h-[44px] sm:min-h-[40px] px-2 py-2 rounded-lg border border-slate-200 text-sm bg-white" data-idx="' + idx + '">' +
+        '<td class="acc-bulk-td p-2 sm:p-3 align-middle text-slate-600 tabular-nums whitespace-nowrap" data-label="#"><span class="acc-bulk-val">' + escHtml(r.lineNum) + '</span></td>' +
+        '<td class="acc-bulk-td p-2 sm:p-3 align-middle font-mono text-sm text-slate-800" data-label="كود"><span class="acc-bulk-val">' + escHtml(row.code) + '</span></td>' +
+        '<td class="acc-bulk-td p-2 sm:p-3 align-middle font-medium text-slate-900 min-w-0" data-label="الاسم"><span class="acc-bulk-val line-clamp-3 break-words inline-block max-w-full">' + escHtml(row.name) + '</span></td>' +
+        '<td class="acc-bulk-td p-2 sm:p-3 align-middle text-indigo-700 font-semibold tabular-nums whitespace-nowrap" data-label="المبلغ"><span class="acc-bulk-val">' + escHtml(row.amount) + '</span></td>' +
+        '<td class="acc-bulk-td p-2 sm:p-3 align-middle" data-label="وساطة %">' +
+        '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full max-w-[5.5rem] min-h-[44px] sm:min-h-[40px] px-2 sm:px-2 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm" data-idx="' + idx + '" value="' + escHtml(r.bpVal) + '"></td>' +
+        '<td class="acc-bulk-td p-2 sm:p-3 align-middle" data-label="الاتجاه">' +
+        '<select class="acc-bulk-dir w-full max-w-full min-w-0 min-h-[44px] sm:min-h-[40px] px-2 py-2 rounded-lg border border-slate-200 text-sm bg-white" data-idx="' + idx + '">' +
         '<option value="to_us"' + (row.salaryDirection === 'to_us' ? ' selected' : '') + '>راتب لنا</option>' +
         '<option value="to_them"' + (row.salaryDirection === 'to_them' ? ' selected' : '') + '>راتب علينا</option></select></td>' +
-        '<td class="acc-bulk-td p-3 align-middle" data-label="النوع">' +
-        '<select class="acc-bulk-kind w-full max-w-full sm:min-w-[9rem] min-h-[44px] sm:min-h-[40px] px-2 py-2 rounded-lg border border-slate-200 text-sm bg-white" data-idx="' + idx + '">' +
+        '<td class="acc-bulk-td p-2 sm:p-3 align-middle" data-label="النوع">' +
+        '<select class="acc-bulk-kind w-full max-w-full min-w-0 min-h-[44px] sm:min-h-[40px] px-2 py-2 rounded-lg border border-slate-200 text-sm bg-white" data-idx="' + idx + '">' +
         '<option value="salary"' + (row.amountKind === 'salary' ? ' selected' : '') + '>راتب</option>' +
         '<option value="debt_to_us"' + (row.amountKind === 'debt_to_us' ? ' selected' : '') + '>دين لنا</option></select></td>' +
-        '<td class="acc-bulk-td acc-bulk-td-actions p-3 align-middle whitespace-nowrap" data-label="إجراء">' +
+        '<td class="acc-bulk-td acc-bulk-td-actions p-2 sm:p-3 align-middle whitespace-nowrap" data-label="إجراء">' +
         '<button type="button" class="min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-0 rounded-lg sm:rounded-none text-red-600 text-sm font-semibold hover:bg-red-50 sm:hover:bg-transparent sm:hover:underline" data-acc-delete="' + idx + '">حذف</button></td></tr>'
       );
     }).join('');
 
+    var colgroup =
+      '<colgroup>' +
+      '<col style="width:3%">' +
+      '<col style="width:8%">' +
+      '<col style="width:26%">' +
+      '<col style="width:10%">' +
+      '<col style="width:8%">' +
+      '<col style="width:18%">' +
+      '<col style="width:15%">' +
+      '<col style="width:12%">' +
+      '</colgroup>';
+
     var thead =
-      '<thead class="acc-bulk-thead sticky top-0 z-20 shadow-sm">' +
+      '<thead class="acc-bulk-thead">' +
       '<tr class="border-b border-slate-100 bg-slate-50 text-slate-700">' +
-      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-hashtag text-[0.65rem] text-slate-400" aria-hidden="true"></i>#</span></th>' +
-      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-barcode text-[0.65rem] text-slate-400" aria-hidden="true"></i>كود</span></th>' +
-      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap min-w-[7rem]"><span class="inline-flex items-center gap-1.5"><i class="fas fa-user text-[0.65rem] text-slate-400" aria-hidden="true"></i>الاسم</span></th>' +
-      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-coins text-[0.65rem] text-slate-400" aria-hidden="true"></i>المبلغ</span></th>' +
-      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-percent text-[0.65rem] text-slate-400" aria-hidden="true"></i>وساطة %</span></th>' +
-      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-right-left text-[0.65rem] text-slate-400" aria-hidden="true"></i>الاتجاه</span></th>' +
-      '<th class="p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-tag text-[0.65rem] text-slate-400" aria-hidden="true"></i>النوع</span></th>' +
-      '<th class="p-3 text-xs sm:text-sm font-bold w-20"><span class="inline-flex items-center gap-1.5"><i class="fas fa-cog text-[0.65rem] text-slate-400" aria-hidden="true"></i></span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-hashtag text-[0.65rem] text-slate-400" aria-hidden="true"></i>#</span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-barcode text-[0.65rem] text-slate-400" aria-hidden="true"></i>كود</span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold"><span class="inline-flex items-center gap-1.5"><i class="fas fa-user text-[0.65rem] text-slate-400" aria-hidden="true"></i>الاسم</span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-coins text-[0.65rem] text-slate-400" aria-hidden="true"></i>المبلغ</span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold whitespace-nowrap"><span class="inline-flex items-center gap-1.5"><i class="fas fa-percent text-[0.65rem] text-slate-400" aria-hidden="true"></i>وساطة %</span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold"><span class="inline-flex items-center gap-1.5"><i class="fas fa-right-left text-[0.65rem] text-slate-400" aria-hidden="true"></i>الاتجاه</span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold"><span class="inline-flex items-center gap-1.5"><i class="fas fa-tag text-[0.65rem] text-slate-400" aria-hidden="true"></i>النوع</span></th>' +
+      '<th class="p-2 sm:p-3 text-xs sm:text-sm font-bold w-16"><span class="inline-flex items-center gap-1.5"><i class="fas fa-cog text-[0.65rem] text-slate-400" aria-hidden="true"></i></span></th>' +
       '</tr></thead>';
 
     tb.innerHTML =
-      '<div class="acc-bulk-scroll max-h-[min(52vh,26rem)] sm:max-h-[min(58vh,34rem)] overflow-y-auto overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">' +
-      '<table class="acc-bulk-review w-full min-w-[52rem] text-right border-collapse text-sm">' +
+      '<div class="acc-bulk-scroll max-h-[min(50vh,28rem)] sm:max-h-[min(60vh,38rem)] overflow-y-auto overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">' +
+      '<table class="acc-bulk-review w-full min-w-0 text-right border-collapse text-sm">' +
+      colgroup +
       thead +
       '<tbody>' + rows + '</tbody></table></div>';
   }
@@ -372,12 +402,18 @@
     if (method) method.value = 'file';
     accSyncBulkSourcePanels();
     accSyncBulkStep();
-    document.getElementById('accBulkModal').classList.remove('hidden');
-    document.getElementById('accBulkModal').classList.add('flex');
+    var modal = document.getElementById('accBulkModal');
+    var body = document.getElementById('accBulkModalBody');
+    if (body) body.scrollTop = 0;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
   };
   window.accCloseBulk = function() {
-    document.getElementById('accBulkModal').classList.add('hidden');
-    document.getElementById('accBulkModal').classList.remove('flex');
+    var modal = document.getElementById('accBulkModal');
+    var body = document.getElementById('accBulkModalBody');
+    if (body) body.scrollTop = 0;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
   };
   window.accSubmitBulk = function() {
     var f = document.getElementById('accBulkFile');
