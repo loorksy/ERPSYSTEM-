@@ -41,6 +41,11 @@ const FUND_LEDGER_TYPE_LABELS = {
   salary_swap_installment: 'تبديل راتب تقسيط',
   shipping_sale_cash: 'بيع شحن نقدي',
   shipping_buy_cash: 'شراء شحن نقدي',
+  company_payout: 'صرف لشركة تحويل',
+  fund_allocation: 'تحويل لصندوق',
+  fund_receive_from_main: 'وارد من الصندوق الرئيسي',
+  accreditation_bulk: 'استيراد رصيد معتمد',
+  accreditation_remainder: 'باقي بعد الوساطة',
 };
 
 function labelNetProfitSource(code) {

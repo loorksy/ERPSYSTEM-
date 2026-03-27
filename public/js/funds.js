@@ -56,10 +56,15 @@
           return (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '');
         }).join(' | ');
         var main = f.is_main ? '<span class="text-amber-600 text-xs font-bold">رئيسي</span>' : '';
+        var debt = (f.openPayablesUsd || 0) > 0.0001;
+        var amtClass = debt ? 'text-red-600' : 'text-indigo-600';
+        var debtLine = debt
+          ? '<p class="text-xs text-red-500 mt-1">دين علينا: ' + (f.openPayablesUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD</p>'
+          : '';
         return '<div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md cursor-pointer" onclick="fundsOpenDetail(' + f.id + ')">' +
           '<h5 class="font-bold text-slate-800">' + (f.name || '') + ' ' + main + '</h5>' +
           '<p class="text-xs text-slate-500 mt-1">' + (f.fund_number || '') + ' · ' + (f.country || '') + '</p>' +
-          '<p class="text-sm font-semibold text-indigo-600 mt-2">' + (bal || '0') + '</p></div>';
+          '<p class="text-sm font-semibold ' + amtClass + ' mt-2">' + (bal || '0') + '</p>' + debtLine + '</div>';
       }).join('');
     });
     apiCall('/api/funds/transfer-companies/list').then(function(res) {
@@ -92,8 +97,21 @@
       document.getElementById('fundDetailMeta').innerHTML =
         '<p><strong>الرقم:</strong> ' + (f.fund_number || '-') + '</p>' +
         '<p><strong>الدولة:</strong> ' + (f.country || '-') + ' ' + (f.region_syria || '') + '</p>';
+      var payBox = document.getElementById('fundDetailPayables');
+      var pay = res.openPayablesUsd != null ? res.openPayablesUsd : 0;
+      if (payBox) {
+        if (pay > 0.0001) {
+          payBox.classList.remove('hidden');
+          payBox.textContent = 'دين علينا تجاه هذا الصندوق: ' + pay.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD';
+        } else {
+          payBox.classList.add('hidden');
+          payBox.textContent = '';
+        }
+      }
+      var balDebt = pay > 0.0001;
       document.getElementById('fundDetailBalances').innerHTML = (res.balances || []).map(function(b) {
-        return '<span class="px-3 py-1 rounded-lg bg-slate-100 text-slate-800">' +
+        var cls = balDebt && (b.currency || '') === 'USD' ? 'bg-red-50 text-red-800 border border-red-100' : 'bg-slate-100 text-slate-800';
+        return '<span class="px-3 py-1 rounded-lg ' + cls + '">' +
           (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '') + '</span>';
       }).join(' ');
       document.getElementById('fundDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
@@ -105,9 +123,10 @@
         var after = l.balanceAfterUsd != null && !isNaN(l.balanceAfterUsd)
           ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
           : '—';
+        var noteLine = (l.displayNotes || l.notes || '');
         return '<div class="py-2.5 px-2 -mx-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 border-b border-slate-50 ' + border + '">' +
           '<div class="min-w-0"><span class="text-sm font-medium text-slate-800">' + (l.labelAr || l.type || '') + '</span>' +
-          '<span class="block text-[0.7rem] text-slate-500 truncate">' + (l.notes || '') + '</span></div>' +
+          '<span class="block text-[0.7rem] text-slate-500 truncate">' + noteLine + '</span></div>' +
           '<div class="text-left shrink-0"><span class="font-semibold tabular-nums">' +
           (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (l.currency || '') + '</span>' +
           '<span class="block text-[0.65rem] text-slate-500">الرصيد بعد: ' + after + '</span></div></div>';
@@ -132,6 +151,11 @@
       document.getElementById('fundDetailModal').classList.add('flex');
     });
   };
+  window.fundsDownloadLedgerPdf = function() {
+    if (!currentFundId) return;
+    window.open('/api/reports/pdf/fund-ledger?fundId=' + encodeURIComponent(currentFundId), '_blank');
+  };
+
   window.fundsCloseDetail = function() {
     document.getElementById('fundDetailModal').classList.add('hidden');
     document.getElementById('fundDetailModal').classList.remove('flex');

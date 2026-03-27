@@ -453,6 +453,7 @@ ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS cost_allocated REAL;
 ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS profit_amount REAL;
 ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS capital_amount REAL;
 ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS buyer_carrier_id INTEGER;
+ALTER TABLE shipping_transactions ADD COLUMN IF NOT EXISTS purchase_transfer_company_id INTEGER;
 
 -- مرتجع مالي (شركة تحويل / صندوق)
 CREATE TABLE IF NOT EXISTS financial_returns (

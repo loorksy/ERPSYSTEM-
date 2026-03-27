@@ -84,13 +84,6 @@ function initHomeStats() {
           }).join('');
           cycleSel.dataset.filled = '1';
         }
-        var pc = document.getElementById('homeProfitCycle');
-        if (pc && cycles.length && !pc.dataset.filled) {
-          pc.innerHTML = '<option value="">— دورة —</option>' + cycles.map(function(c) {
-            return '<option value="' + c.id + '">' + (c.name || '') + '</option>';
-          }).join('');
-          pc.dataset.filled = '1';
-        }
         function setEl(id, val) {
           var el = document.getElementById(id);
           if (el) el.textContent = formatMoney(val != null ? val : 0);
@@ -106,7 +99,6 @@ function initHomeStats() {
           }
         }
         setEl('shippingBalance', data.shippingBalance);
-        setEl('totalRevenue', data.totalRevenue);
         setEl('netProfit', data.netProfit);
         setEl('totalExpenses', data.totalExpenses);
         setEl('totalDebts', data.totalDebts);
@@ -118,7 +110,6 @@ function initHomeStats() {
         if (pdH) {
           pdH.textContent = data.paymentDueTotal != null ? formatMoney(data.paymentDueTotal) : '—';
         }
-        setEl('capitalRecovery', data.capitalRecovered);
         var sub = document.getElementById('cashBalanceSub');
         if (sub) {
           var parts = [];
@@ -174,66 +165,6 @@ window.homeOpenFundModal = function() {
 window.homeCloseFundModal = function() {
   var m = document.getElementById('homeFundModal');
   if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
-};
-
-window.homeOpenCapitalModal = function() {
-  var m = document.getElementById('homeCapitalModal');
-  if (!m) return;
-  var rows = document.getElementById('homeProfitRows');
-  if (rows && !rows.dataset.inited) {
-    homeAddProfitRow();
-    rows.dataset.inited = '1';
-  }
-  m.classList.remove('hidden');
-  m.classList.add('flex');
-  fetch('/api/funds/list', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
-    document.querySelectorAll('.home-profit-fund-select').forEach(function(sel) {
-      var v = sel.value;
-      sel.innerHTML = '<option value="">— صندوق —</option>';
-      (d.funds || []).forEach(function(f) {
-        sel.innerHTML += '<option value="' + f.id + '">' + (f.name || '') + '</option>';
-      });
-      sel.value = v;
-    });
-  });
-};
-window.homeCloseCapitalModal = function() {
-  var m = document.getElementById('homeCapitalModal');
-  if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
-};
-window.homeAddProfitRow = function() {
-  var rows = document.getElementById('homeProfitRows');
-  if (!rows) return;
-  var div = document.createElement('div');
-  div.className = 'flex gap-2 items-center';
-  div.innerHTML = '<select class="home-profit-fund-select flex-1 px-2 py-2 rounded-lg border border-slate-200 text-sm"><option value="">— صندوق —</option></select>' +
-    '<input type="number" class="home-profit-amt w-28 px-2 py-2 rounded-lg border border-slate-200" step="0.01" placeholder="مبلغ">';
-  rows.appendChild(div);
-  fetch('/api/funds/list', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
-    var sel = div.querySelector('.home-profit-fund-select');
-    (d.funds || []).forEach(function(f) {
-      sel.innerHTML += '<option value="' + f.id + '">' + (f.name || '') + '</option>';
-    });
-  });
-};
-window.homeSubmitProfitTransfer = function() {
-  var batches = [];
-  document.querySelectorAll('#homeProfitRows > div').forEach(function(row) {
-    var fid = row.querySelector('.home-profit-fund-select');
-    var amt = row.querySelector('.home-profit-amt');
-    if (fid && amt && fid.value && amt.value) {
-      batches.push({ fundId: fid.value, amount: parseFloat(amt.value), currency: 'USD' });
-    }
-  });
-  var cycleId = document.getElementById('homeProfitCycle') && document.getElementById('homeProfitCycle').value;
-  apiCall('/dashboard/transfer-profit', {
-    method: 'POST',
-    body: JSON.stringify({ batches: batches, cycleId: cycleId || null })
-  }).then(function(res) {
-    if (typeof showToast === 'function') showToast(res.message || '', res.success ? 'success' : 'error');
-    if (res.success) homeCloseCapitalModal();
-    if (typeof homeLoadStats === 'function') homeLoadStats();
-  });
 };
 
 function initHomeSheetsStatus() {

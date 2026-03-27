@@ -8,7 +8,12 @@ const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
 const { adjustFundBalance, getMainFundId } = require('../services/fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('../services/ledgerService');
-const { processAccreditationBulkRows, parseCsvTextToRows } = require('../services/accreditationBulkImport');
+const {
+  processAccreditationBulkRows,
+  processAccreditationBulkRowsFromItems,
+  parseCsvTextToRows,
+  buildBulkPreview,
+} = require('../services/accreditationBulkImport');
 const { extractSpreadsheetIdFromUrl, fetchSheetRowsUsingStoredGoogleConfig } = require('../services/googleSheetReadService');
 
 const uploadsDir = path.join(__dirname, '../uploads/temp');
@@ -154,6 +159,63 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       });
     }
     res.json({ success: true, message: 'تم التسجيل', newBalance: newBal });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** معاينة فقط — ملف */
+router.post('/bulk-balance-parse-file', requireAuth, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.json({ success: false, message: 'الملف مطلوب' });
+    const rows = parseUploadedRows(req.file.path, req.file.mimetype);
+    const preview = buildBulkPreview(rows);
+    res.json({ success: true, preview });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** معاينة فقط — نص */
+router.post('/bulk-balance-parse-text', requireAuth, async (req, res) => {
+  try {
+    const { csvText } = req.body || {};
+    const rows = parseCsvTextToRows(csvText || '');
+    const preview = buildBulkPreview(rows);
+    res.json({ success: true, preview });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** معاينة فقط — Google Sheet */
+router.post('/bulk-balance-parse-sheet-url', requireAuth, async (req, res) => {
+  try {
+    const { sheetUrl, sheetName } = req.body || {};
+    const sid = extractSpreadsheetIdFromUrl(sheetUrl);
+    if (!sid) return res.json({ success: false, message: 'رابط Google Sheet غير صالح' });
+    const db = getDb();
+    const result = await fetchSheetRowsUsingStoredGoogleConfig(db, sid, sheetName || null);
+    const rows = result.values || [];
+    if (rows.length < 2) {
+      return res.json({ success: false, message: 'الورقة فارغة أو غير قابلة للقراءة', sheetTitleUsed: result.sheetTitleUsed });
+    }
+    const preview = buildBulkPreview(rows);
+    res.json({ success: true, preview, sheetTitleUsed: result.sheetTitleUsed });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** حفظ بعد المراجعة */
+router.post('/bulk-balance-commit', requireAuth, async (req, res) => {
+  try {
+    const { cycleId, items, defaultBrokeragePct } = req.body || {};
+    const list = Array.isArray(items) ? items : [];
+    if (!list.length) return res.json({ success: false, message: 'لا توجد صفوف' });
+    const db = getDb();
+    const out = await processAccreditationBulkRowsFromItems(db, req.session.userId, list, cycleId, defaultBrokeragePct);
+    res.json(out);
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }

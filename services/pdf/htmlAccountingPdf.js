@@ -134,6 +134,38 @@ function renderAccreditations(data) {
   return docShell('تقرير الاعتمادات', inner);
 }
 
+function renderTransferCompanyLedger(data) {
+  if (!data || !data.company) return docShell('حركات شركة تحويل', '<p class="muted">لا توجد بيانات.</p>');
+  const c = data.company;
+  let inner = `<h2>${escapeHtml(c.name)} — رصيد: ${fmtNum(c.balance_amount)} ${escapeHtml(c.balance_currency || 'USD')}</h2>`;
+  const rows = (data.rows || []).map((r) => [
+    String(r.id),
+    fmtNum(r.amount),
+    r.currency || 'USD',
+    (r.notes || '').slice(0, 120),
+    r.created_at ? new Date(r.created_at).toLocaleString('ar-SY') : '',
+  ]);
+  inner += tableHtml(['#', 'المبلغ', 'العملة', 'ملاحظات', 'التاريخ'], rows);
+  return docShell('تقرير حركات شركة تحويل', inner);
+}
+
+function renderFundLedger(data) {
+  if (!data || !data.fund) return docShell('حركات صندوق', '<p class="muted">لا توجد بيانات.</p>');
+  const f = data.fund;
+  const title = [f.name, f.fund_number].filter(Boolean).join(' — ');
+  let inner = `<h2>${escapeHtml(title || 'صندوق')}</h2>`;
+  const rows = (data.rows || []).map((r) => [
+    String(r.id),
+    String(r.type || ''),
+    fmtNum(r.amount),
+    r.currency || 'USD',
+    (r.displayNotes || r.notes || '').slice(0, 100),
+    r.created_at ? new Date(r.created_at).toLocaleString('ar-SY') : '',
+  ]);
+  inner += tableHtml(['#', 'النوع', 'المبلغ', 'العملة', 'ملاحظات', 'التاريخ'], rows);
+  return docShell('تقرير حركات صندوق', inner);
+}
+
 function renderTransferCompanies(data) {
   let inner = `<p class="muted">${escapeHtml(data.noteNoCycle)}</p>`;
   for (const block of data.ledgersByCompany) {
@@ -338,6 +370,8 @@ module.exports = {
   renderSubAgency,
   renderAccreditations,
   renderTransferCompanies,
+  renderTransferCompanyLedger,
+  renderFundLedger,
   renderMovements,
   renderComprehensive,
   htmlToPdfBuffer,

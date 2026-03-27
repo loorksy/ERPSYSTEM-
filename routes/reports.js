@@ -8,13 +8,18 @@ const {
   getSubAgencyReportData,
   getAccreditationsReportData,
   getTransferCompaniesReportData,
+  getTransferCompanyLedgerReportData,
+  getFundLedgerReportData,
   getMovementsReportData,
   getComprehensiveReportData,
 } = require('../services/accountingReportData');
+const { enrichFundLedgerDisplayNotes } = require('../services/fundLedgerNotes');
 const {
   renderSubAgency,
   renderAccreditations,
   renderTransferCompanies,
+  renderTransferCompanyLedger,
+  renderFundLedger,
   renderMovements,
   renderComprehensive,
   htmlToPdfBuffer,
@@ -93,6 +98,49 @@ router.get('/pdf/transfer-companies', requireAuth, async (req, res) => {
     sendPdf(res, 'شركات-التحويل.pdf', buf);
   } catch (e) {
     console.error('[reports] transfer-companies PDF:', e);
+    res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
+  }
+});
+
+router.get('/pdf/transfer-company-ledger', requireAuth, async (req, res) => {
+  try {
+    const companyId = parseInt(req.query.companyId, 10);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'companyId مطلوب' });
+    }
+    const db = getDb();
+    const userId = req.session.userId;
+    const data = await getTransferCompanyLedgerReportData(db, userId, companyId);
+    if (!data) return res.status(404).json({ success: false, message: 'الشركة غير موجودة' });
+    const html = renderTransferCompanyLedger(data);
+    const buf = await htmlToPdfBuffer(html);
+    const name = `حركات-${data.company.name || companyId}.pdf`;
+    sendPdf(res, name, buf);
+  } catch (e) {
+    console.error('[reports] transfer-company-ledger PDF:', e);
+    res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
+  }
+});
+
+router.get('/pdf/fund-ledger', requireAuth, async (req, res) => {
+  try {
+    const fundId = parseInt(req.query.fundId, 10);
+    if (!fundId) {
+      return res.status(400).json({ success: false, message: 'fundId مطلوب' });
+    }
+    const db = getDb();
+    const userId = req.session.userId;
+    const data = await getFundLedgerReportData(db, userId, fundId);
+    if (!data) return res.status(404).json({ success: false, message: 'الصندوق غير موجود' });
+    if (data.rows && data.rows.length) {
+      data.rows = await enrichFundLedgerDisplayNotes(db, userId, data.rows);
+    }
+    const html = renderFundLedger(data);
+    const buf = await htmlToPdfBuffer(html);
+    const name = `حركات-صندوق-${data.fund.name || fundId}.pdf`;
+    sendPdf(res, name, buf);
+  } catch (e) {
+    console.error('[reports] fund-ledger PDF:', e);
     res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
   }
 });

@@ -5,6 +5,7 @@ const { getDb } = require('../db/database');
 const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
 const { adjustFundBalance, getMainFundId, getMainFundUsdBalance, ensureDefaultMainFund } = require('../services/fundService');
 const { labelFundLedgerType, movementColorCategory } = require('../services/accountingLabelsAr');
+const { enrichFundLedgerDisplayNotes } = require('../services/fundLedgerNotes');
 
 router.get('/transfer-companies/list', requireAuth, async (req, res) => {
   try {
@@ -51,15 +52,25 @@ router.get('/list', requireAuth, async (req, res) => {
   try {
     const db = getDb();
     await ensureDefaultMainFund(db, req.session.userId);
+    const uid = req.session.userId;
     const rows = (await db.query(
       `SELECT id, name, fund_number, country, region_syria, is_main, transfer_company_id, created_at
        FROM funds WHERE user_id = $1 ORDER BY is_main DESC, name`,
-      [req.session.userId]
+      [uid]
     )).rows;
+    const payRows = (await db.query(
+      `SELECT entity_id, COALESCE(SUM(amount), 0)::float AS t
+       FROM entity_payables
+       WHERE user_id = $1 AND entity_type = 'fund' AND amount > 0.0001
+       GROUP BY entity_id`,
+      [uid]
+    )).rows;
+    const payMap = {};
+    payRows.forEach((r) => { payMap[r.entity_id] = r.t; });
     const list = [];
     for (const f of rows) {
       const bals = (await db.query('SELECT currency, amount FROM fund_balances WHERE fund_id = $1', [f.id])).rows;
-      list.push({ ...f, balances: bals });
+      list.push({ ...f, balances: bals, openPayablesUsd: payMap[f.id] || 0 });
     }
     res.json({ success: true, funds: list });
   } catch (e) {
@@ -123,10 +134,11 @@ router.get('/:id', requireAuth, async (req, res) => {
     )).rows[0];
     if (!f) return res.json({ success: false, message: 'غير موجود' });
     const bals = (await db.query('SELECT currency, amount FROM fund_balances WHERE fund_id = $1', [id])).rows;
-    const ledger = (await db.query(
+    const ledgerRaw = (await db.query(
       'SELECT * FROM fund_ledger WHERE fund_id = $1 ORDER BY created_at DESC LIMIT 200',
       [id]
     )).rows;
+    const ledger = await enrichFundLedgerDisplayNotes(db, req.session.userId, ledgerRaw);
     const chron = [...ledger].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     let runUsd = 0;
     chron.forEach((l) => {
@@ -135,7 +147,8 @@ router.get('/:id', requireAuth, async (req, res) => {
       l.labelAr = labelFundLedgerType(l.type);
       l.colorCategory = movementColorCategory({ fundLedgerType: l.type, amount: l.amount });
     });
-    res.json({ success: true, fund: f, balances: bals, ledger });
+    const openPayablesUsd = await sumOpenPayables(db, req.session.userId, 'fund', id);
+    res.json({ success: true, fund: f, balances: bals, ledger, openPayablesUsd });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }
@@ -204,10 +217,17 @@ router.post('/:id/receive-from-main', requireAuth, async (req, res) => {
 
     await adjustFundBalance(db, mainId, 'USD', -amt, 'fund_allocation', notes || 'تحويل لصندوق', 'funds', id);
     if (creditPortion > 0) {
-      await db.query(
-        `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-         VALUES ($1, 'fund_receive_from_main', $2, 'USD', $3, 'funds', $4)`,
-        [id, creditPortion, (notes || 'وارد من الصندوق الرئيسي') + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : ''), mainId]
+      const recvNotes = (notes || 'وارد من الصندوق الرئيسي')
+        + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '');
+      await adjustFundBalance(
+        db,
+        id,
+        'USD',
+        creditPortion,
+        'fund_receive_from_main',
+        recvNotes,
+        'funds',
+        mainId
       );
     }
     res.json({
@@ -238,12 +258,13 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
     const a = (await db.query('SELECT id FROM funds WHERE id = $1 AND user_id = $2', [fromId, u])).rows[0];
     const b = (await db.query('SELECT id FROM funds WHERE id = $1 AND user_id = $2', [toId, u])).rows[0];
     if (!a || !b) return res.json({ success: false, message: 'صندوق غير صالح' });
-    await adjustFundBalance(db, fromId, cur, -amt, 'transfer_out', notes || 'ترحيل لصندوق آخر', 'fund_transfers', null);
-    await adjustFundBalance(db, toId, cur, amt, 'transfer_in', notes || 'وارد من صندوق', 'fund_transfers', null);
-    await db.query(
+    const insFt = await db.query(
       `INSERT INTO fund_transfers (from_fund_id, to_fund_id, amount, currency, notes) VALUES ($1, $2, $3, $4, $5)`,
       [fromId, toId, amt, cur, notes || null]
     );
+    const ftId = insFt.lastInsertRowid;
+    await adjustFundBalance(db, fromId, cur, -amt, 'transfer_out', notes || 'ترحيل لصندوق آخر', 'fund_transfers', ftId);
+    await adjustFundBalance(db, toId, cur, amt, 'transfer_in', notes || 'وارد من صندوق', 'fund_transfers', ftId);
     res.json({ success: true, message: 'تم الترحيل' });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });

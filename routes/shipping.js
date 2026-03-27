@@ -295,7 +295,10 @@ router.post('/sell', requireAuth, async (req, res) => {
 router.post('/buy', requireAuth, async (req, res) => {
   try {
     const body = req.body || {};
-    const { purchaseSource, companyName, companyId, itemType, quantity, unitPrice, paymentMethod, notes } = body;
+    const {
+      purchaseSource, companyName, companyId, transferCompanyId,
+      itemType, quantity, unitPrice, paymentMethod, notes,
+    } = body;
     const qty = parseFloat(quantity);
     const lineTotal = lineTotalFromBody(unitPrice);
     if (!itemType || !purchaseSource || !quantity || isNaN(qty) || qty <= 0 || isNaN(lineTotal) || lineTotal < 0 || !paymentMethod) {
@@ -307,6 +310,7 @@ router.post('/buy', requireAuth, async (req, res) => {
     const qohBefore = invBefore.quantity_on_hand || 0;
     let finalCompanyName = null;
     let finalCompanyId = null;
+    let finalTransferCompanyId = null;
     if (purchaseSource === 'company') {
       if (companyId) {
         const row = (await db.query('SELECT id, name FROM shipping_companies WHERE id = $1', [companyId])).rows[0];
@@ -318,21 +322,32 @@ router.post('/buy', requireAuth, async (req, res) => {
       if (!finalCompanyName && companyName) finalCompanyName = String(companyName).trim();
       if (!finalCompanyName) return res.json({ success: false, message: 'اسم الشركة مطلوب' });
     }
+    if (purchaseSource === 'transfer_company') {
+      const tcId = transferCompanyId ? parseInt(transferCompanyId, 10) : null;
+      if (!tcId) return res.json({ success: false, message: 'اختر شركة تحويل من النظام' });
+      const tcRow = (await db.query(
+        'SELECT id, name FROM transfer_companies WHERE id = $1 AND user_id = $2',
+        [tcId, userId]
+      )).rows[0];
+      if (!tcRow) return res.json({ success: false, message: 'شركة التحويل غير موجودة' });
+      finalTransferCompanyId = tcRow.id;
+      finalCompanyName = tcRow.name;
+    }
     await applyBuy(db, userId, itemType, qty, lineTotal);
     const unitEquiv = qty > 0 ? lineTotal / qty : 0;
     const status = paymentMethod === 'debt' ? 'debt' : 'completed';
     const r = await db.query(`
       INSERT INTO shipping_transactions (
         type, item_type, quantity, unit_price, total, payment_method, status,
-        purchase_source, purchase_company_id, purchase_company_name, notes,
+        purchase_source, purchase_company_id, purchase_company_name, purchase_transfer_company_id, notes,
         cost_allocated, profit_amount, capital_amount
       )
       VALUES (
-        'buy', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+        'buy', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
       )
     `, [
       itemType, qty, unitEquiv, lineTotal, paymentMethod, status,
-      purchaseSource, finalCompanyId, finalCompanyName, notes || null,
+      purchaseSource, finalCompanyId, finalCompanyName, finalTransferCompanyId, notes || null,
       lineTotal, 0, lineTotal,
     ]);
     const txId = r.lastInsertRowid;
@@ -341,6 +356,13 @@ router.post('/buy', requireAuth, async (req, res) => {
         `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes)
          VALUES ($1, 'shipping_company', $2, $3, 'USD', $4)`,
         [userId, finalCompanyId, lineTotal, (notes || 'شراء شحن دين — مخزون صفر') + ' #' + txId]
+      );
+    }
+    if (paymentMethod === 'debt' && purchaseSource === 'transfer_company' && finalTransferCompanyId) {
+      await db.query(
+        `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes)
+         VALUES ($1, 'transfer_company', $2, $3, 'USD', $4)`,
+        [userId, finalTransferCompanyId, lineTotal, (notes || 'شراء شحن دين — شركة تحويل') + ' #' + txId]
       );
     }
     if (paymentMethod === 'cash') {

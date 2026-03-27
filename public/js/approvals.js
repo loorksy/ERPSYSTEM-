@@ -1,6 +1,137 @@
 (function() {
   var currentId = null;
   var currentPinned = false;
+  var accBulkStagingItems = [];
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function accShowStagingFromPreview(preview) {
+    var valid = (preview || []).filter(function(r) { return r.valid; });
+    if (!valid.length) {
+      toast('لا توجد صفوف صالحة', 'error');
+      return;
+    }
+    accBulkStagingItems = valid.map(function(r) {
+      return {
+        lineIndex: r.lineIndex,
+        code: r.code,
+        name: r.name,
+        amount: r.amount,
+        parentRef: r.parentRef || '',
+        brokeragePct: '',
+        salaryDirection: 'to_us',
+        amountKind: 'salary',
+      };
+    });
+    accRenderStagingTable();
+    var st = document.getElementById('accBulkStaging');
+    if (st) st.classList.remove('hidden');
+  }
+
+  function accRenderStagingTable() {
+    var tb = document.getElementById('accBulkStagingTable');
+    if (!tb) return;
+    var br = document.getElementById('accBulkBroker');
+    var defB = br && br.value !== '' && br.value != null ? br.value : '0';
+    var html = '<table class="min-w-full text-right border-collapse text-xs"><thead><tr class="border-b bg-slate-50">' +
+      '<th class="p-2">#</th><th class="p-2">كود</th><th class="p-2">اسم</th><th class="p-2">مبلغ</th><th class="p-2">وساطة %</th><th class="p-2">اتجاه</th><th class="p-2">نوع</th><th class="p-2"></th></tr></thead><tbody>';
+    accBulkStagingItems.forEach(function(row, idx) {
+      var bpVal = row.brokeragePct !== '' && row.brokeragePct != null && row.brokeragePct !== undefined ? row.brokeragePct : defB;
+      html += '<tr class="border-b border-slate-100">' +
+        '<td class="p-1">' + (row.lineIndex != null ? row.lineIndex : idx + 1) + '</td>' +
+        '<td class="p-1">' + escHtml(row.code) + '</td>' +
+        '<td class="p-1">' + escHtml(row.name) + '</td>' +
+        '<td class="p-1">' + escHtml(row.amount) + '</td>' +
+        '<td class="p-1"><input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-20 px-1 py-1 border rounded" data-idx="' + idx + '" value="' + escHtml(bpVal) + '"></td>' +
+        '<td class="p-1"><select class="acc-bulk-dir w-28 px-1 py-1 border rounded" data-idx="' + idx + '">' +
+        '<option value="to_us"' + (row.salaryDirection === 'to_us' ? ' selected' : '') + '>راتب لنا</option>' +
+        '<option value="to_them"' + (row.salaryDirection === 'to_them' ? ' selected' : '') + '>علينا</option></select></td>' +
+        '<td class="p-1"><select class="acc-bulk-kind w-32 px-1 py-1 border rounded" data-idx="' + idx + '">' +
+        '<option value="salary"' + (row.amountKind === 'salary' ? ' selected' : '') + '>راتب</option>' +
+        '<option value="debt_to_us"' + (row.amountKind === 'debt_to_us' ? ' selected' : '') + '>دين لنا</option></select></td>' +
+        '<td class="p-1"><button type="button" class="text-red-600" onclick="accRemoveStagingRow(' + idx + ')">حذف</button></td></tr>';
+    });
+    html += '</tbody></table>';
+    tb.innerHTML = html;
+    tb.querySelectorAll('.acc-bulk-bp').forEach(function(inp) {
+      inp.addEventListener('change', function() {
+        var i = parseInt(inp.getAttribute('data-idx'), 10);
+        if (!isNaN(i) && accBulkStagingItems[i]) accBulkStagingItems[i].brokeragePct = inp.value;
+      });
+    });
+    tb.querySelectorAll('.acc-bulk-dir').forEach(function(sel) {
+      sel.addEventListener('change', function() {
+        var i = parseInt(sel.getAttribute('data-idx'), 10);
+        if (!isNaN(i) && accBulkStagingItems[i]) accBulkStagingItems[i].salaryDirection = sel.value;
+      });
+    });
+    tb.querySelectorAll('.acc-bulk-kind').forEach(function(sel) {
+      sel.addEventListener('change', function() {
+        var i = parseInt(sel.getAttribute('data-idx'), 10);
+        if (!isNaN(i) && accBulkStagingItems[i]) accBulkStagingItems[i].amountKind = sel.value;
+      });
+    });
+  }
+
+  window.accRemoveStagingRow = function(idx) {
+    accBulkStagingItems.splice(idx, 1);
+    if (!accBulkStagingItems.length) {
+      accClearBulkStaging();
+      return;
+    }
+    accRenderStagingTable();
+  };
+
+  window.accClearBulkStaging = function() {
+    accBulkStagingItems = [];
+    var st = document.getElementById('accBulkStaging');
+    if (st) st.classList.add('hidden');
+    var tb = document.getElementById('accBulkStagingTable');
+    if (tb) tb.innerHTML = '';
+  };
+
+  window.accCommitBulk = function() {
+    if (!accBulkStagingItems.length) {
+      toast('لا توجد صفوف', 'error');
+      return;
+    }
+    var cid = document.getElementById('accBulkCycle').value;
+    var defBr = document.getElementById('accBulkBroker') ? document.getElementById('accBulkBroker').value : '';
+    var items = accBulkStagingItems.map(function(r) {
+      return {
+        code: r.code,
+        name: r.name,
+        amount: r.amount,
+        parentRef: r.parentRef,
+        brokeragePct: r.brokeragePct !== '' && r.brokeragePct != null ? r.brokeragePct : defBr,
+        salaryDirection: r.salaryDirection,
+        amountKind: r.amountKind,
+      };
+    });
+    apiCall('/api/accreditations/bulk-balance-commit', {
+      method: 'POST',
+      body: JSON.stringify({ cycleId: cid || null, items: items, defaultBrokeragePct: defBr || null }),
+    }).then(function(res) {
+      toast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        accClearBulkStaging();
+        accCloseBulk();
+        var f = document.getElementById('accBulkFile');
+        if (f) f.value = '';
+        var p = document.getElementById('accBulkPaste');
+        if (p) p.value = '';
+        var u = document.getElementById('accBulkSheetUrl');
+        if (u) u.value = '';
+        accLoad();
+      }
+    });
+  };
 
   function apiCall(url, opts) {
     if (typeof window.apiCall === 'function') return window.apiCall(url, opts);
@@ -86,9 +217,18 @@
   }
 
   window.accOpenBulk = function() {
+    accClearBulkStaging();
     fillCycleSelect('accBulkCycle', { defaultLatest: true, keepSelection: false });
     var br = document.getElementById('accBulkBroker');
-    if (br) br.value = '';
+    if (br) {
+      br.value = '';
+      if (!br.dataset.bound) {
+        br.dataset.bound = '1';
+        br.addEventListener('input', function() {
+          if (accBulkStagingItems.length) accRenderStagingTable();
+        });
+      }
+    }
     document.getElementById('accBulkModal').classList.remove('hidden');
     document.getElementById('accBulkModal').classList.add('flex');
   };
@@ -104,19 +244,15 @@
     }
     var fd = new FormData();
     fd.append('file', f.files[0]);
-    var cid = document.getElementById('accBulkCycle').value;
-    if (cid) fd.append('cycleId', cid);
-    fetch('/api/accreditations/bulk-balance', { method: 'POST', body: fd, credentials: 'same-origin' })
+    fetch('/api/accreditations/bulk-balance-parse-file', { method: 'POST', body: fd, credentials: 'same-origin' })
       .then(function(r) { return r.json(); })
       .then(function(res) {
-        toast(res.message || '', res.success ? 'success' : 'error');
-        if (res.success) {
-          accCloseBulk();
-          f.value = '';
-          var p = document.getElementById('accBulkPaste');
-          if (p) p.value = '';
-          accLoad();
+        if (!res.success) {
+          toast(res.message || 'فشل', 'error');
+          return;
         }
+        accShowStagingFromPreview(res.preview || []);
+        toast('راجع الصفوف ثم اضغط حفظ الكل', 'success');
       });
   };
 
@@ -127,17 +263,16 @@
       toast('الصق النص أولاً', 'error');
       return;
     }
-    var cid = document.getElementById('accBulkCycle').value;
-    apiCall('/api/accreditations/bulk-balance-text', {
+    apiCall('/api/accreditations/bulk-balance-parse-text', {
       method: 'POST',
-      body: JSON.stringify({ csvText: txt, cycleId: cid || null })
+      body: JSON.stringify({ csvText: txt }),
     }).then(function(res) {
-      toast(res.message || '', res.success ? 'success' : 'error');
-      if (res.success) {
-        accCloseBulk();
-        if (t) t.value = '';
-        accLoad();
+      if (!res.success) {
+        toast(res.message || 'فشل', 'error');
+        return;
       }
+      accShowStagingFromPreview(res.preview || []);
+      toast('راجع الصفوف ثم اضغط حفظ الكل', 'success');
     });
   };
 
@@ -149,23 +284,20 @@
       toast('أدخل رابط الجدول', 'error');
       return;
     }
-    var cid = document.getElementById('accBulkCycle').value;
-    apiCall('/api/accreditations/bulk-balance-sheet-url', {
+    apiCall('/api/accreditations/bulk-balance-parse-sheet-url', {
       method: 'POST',
       body: JSON.stringify({
         sheetUrl: url,
         sheetName: sn && sn.value ? sn.value.trim() : null,
-        cycleId: cid || null
-      })
+      }),
     }).then(function(res) {
-      var msg = res.message || '';
-      if (res.sheetTitleUsed) msg += ' — ورقة: ' + res.sheetTitleUsed;
-      toast(msg, res.success ? 'success' : 'error');
-      if (res.success) {
-        accCloseBulk();
-        if (u) u.value = '';
-        accLoad();
+      if (!res.success) {
+        toast(res.message || 'فشل', 'error');
+        return;
       }
+      var extra = res.sheetTitleUsed ? ' — ' + res.sheetTitleUsed : '';
+      accShowStagingFromPreview(res.preview || []);
+      toast('تمت المعاينة' + extra, 'success');
     });
   };
 

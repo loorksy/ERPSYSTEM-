@@ -287,6 +287,44 @@ async function getTransferCompaniesReportData(db, userId) {
   };
 }
 
+async function getTransferCompanyLedgerReportData(db, userId, companyId) {
+  const cid = parseInt(companyId, 10);
+  if (!cid) return null;
+  const c = (
+    await db.query(
+      `SELECT id, name, balance_amount, balance_currency FROM transfer_companies WHERE id = $1 AND user_id = $2`,
+      [cid, userId]
+    )
+  ).rows[0];
+  if (!c) return null;
+  const rows = (
+    await db.query(
+      `SELECT id, amount, currency, notes, created_at FROM transfer_company_ledger WHERE company_id = $1 ORDER BY created_at DESC LIMIT 500`,
+      [cid]
+    )
+  ).rows;
+  return { company: c, rows };
+}
+
+async function getFundLedgerReportData(db, userId, fundId) {
+  const fid = parseInt(fundId, 10);
+  if (!fid) return null;
+  const f = (
+    await db.query(
+      `SELECT id, name, fund_number, is_main FROM funds WHERE id = $1 AND user_id = $2`,
+      [fid, userId]
+    )
+  ).rows[0];
+  if (!f) return null;
+  const rows = (
+    await db.query(
+      `SELECT id, type, amount, currency, notes, ref_table, ref_id, created_at FROM fund_ledger WHERE fund_id = $1 ORDER BY created_at DESC LIMIT 500`,
+      [fid]
+    )
+  ).rows;
+  return { fund: f, rows };
+}
+
 async function getMovementsReportData(db, userId, cycleId) {
   const cycle = cycleId ? await ensureCycleOwnership(db, userId, cycleId) : null;
   if (cycleId && !cycle) return null;
@@ -419,6 +457,8 @@ module.exports = {
   getSubAgencyReportData,
   getAccreditationsReportData,
   getTransferCompaniesReportData,
+  getTransferCompanyLedgerReportData,
+  getFundLedgerReportData,
   getMovementsReportData,
   getComprehensiveReportData,
 };

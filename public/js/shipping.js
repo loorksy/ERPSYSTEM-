@@ -146,6 +146,14 @@
         sel.innerHTML += '<option value="' + c.id + '">' + (c.name || '') + '</option>';
       });
     });
+    apiCall('/api/funds/transfer-companies/list').then(function(res) {
+      var sel = document.getElementById('buyTransferCompanyId');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">-- اختر شركة تحويل --</option>';
+      (res.list || []).forEach(function(c) {
+        sel.innerHTML += '<option value="' + c.id + '">' + (c.name || '') + '</option>';
+      });
+    });
   }
 
   window.shippingSellBuyerTypeChange = function() {
@@ -204,6 +212,8 @@
   window.shippingBuySourceChange = function() {
     var src = document.getElementById('buyPurchaseSource').value;
     document.getElementById('buyCompanyFields').classList.toggle('hidden', src !== 'company');
+    var tf = document.getElementById('buyTransferCompanyFields');
+    if (tf) tf.classList.toggle('hidden', src !== 'transfer_company');
   };
 
   window.shippingOpenSellModal = function() {
@@ -275,7 +285,8 @@
         else if (r.buyer_type === 'approved' && r.buyer_approved_id) buyer = 'معتمد #' + r.buyer_approved_id;
         else if (r.buyer_type === 'sub_agent' && r.buyer_sub_agency_id) buyer = 'وكيل #' + r.buyer_sub_agency_id;
         else if (r.buyer_type === 'shipping_carrier' && r.buyer_carrier_id) buyer = 'وكالة شحن #' + r.buyer_carrier_id;
-        else if (r.purchase_source === 'company' && r.purchase_company_name) buyer = 'شركة: ' + r.purchase_company_name;
+        else if (r.purchase_source === 'company' && r.purchase_company_name) buyer = 'شركة شحن: ' + r.purchase_company_name;
+        else if (r.purchase_source === 'transfer_company' && r.purchase_company_name) buyer = 'شركة تحويل: ' + r.purchase_company_name;
         else if (r.purchase_source === 'administration') buyer = 'الإدارة';
         var pm = r.payment_method === 'cash' ? 'كاش' : r.payment_method === 'debt' ? 'دين' : r.payment_method === 'salary_deduction' ? 'خصم من راتب' : r.payment_method === 'agency_deduction' ? 'خصم من نسبة الوكالة' : r.payment_method;
         var profitLine = (r.type === 'sell' && r.profit_amount != null) ? ' | ربح: ' + (window.formatMoney ? window.formatMoney(r.profit_amount) : r.profit_amount) : '';
@@ -410,10 +421,12 @@
         var src = document.getElementById('buyPurchaseSource').value;
         var companyId = document.getElementById('buyCompanyId').value;
         var companyName = document.getElementById('buyCompanyName').value;
+        var tcId = document.getElementById('buyTransferCompanyId') ? document.getElementById('buyTransferCompanyId').value : '';
         var body = {
           purchaseSource: src,
           companyId: src === 'company' ? companyId : null,
           companyName: src === 'company' ? (companyName || document.getElementById('buyCompanyId').options[document.getElementById('buyCompanyId').selectedIndex]?.text) : null,
+          transferCompanyId: src === 'transfer_company' ? tcId : null,
           itemType: document.getElementById('buyItemType').value,
           quantity: document.getElementById('buyQuantity').value,
           unitPrice: document.getElementById('buyUnitPrice').value,
@@ -422,6 +435,10 @@
         };
         if (src === 'company' && !companyId && !companyName) {
           showToast('اسم الشركة مطلوب', 'error');
+          return;
+        }
+        if (src === 'transfer_company' && !tcId) {
+          showToast('اختر شركة تحويل', 'error');
           return;
         }
         apiCall('/api/shipping/buy', { method: 'POST', body: JSON.stringify(body) }).then(function(res) {

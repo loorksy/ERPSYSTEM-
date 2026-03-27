@@ -103,9 +103,14 @@ router.post('/:id/payout-from-main', requireAuth, async (req, res) => {
 
     await adjustFundBalance(db, mainId, 'USD', -amt, 'company_payout', notes || 'صرف لشركة تحويل', 'transfer_companies', id);
     if (cashPortion > 0) {
+      const ledNotes = (notes || 'صرف من الصندوق الرئيسي') + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '');
       await db.query(
         `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, 'USD', $3)`,
-        [id, cashPortion, (notes || 'صرف من الصندوق الرئيسي') + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '')]
+        [id, cashPortion, ledNotes]
+      );
+      await db.query(
+        `UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3`,
+        [cashPortion, id, uid]
       );
     }
     res.json({
@@ -121,20 +126,64 @@ router.post('/:id/payout-from-main', requireAuth, async (req, res) => {
   }
 });
 
+/** إضافة رصيد «دين لنا» لدى شركة التحويل */
+router.post('/:id/add-receivable', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { amount, currency, notes } = req.body || {};
+    const amt = parseFloat(amount);
+    if (!id || isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'مبلغ غير صالح' });
+    const cur = (currency || 'USD').trim();
+    const db = getDb();
+    const uid = req.session.userId;
+    const company = (await db.query(
+      'SELECT id FROM transfer_companies WHERE id = $1 AND user_id = $2',
+      [id, uid]
+    )).rows[0];
+    if (!company) return res.json({ success: false, message: 'شركة غير موجودة' });
+    const noteText = (notes && String(notes).trim()) ? String(notes).trim() : 'إضافة دين لنا';
+    await db.query(
+      `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, $3, $4)`,
+      [id, amt, cur, noteText]
+    );
+    await db.query(
+      `UPDATE transfer_companies SET balance_amount = balance_amount + $1, balance_currency = $2 WHERE id = $3 AND user_id = $4`,
+      [amt, cur, id, uid]
+    );
+    res.json({ success: true, message: 'تم تسجيل دين لنا' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (!id) return res.json({ success: false, message: 'معرف غير صالح' });
     const db = getDb();
+    const uid = req.session.userId;
     const row = (await db.query(
       'SELECT * FROM transfer_companies WHERE id = $1 AND user_id = $2',
-      [id, req.session.userId]
+      [id, uid]
     )).rows[0];
     if (!row) return res.json({ success: false, message: 'غير موجود' });
     const tx = (await db.query(
       'SELECT * FROM transfer_company_ledger WHERE company_id = $1 ORDER BY created_at DESC LIMIT 300',
       [id]
     )).rows;
+    const chron = [...tx].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    let runUsd = 0;
+    chron.forEach((l) => {
+      if ((l.currency || 'USD') === 'USD') runUsd += Number(l.amount) || 0;
+      l.balanceAfterUsd = runUsd;
+      const n = String(l.notes || '');
+      if (/دين لنا|إضافة دين/i.test(n)) l.labelAr = 'دين لنا';
+      else if (/صرف من الصندوق|صرف لشركة/i.test(n)) l.labelAr = 'صرف من الرئيسي';
+      else if (/رصيد افتتاحي/i.test(n)) l.labelAr = 'رصيد افتتاحي';
+      else if (/استيراد|معتمد|اعتماد/i.test(n)) l.labelAr = 'من الاعتمادات';
+      else l.labelAr = 'حركة';
+      l.colorCategory = Number(l.amount) >= 0 ? 'balance' : 'payout';
+    });
     let types = [];
     try {
       types = row.transfer_types ? JSON.parse(row.transfer_types) : [];
