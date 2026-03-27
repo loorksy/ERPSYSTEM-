@@ -101,8 +101,22 @@
       return v;
     }
 
+    function accGetRowKindValue(row) {
+      if (row.amountKind === 'debt_to_us') return 'debt_to_us';
+      if (row.amountKind === 'salary' && row.salaryDirection === 'to_them') return 'salary_to_them';
+      return 'salary_to_us';
+    }
+
     var rows = accBulkStagingItems.map(function(row, idx) {
       var r = rowBp(row, idx);
+      var combinedKind = accGetRowKindValue(row);
+      var kindSelectHtml = 
+        '<select class="acc-bulk-combined-kind w-full px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-shadow" data-idx="' + idx + '">' +
+        '<option value="salary_to_us"' + (combinedKind === 'salary_to_us' ? ' selected' : '') + '>راتب لنا (وساطة + صندوق)</option>' +
+        '<option value="salary_to_them"' + (combinedKind === 'salary_to_them' ? ' selected' : '') + '>راتب علينا (وساطة + صندوق)</option>' +
+        '<option value="debt_to_us"' + (combinedKind === 'debt_to_us' ? ' selected' : '') + '>دين لنا (بدون وساطة/صندوق)</option>' +
+        '</select>';
+
       return (
         '<tr class="acc-bulk-tr border-b border-slate-100 hover:bg-slate-50 transition-colors relative">' +
         '<td class="acc-bulk-td p-3 align-middle text-slate-400 text-xs sm:w-10 text-center" data-label="#"><span class="acc-bulk-val">' + escHtml(r.lineNum) + '</span></td>' +
@@ -115,14 +129,7 @@
         '<td class="acc-bulk-td p-3 align-middle" data-label="المبلغ"><span class="acc-bulk-val font-bold text-indigo-600 tabular-nums">' + escHtml(row.amount) + '</span></td>' +
         '<td class="acc-bulk-td p-3 align-middle" data-label="وساطة %">' +
         '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full sm:w-20 px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-shadow" data-idx="' + idx + '" value="' + escHtml(accBulkBpInputValue(r.bpVal, defB)) + '"></td>' +
-        '<td class="acc-bulk-td p-3 align-middle" data-label="الاتجاه">' +
-        '<select class="acc-bulk-dir w-full px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-shadow" data-idx="' + idx + '">' +
-        '<option value="to_us"' + (row.salaryDirection === 'to_us' ? ' selected' : '') + '>راتب لنا</option>' +
-        '<option value="to_them"' + (row.salaryDirection === 'to_them' ? ' selected' : '') + '>راتب علينا</option></select></td>' +
-        '<td class="acc-bulk-td p-3 align-middle" data-label="النوع">' +
-        '<select class="acc-bulk-kind w-full px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-shadow" data-idx="' + idx + '">' +
-        '<option value="salary"' + (row.amountKind === 'salary' ? ' selected' : '') + '>راتب</option>' +
-        '<option value="debt_to_us"' + (row.amountKind === 'debt_to_us' ? ' selected' : '') + '>دين لنا</option></select></td>' +
+        '<td class="acc-bulk-td p-3 align-middle" data-label="النوع">' + kindSelectHtml + '</td>' +
         '<td class="acc-bulk-td p-3 align-middle text-left sm:w-12" data-label="إجراء">' +
         '<button type="button" class="w-full sm:w-8 sm:h-8 inline-flex items-center justify-center rounded-lg text-red-500 bg-red-50 hover:bg-red-500 hover:text-white transition-colors py-2 sm:py-0 text-sm font-semibold sm:font-normal" data-acc-delete="' + idx + '"><span class="sm:hidden ml-2">حذف</span><i class="fas fa-trash-alt pointer-events-none"></i></button></td></tr>'
       );
@@ -132,10 +139,9 @@
       '<colgroup>' +
       '<col style="width:4%">' +
       '<col style="width:30%">' +
-      '<col style="width:12%">' +
-      '<col style="width:12%">' +
-      '<col style="width:16%">' +
-      '<col style="width:16%">' +
+      '<col style="width:14%">' +
+      '<col style="width:14%">' +
+      '<col style="width:28%">' +
       '<col style="width:10%">' +
       '</colgroup>';
 
@@ -146,7 +152,6 @@
       '<th class="p-3 text-xs font-bold text-right">المعتمد</th>' +
       '<th class="p-3 text-xs font-bold text-right">المبلغ</th>' +
       '<th class="p-3 text-xs font-bold text-center">وساطة %</th>' +
-      '<th class="p-3 text-xs font-bold text-right">الاتجاه</th>' +
       '<th class="p-3 text-xs font-bold text-right">النوع</th>' +
       '<th class="p-3 text-xs font-bold text-center"></th>' +
       '</tr></thead>';
@@ -167,8 +172,20 @@
       var t = e.target;
       var idx = parseInt(t.getAttribute('data-idx'), 10);
       if (isNaN(idx) || !accBulkStagingItems[idx]) return;
-      if (t.classList.contains('acc-bulk-dir')) accBulkStagingItems[idx].salaryDirection = t.value;
-      if (t.classList.contains('acc-bulk-kind')) accBulkStagingItems[idx].amountKind = t.value;
+      
+      if (t.classList.contains('acc-bulk-combined-kind')) {
+        var val = t.value;
+        if (val === 'debt_to_us') {
+          accBulkStagingItems[idx].amountKind = 'debt_to_us';
+          accBulkStagingItems[idx].salaryDirection = 'to_us'; // default
+        } else if (val === 'salary_to_them') {
+          accBulkStagingItems[idx].amountKind = 'salary';
+          accBulkStagingItems[idx].salaryDirection = 'to_them';
+        } else {
+          accBulkStagingItems[idx].amountKind = 'salary';
+          accBulkStagingItems[idx].salaryDirection = 'to_us';
+        }
+      }
     });
     c.addEventListener('input', function(e) {
       var t = e.target;
@@ -202,6 +219,30 @@
     var tb = document.getElementById('accBulkStagingTable');
     if (tb) tb.innerHTML = '';
     accSyncBulkStep();
+  };
+
+  window.accApplyGlobalSettings = function() {
+    if (!accBulkStagingItems || !accBulkStagingItems.length) return;
+    
+    var val = document.getElementById('accBulkGlobalKind').value;
+    var newKind = 'salary';
+    var newDir = 'to_us';
+
+    if (val === 'debt_to_us') {
+      newKind = 'debt_to_us';
+      newDir = 'to_us';
+    } else if (val === 'salary_to_them') {
+      newKind = 'salary';
+      newDir = 'to_them';
+    }
+
+    accBulkStagingItems.forEach(function(item) {
+      item.amountKind = newKind;
+      item.salaryDirection = newDir;
+    });
+
+    accRenderStagingTable();
+    toast('تم تطبيق النوع على جميع الصفوف', 'success');
   };
 
   window.accCommitBulk = function() {

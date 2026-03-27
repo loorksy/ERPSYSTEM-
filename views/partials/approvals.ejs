@@ -161,8 +161,8 @@
       grid-template-areas: 
         "name number"
         "amount amount"
-        "broker dir"
-        "type action";
+        "broker type"
+        "action action";
       gap: 0.75rem;
       padding: 1rem;
       border: 1px solid rgb(226 232 240);
@@ -239,11 +239,10 @@
     .acc-bulk-review tbody td.acc-bulk-td:nth-child(3) .acc-bulk-val { font-size: 1.125rem; font-weight: 800; color: rgb(67 56 202); }
     
     .acc-bulk-review tbody td.acc-bulk-td:nth-child(4) { grid-area: broker; }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(5) { grid-area: dir; }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(6) { grid-area: type; }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(7) { 
+    .acc-bulk-review tbody td.acc-bulk-td:nth-child(5) { grid-area: type; }
+    .acc-bulk-review tbody td.acc-bulk-td:nth-child(6) { 
       grid-area: action; 
-      justify-content: flex-end;
+      justify-content: center;
       margin-top: 0.5rem;
     }
     
@@ -254,6 +253,7 @@
       max-width: none !important;
       background-color: rgb(248 250 252) !important;
       border-color: rgb(226 232 240) !important;
+      text-align: right;
     }
     .acc-bulk-review tbody td.acc-bulk-td button {
       min-height: 2.75rem !important;
@@ -364,13 +364,13 @@
 
     <div id="accBulkStepper" class="flex items-center justify-center px-4 py-3 bg-slate-50/80 border-b border-slate-100 shrink-0 gap-2 sm:gap-4 relative z-0">
       <div class="flex items-center gap-2">
-        <span class="acc-bulk-step-dot-1 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300">1</span>
-        <span class="acc-bulk-step-label-1 text-sm font-semibold transition-all duration-300"><i class="fas fa-file-import ml-1 text-xs"></i>استيراد</span>
+        <span class="acc-bulk-step-dot-1 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300"><i class="fas fa-file-import text-xs"></i></span>
+        <span class="acc-bulk-step-label-1 text-sm font-semibold transition-all duration-300">استيراد</span>
       </div>
       <div class="w-12 sm:w-16 h-px bg-slate-300"></div>
       <div class="flex items-center gap-2">
-        <span class="acc-bulk-step-dot-2 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300">2</span>
-        <span class="acc-bulk-step-label-2 text-sm font-semibold transition-all duration-300"><i class="fas fa-list-check ml-1 text-xs"></i>مراجعة</span>
+        <span class="acc-bulk-step-dot-2 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300"><i class="fas fa-list-check text-xs"></i></span>
+        <span class="acc-bulk-step-label-2 text-sm font-semibold transition-all duration-300">مراجعة</span>
       </div>
     </div>
 
@@ -388,6 +388,19 @@
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">نسبة وساطة افتراضية %</label>
             <input type="number" id="accBulkBroker" min="0" max="100" step="0.01" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" placeholder="مثال: 0">
+          </div>
+          <div class="sm:col-span-2 border-t border-slate-100 pt-3 mt-1">
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">تطبيق نوع الرصيد على جميع الصفوف</label>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <select id="accBulkGlobalKind" class="w-full sm:flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
+                <option value="salary_to_us">راتب لنا (وساطة + صندوق)</option>
+                <option value="salary_to_them">راتب علينا (وساطة + صندوق)</option>
+                <option value="debt_to_us">دين لنا (بدون وساطة/صندوق)</option>
+              </select>
+              <button type="button" onclick="accApplyGlobalSettings()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold hover:bg-slate-200 transition-colors whitespace-nowrap">
+                تطبيق على الكل
+              </button>
+            </div>
           </div>
         </div>
       </div>
