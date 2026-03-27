@@ -240,25 +240,50 @@
     else alert(m);
   }
 
+  function accApprovalsEmptyStateHtml(kind, msg) {
+    if (kind === 'loading') {
+      return (
+        '<div class="col-span-full acc-approvals-empty text-slate-400">' +
+        '<i class="fas fa-spinner fa-spin text-3xl text-indigo-400" aria-hidden="true"></i>' +
+        '<span class="text-sm font-medium">جاري التحميل...</span></div>'
+      );
+    }
+    if (kind === 'error') {
+      return (
+        '<div class="col-span-full acc-approvals-empty text-slate-600">' +
+        '<i class="fas fa-circle-exclamation text-4xl text-red-400" aria-hidden="true"></i>' +
+        '<p class="text-red-600 font-medium text-sm">' + escHtml(msg || 'حدث خطأ') + '</p></div>'
+      );
+    }
+    return (
+      '<div class="col-span-full acc-approvals-empty text-slate-500">' +
+      '<span class="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">' +
+      '<i class="fas fa-clipboard-list text-4xl" aria-hidden="true"></i></span>' +
+      '<p class="font-medium text-slate-600">لا يوجد معتمدون</p>' +
+      '<p class="text-xs text-slate-400 max-w-sm leading-relaxed">أضف معتمداً من زر «إضافة معتمد» أو استورد أرصدة من «رفع أرصدة».</p></div>'
+    );
+  }
+
   window.accLoad = function() {
     var box = document.getElementById('accCards');
     if (!box) return;
+    box.innerHTML = accApprovalsEmptyStateHtml('loading');
     apiCall('/api/accreditations/list').then(function(res) {
       if (!res.success) {
-        box.innerHTML = '<p class="text-red-500">' + (res.message || '') + '</p>';
+        box.innerHTML = accApprovalsEmptyStateHtml('error', res.message || '');
         return;
       }
       var list = res.list || [];
       if (list.length === 0) {
-        box.innerHTML = '<p class="text-slate-400 col-span-full text-center py-12">لا يوجد معتمدون</p>';
+        box.innerHTML = accApprovalsEmptyStateHtml('empty');
         return;
       }
       box.innerHTML = list.map(function(a) {
         var pin = a.pinned ? '<i class="fas fa-thumbtack text-amber-500 ml-1"></i>' : '';
-        return '<div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm cursor-pointer hover:shadow-md" onclick="accOpen(' + a.id + ')">' +
-          pin + '<h5 class="font-bold">' + (a.name || '') + '</h5>' +
-          '<p class="text-xs text-slate-500">' + (a.code || '') + '</p>' +
-          '<p class="text-indigo-600 font-semibold mt-2">' + (a.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p></div>';
+        return '<div class="rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-indigo-200/80 transition-colors" onclick="accOpen(' + a.id + ')">' +
+          pin + '<h5 class="font-bold text-slate-900">' + escHtml(a.name || '') + '</h5>' +
+          '<p class="text-xs text-slate-500">' + escHtml(a.code || '') + '</p>' +
+          '<p class="text-indigo-600 font-semibold mt-2 tabular-nums">' + (a.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p></div>';
       }).join('');
     });
   };
