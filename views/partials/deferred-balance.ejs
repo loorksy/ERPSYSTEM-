@@ -1,84 +1,129 @@
-<div class="max-w-6xl mx-auto px-4 sm:px-0 pb-10" dir="rtl">
-  <div class="erp-module-shell rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden">
-    <div class="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-br from-sky-50/90 via-white to-slate-50 px-4 py-5 sm:px-7 sm:py-6">
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,rgba(14,165,233,0.1),transparent)] pointer-events-none"></div>
-      <div class="relative flex items-start gap-3 sm:gap-4">
-        <div class="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-md">
-          <i class="fas fa-clock-rotate-left text-lg sm:text-xl"></i>
+<div class="deferred-page w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-0 pb-10 sm:pb-12 min-w-0" dir="rtl">
+  <!-- مقدمة الصفحة -->
+  <section class="relative mb-6 sm:mb-8 rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-200/60 bg-gradient-to-bl from-sky-50 via-white to-slate-50 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+    <div class="absolute top-0 right-0 w-40 h-40 sm:w-56 sm:h-56 rounded-full bg-sky-400/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+    <div class="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 rounded-full bg-indigo-400/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+    <div class="relative px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      <div class="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+        <div class="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/25 ring-4 ring-white/80">
+          <i class="fas fa-clock-rotate-left text-2xl sm:text-[1.65rem]" aria-hidden="true"></i>
         </div>
+        <div class="min-w-0 flex-1 space-y-2">
+          <p class="text-xs sm:text-sm font-bold tracking-wide text-sky-700 uppercase">رواتب غير مدققة</p>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight">الرصيد المؤجل</h1>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl">
+            المستخدمون الذين لم يتم تدقيق رواتبهم من جدول الوكيل. الأرصدة <strong class="font-semibold text-slate-800">تُرحَّل بين الدورات</strong> حتى يتم التدقيق أو الدمج.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- بطاقات العمل — كل خيار مستقل -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">
+    <!-- بحث -->
+    <article class="group flex flex-col min-w-0 rounded-2xl border border-slate-200/90 bg-white shadow-sm hover:shadow-md transition-shadow duration-200 ring-1 ring-slate-900/[0.03]">
+      <div class="flex items-center gap-3 px-4 pt-4 sm:px-5 sm:pt-5 pb-2 border-b border-slate-100/90">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-200">
+          <i class="fas fa-magnifying-glass text-sm" aria-hidden="true"></i>
+        </span>
         <div class="min-w-0">
-          <p class="text-xs font-semibold text-sky-700 mb-0.5">رواتب غير مدققة</p>
-          <h2 class="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">الرصيد المؤجل</h2>
-          <p class="text-sm text-slate-600 mt-1 leading-relaxed">المستخدمون الذين لم يتم تدقيق رواتبهم من جدول الوكيل. الأرصدة <strong>تُرحَّل بين الدورات</strong> حتى يتم التدقيق أو الدمج.</p>
+          <h2 class="text-base font-bold text-slate-900 leading-tight">بحث عن مستخدم</h2>
+          <p class="text-xs text-slate-500 mt-0.5">عرض كل رواتبه المؤجلة</p>
         </div>
       </div>
-    </div>
+      <div class="flex flex-col flex-1 p-4 sm:p-5 gap-3">
+        <label for="deferredMemberSearch" class="sr-only">رقم المستخدم</label>
+        <input type="text" id="deferredMemberSearch" inputmode="numeric" autocomplete="off" placeholder="رقم المستخدم" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-shadow">
+        <button type="button" onclick="deferredLoadMemberHistory()" class="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 active:scale-[0.99] transition">
+          <i class="fas fa-list-ul text-xs opacity-90" aria-hidden="true"></i>
+          عرض السجل
+        </button>
+        <div id="deferredMemberHistory" class="hidden mt-1 text-sm text-slate-700 rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 sm:p-4 max-h-56 overflow-y-auto overscroll-contain"></div>
+      </div>
+    </article>
 
-    <div class="border-b border-slate-100 bg-slate-50/95 px-4 py-4 sm:px-6 sm:py-5">
-      <p class="text-xs font-semibold text-slate-500 mb-3 sm:mb-4">البحث والمزامنة والدمج</p>
-      <div class="flex flex-col gap-4 lg:gap-5">
-        <div class="rounded-xl border border-slate-200/90 bg-white p-3 sm:p-4 shadow-sm">
-          <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm">
-            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600"><i class="fas fa-search text-xs"></i></span>
-            بحث عن مستخدم — كل رواتبه المؤجلة
-          </h4>
-          <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
-            <input type="text" id="deferredMemberSearch" placeholder="رقم المستخدم" class="w-full sm:min-w-[160px] sm:max-w-xs flex-1 px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15">
-            <button type="button" onclick="deferredLoadMemberHistory()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-md hover:bg-indigo-700 active:scale-[0.99] transition">عرض السجل</button>
-          </div>
-          <div id="deferredMemberHistory" class="mt-3 text-sm text-slate-700 hidden rounded-xl border border-slate-100 bg-slate-50/80 p-3"></div>
-        </div>
-
-        <div class="rounded-xl border border-slate-200/90 bg-white p-3 sm:p-4 shadow-sm">
-          <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm">
-            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-sky-700"><i class="fas fa-sync-alt text-xs"></i></span>
-            الدورة والتحديث من Google
-          </h4>
-          <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-            <div class="w-full sm:flex-1 sm:min-w-[200px]">
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">الدورة المالية</label>
-              <select id="deferredCycleSelect" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15" onchange="deferredLoadUsers()">
-                <option value="">— كل الدورات —</option>
-              </select>
-            </div>
-            <button type="button" onclick="deferredRefresh()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-semibold shadow-md hover:bg-sky-700 active:scale-[0.99] transition whitespace-normal text-center">
-              <i class="fas fa-sync-alt ml-1"></i> تحديث من Google (الدورة المختارة)
-            </button>
-          </div>
-          <p class="text-xs text-slate-500 mt-2">للمزامنة اختر دورة محددة أولاً. عرض «كل الدورات» يُظهر كل الأسطر المؤجلة.</p>
-        </div>
-
-        <div class="rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50/90 to-orange-50/50 p-3 sm:p-4 shadow-sm">
-          <h4 class="font-bold text-amber-950 mb-2 flex items-center gap-2 text-sm">
-            <i class="fas fa-object-group text-amber-700"></i>
-            دمج كل رواتب مستخدم في دورة واحدة
-          </h4>
-          <p class="text-xs text-amber-900/90 mb-3 leading-relaxed">يُصفّر المؤجل لذلك الرقم ويُسجَّل تدقيق في الدورة التي تختارها (مجموع الرواتب في السجل).</p>
-          <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-            <div class="w-full sm:flex-1 sm:min-w-[140px]">
-              <label class="block text-xs font-semibold text-amber-900/80 mb-1.5">رقم المستخدم</label>
-              <input type="text" id="deferredMergeMember" placeholder="رقم المستخدم" class="w-full px-4 py-2.5 rounded-xl border-2 border-amber-200/80 bg-white text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/15">
-            </div>
-            <div class="w-full sm:flex-1 sm:min-w-[180px]">
-              <label class="block text-xs font-semibold text-amber-900/80 mb-1.5">دورة الدمج</label>
-              <select id="deferredMergeCycle" class="w-full px-4 py-2.5 rounded-xl border-2 border-amber-200/80 bg-white text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/15">
-                <option value="">— دورة الدمج —</option>
-              </select>
-            </div>
-            <button type="button" onclick="deferredSubmitMerge()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold shadow-md hover:bg-amber-700 active:scale-[0.99] transition">دمج وتدقيق</button>
-          </div>
+    <!-- الدورة والمزامنة -->
+    <article class="group flex flex-col min-w-0 rounded-2xl border border-slate-200/90 bg-white shadow-sm hover:shadow-md transition-shadow duration-200 ring-1 ring-slate-900/[0.03]">
+      <div class="flex items-center gap-3 px-4 pt-4 sm:px-5 sm:pt-5 pb-2 border-b border-slate-100/90">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white transition-colors duration-200">
+          <i class="fas fa-arrows-rotate text-sm" aria-hidden="true"></i>
+        </span>
+        <div class="min-w-0">
+          <h2 class="text-base font-bold text-slate-900 leading-tight">الدورة والمزامنة</h2>
+          <p class="text-xs text-slate-500 mt-0.5">تحديث من Google للدورة المختارة</p>
         </div>
       </div>
-    </div>
-
-    <div class="px-4 py-5 sm:px-7 sm:py-6">
-      <h3 class="text-sm font-bold text-slate-800 mb-3">قائمة المؤجل</h3>
-      <div id="deferredUsersList" class="space-y-2">
-        <p class="text-slate-400 text-center py-8">جاري التحميل...</p>
+      <div class="flex flex-col flex-1 p-4 sm:p-5 gap-3">
+        <div class="space-y-1.5">
+          <label for="deferredCycleSelect" class="block text-xs font-semibold text-slate-600">الدورة المالية</label>
+          <select id="deferredCycleSelect" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm text-slate-900 focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10 transition-shadow" onchange="deferredLoadUsers()">
+            <option value="">— كل الدورات —</option>
+          </select>
+        </div>
+        <button type="button" onclick="deferredRefresh()" class="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/20 hover:bg-sky-700 active:scale-[0.99] transition">
+          <i class="fas fa-cloud-arrow-down text-xs opacity-95" aria-hidden="true"></i>
+          <span class="text-center leading-snug">تحديث من Google <span class="hidden sm:inline">(الدورة المختارة)</span></span>
+        </button>
+        <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed border-t border-slate-100 pt-3">للمزامنة اختر دورة محددة أولاً. عرض «كل الدورات» يُظهر كل الأسطر المؤجلة.</p>
       </div>
-    </div>
+    </article>
+
+    <!-- دمج — يمتد على عمودين على الشاشة المتوسطة ثم عمود واحد على xl -->
+    <article class="group flex flex-col min-w-0 md:col-span-2 xl:col-span-1 rounded-2xl border border-amber-200/80 bg-gradient-to-b from-amber-50/90 to-white shadow-sm hover:shadow-md transition-shadow duration-200 ring-1 ring-amber-900/[0.04]">
+      <div class="flex items-center gap-3 px-4 pt-4 sm:px-5 sm:pt-5 pb-2 border-b border-amber-100/80">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-200/80 text-amber-900 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-200">
+          <i class="fas fa-layer-group text-sm" aria-hidden="true"></i>
+        </span>
+        <div class="min-w-0">
+          <h2 class="text-base font-bold text-amber-950 leading-tight">دمج وتدقيق</h2>
+          <p class="text-xs text-amber-900/70 mt-0.5">دمج كل رواتب مستخدم في دورة واحدة</p>
+        </div>
+      </div>
+      <div class="flex flex-col flex-1 p-4 sm:p-5 gap-3">
+        <p class="text-xs text-amber-900/85 leading-relaxed">يُصفّر المؤجل لذلك الرقم ويُسجَّل تدقيق في الدورة التي تختارها (مجموع الرواتب في السجل).</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3">
+          <div class="space-y-1.5 min-w-0">
+            <label for="deferredMergeMember" class="block text-xs font-semibold text-amber-900/90">رقم المستخدم</label>
+            <input type="text" id="deferredMergeMember" placeholder="رقم المستخدم" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border-2 border-amber-200/90 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+          </div>
+          <div class="space-y-1.5 min-w-0">
+            <label for="deferredMergeCycle" class="block text-xs font-semibold text-amber-900/90">دورة الدمج</label>
+            <select id="deferredMergeCycle" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border-2 border-amber-200/90 bg-white text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/15">
+              <option value="">— دورة الدمج —</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" onclick="deferredSubmitMerge()" class="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-amber-600/25 hover:bg-amber-700 active:scale-[0.99] transition">
+          <i class="fas fa-check-double text-xs" aria-hidden="true"></i>
+          دمج وتدقيق
+        </button>
+      </div>
+    </article>
   </div>
+
+  <!-- قائمة المؤجل -->
+  <section class="rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white shadow-sm overflow-hidden min-w-0">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 bg-slate-50/80">
+      <h2 class="text-lg font-bold text-slate-900">قائمة المؤجل</h2>
+      <span class="text-xs font-medium text-slate-500 self-start sm:self-auto">يتم التحديث عند تغيير الدورة</span>
+    </div>
+    <div class="p-4 sm:p-6">
+      <div id="deferredUsersList" class="space-y-3 min-h-[4rem]">
+        <p class="text-slate-400 text-center py-10 text-sm">جاري التحميل...</p>
+      </div>
+    </div>
+  </section>
 </div>
+
+<style>
+  /* دعم متصفحات قديمة: min-height للمسات */
+  .deferred-page input,
+  .deferred-page select,
+  .deferred-page button {
+    -webkit-tap-highlight-color: transparent;
+  }
+</style>
 
 <script>
 (function() {
@@ -113,31 +158,32 @@
     var sel = document.getElementById('deferredCycleSelect');
     var list = document.getElementById('deferredUsersList');
     if (!list) return;
-    list.innerHTML = '<p class="text-slate-400 text-center py-8">جاري التحميل...</p>';
+    list.innerHTML = '<p class="text-slate-400 text-center py-10 text-sm">جاري التحميل...</p>';
     var q = sel && sel.value ? ('?cycleId=' + encodeURIComponent(sel.value)) : '';
     apiCall('/dashboard/deferred-users' + q).then(function(res) {
       if (!res.success) {
-        list.innerHTML = '<p class="text-red-500 text-center py-8">' + (res.message || 'فشل') + '</p>';
+        list.innerHTML = '<p class="text-red-600 text-center py-10 text-sm">' + (res.message || 'فشل') + '</p>';
         return;
       }
       var users = res.users || [];
       if (res.mode === 'all' && res.totalDeferred != null) {
-        list.innerHTML = '<p class="text-sm text-slate-600 mb-3">إجمالي المؤجل (كل الدورات): <strong class="text-sky-700">' + fmt(res.totalDeferred) + '</strong></p>';
+        list.innerHTML = '<div class="rounded-xl border border-sky-100 bg-sky-50/60 px-4 py-3 text-sm text-slate-700 mb-3">إجمالي المؤجل (كل الدورات): <strong class="text-sky-800 tabular-nums">' + fmt(res.totalDeferred) + '</strong></div>';
       } else {
         list.innerHTML = '';
       }
       if (users.length === 0) {
-        list.innerHTML += '<p class="text-slate-400 text-center py-8">لا يوجد مستخدمون غير مدققين في هذا العرض</p>';
+        list.innerHTML += '<div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center"><i class="fas fa-inbox text-3xl text-slate-300 mb-3 block" aria-hidden="true"></i><p class="text-slate-500 text-sm">لا يوجد مستخدمون غير مدققين في هذا العرض</p></div>';
         return;
       }
       list.innerHTML += users.map(function(u) {
         var cycleInfo = u.cycle_name ? (' · ' + (u.cycle_name || '') + ' #' + (u.cycle_id || '')) : '';
         var before = u.salary_before_discount != null ? (' · قبل الخصم: ' + fmt(u.salary_before_discount)) : '';
-        return '<div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-2">' +
-          '<div><span class="font-semibold text-slate-800">رقم المستخدم: ' + (u.member_user_id || '') + '</span>' + cycleInfo + '</div>' +
-          '<div class="text-sm text-slate-600">المعرف: ' + (u.extra_id_c || '-') + before + '</div>' +
-          '<div class="font-bold text-sky-600">بعد الخصم: ' + fmt(u.balance_d || 0) + '</div>' +
-          '</div>';
+        return '<article class="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow transition-shadow">' +
+          '<div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-y-2">' +
+          '<div class="min-w-0"><span class="font-bold text-slate-900">مستخدم: ' + (u.member_user_id || '') + '</span><span class="text-slate-500 text-sm">' + cycleInfo + '</span></div>' +
+          '<div class="text-sm text-slate-600 break-words">معرف: ' + (u.extra_id_c || '-') + before + '</div>' +
+          '<div class="text-base font-bold text-sky-600 tabular-nums shrink-0">بعد الخصم: ' + fmt(u.balance_d || 0) + '</div>' +
+          '</div></article>';
       }).join('');
     });
   };
@@ -164,20 +210,20 @@
       return;
     }
     box.classList.remove('hidden');
-    box.innerHTML = '<p class="text-slate-400">جاري التحميل...</p>';
+    box.innerHTML = '<p class="text-slate-400 text-sm py-2">جاري التحميل...</p>';
     apiCall('/api/search/member-deferred-history?memberUserId=' + encodeURIComponent(id)).then(function(res) {
       if (!res.success) {
-        box.innerHTML = '<p class="text-red-600">' + (res.message || 'فشل') + '</p>';
+        box.innerHTML = '<p class="text-red-600 text-sm">' + (res.message || 'فشل') + '</p>';
         return;
       }
       var lines = res.lines || [];
       if (!lines.length) {
-        box.innerHTML = '<p class="text-slate-500">لا توجد أسطر مؤجلة لهذا الرقم.</p>';
+        box.innerHTML = '<p class="text-slate-500 text-sm">لا توجد أسطر مؤجلة لهذا الرقم.</p>';
         return;
       }
-      box.innerHTML = '<p class="mb-2 font-semibold">المجموع: ' + fmt(res.totalDeferred) + '</p><ul class="list-disc pr-5 space-y-1">' +
+      box.innerHTML = '<p class="mb-2 font-semibold text-slate-800">المجموع: <span class="tabular-nums text-sky-700">' + fmt(res.totalDeferred) + '</span></p><ul class="list-disc pr-5 space-y-1.5 text-sm text-slate-700">' +
         lines.map(function(l) {
-          return '<li>' + (l.cycle_name || '') + ': ' + fmt(l.balance_d) + (l.salary_before_discount != null ? ' (قبل الخصم ' + fmt(l.salary_before_discount) + ')' : '') + '</li>';
+          return '<li class="break-words">' + (l.cycle_name || '') + ': ' + fmt(l.balance_d) + (l.salary_before_discount != null ? ' (قبل الخصم ' + fmt(l.salary_before_discount) + ')' : '') + '</li>';
         }).join('') + '</ul>';
     });
   };

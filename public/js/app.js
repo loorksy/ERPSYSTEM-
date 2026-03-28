@@ -68,6 +68,39 @@ window.homeDownloadReportPdf = function() {
   window.open(path + (q.length ? '?' + q.join('&') : ''), '_blank');
 };
 
+/** تنسيق أرقام لوحة التحكم: سالب = أحمر، دين/مطلوب دفع/إجمالي ديون = أحمر عند وجود مبلغ، ربح أخضر/أحمر */
+var HOME_METRIC_CLASS =
+  'home-dash-metric font-mono text-base sm:text-lg lg:text-xl font-bold tabular-nums tracking-tight transition-colors duration-200';
+
+function homeApplyMetric(el, rawVal, kind) {
+  if (!el) return;
+  kind = kind || 'balance';
+  if (kind === 'dash') {
+    if (rawVal == null || rawVal === '') {
+      el.textContent = '—';
+      el.className = HOME_METRIC_CLASS + ' text-slate-400';
+      return;
+    }
+    kind = 'receivable';
+  }
+  var v = rawVal == null ? NaN : parseFloat(rawVal);
+  if (isNaN(v)) v = 0;
+  el.textContent = formatMoney(v);
+  var tone = 'text-slate-900';
+  if (kind === 'debt') {
+    tone = v > 0 ? 'text-red-600' : 'text-slate-500';
+  } else if (kind === 'profit') {
+    tone = v < 0 ? 'text-red-600' : (v > 0 ? 'text-emerald-700' : 'text-slate-600');
+  } else if (kind === 'receivable') {
+    tone = v < 0 ? 'text-red-600' : (v > 0 ? 'text-emerald-700' : 'text-slate-600');
+  } else if (kind === 'expense') {
+    tone = v > 0 ? 'text-rose-700' : 'text-slate-600';
+  } else {
+    tone = v < 0 ? 'text-red-600' : 'text-slate-900';
+  }
+  el.className = HOME_METRIC_CLASS + ' ' + tone;
+}
+
 function initHomeStats() {
   var cycleSel = document.getElementById('homeCycleSelect');
   if (!cycleSel) return;
@@ -84,31 +117,28 @@ function initHomeStats() {
           }).join('');
           cycleSel.dataset.filled = '1';
         }
-        function setEl(id, val) {
-          var el = document.getElementById(id);
-          if (el) el.textContent = formatMoney(val != null ? val : 0);
-        }
-        setEl('cashBalance', data.cashBalance);
+        homeApplyMetric(document.getElementById('cashBalance'), data.cashBalance, 'balance');
         var defEl = document.getElementById('deferredBalance');
         if (defEl) {
           var dv = data.deferredBalance;
-          if (dv != null && dv !== 0) {
-            defEl.textContent = formatMoney(dv);
-          } else {
-            defEl.textContent = formatMoney(0);
-          }
+          homeApplyMetric(defEl, dv != null && dv !== 0 ? dv : 0, 'balance');
         }
-        setEl('shippingBalance', data.shippingBalance);
-        setEl('netProfit', data.netProfit);
-        setEl('totalExpenses', data.totalExpenses);
-        setEl('totalDebts', data.totalDebts);
+        homeApplyMetric(document.getElementById('shippingBalance'), data.shippingBalance, 'balance');
+        homeApplyMetric(document.getElementById('netProfit'), data.netProfit, 'profit');
+        homeApplyMetric(document.getElementById('totalExpenses'), data.totalExpenses, 'expense');
+        homeApplyMetric(document.getElementById('totalDebts'), data.totalDebts, 'debt');
         var recvH = document.getElementById('receivablesToUsHome');
         if (recvH) {
-          recvH.textContent = data.receivablesToUsTotal != null ? formatMoney(data.receivablesToUsTotal) : '—';
+          homeApplyMetric(recvH, data.receivablesToUsTotal, 'dash');
         }
         var pdH = document.getElementById('paymentDueHome');
         if (pdH) {
-          pdH.textContent = data.paymentDueTotal != null ? formatMoney(data.paymentDueTotal) : '—';
+          if (data.paymentDueTotal != null) {
+            homeApplyMetric(pdH, data.paymentDueTotal, 'debt');
+          } else {
+            pdH.textContent = '—';
+            pdH.className = HOME_METRIC_CLASS + ' text-slate-400';
+          }
         }
         var sub = document.getElementById('cashBalanceSub');
         if (sub) {
