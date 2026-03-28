@@ -125,6 +125,12 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
         [rec, ent.id]
       );
       await syncNetBalance(db, ent.id);
+      if (!isNaN(discRaw) && discRaw > 0 && pay > 0) {
+        const cut = Math.min(pay, bal * (discRaw / 100));
+        pay -= cut;
+        await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, ent.id]);
+        await syncNetBalance(db, ent.id);
+      }
       ok++;
       continue;
     }
@@ -160,6 +166,12 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
           refId: ledgerId,
           notes: 'استيراد — دين علينا',
         });
+      }
+      if (!isNaN(discRaw) && discRaw > 0 && rec > 0) {
+        const cut = Math.min(rec, bal * (discRaw / 100));
+        rec -= cut;
+        await db.query('UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2', [rec, ent.id]);
+        await syncNetBalance(db, ent.id);
       }
       ok++;
       continue;

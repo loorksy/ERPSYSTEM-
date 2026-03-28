@@ -131,6 +131,13 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         [rec, id]
       );
       await syncNetBalance(db, id);
+      // خصم اختياري من «علينا» عند تسجيل «لنا» (نفس فكرة خصم من «لنا» عند راتب لنا)
+      if (!isNaN(discountPct) && discountPct > 0 && pay > 0) {
+        const cut = Math.min(pay, amt * (discountPct / 100));
+        pay -= cut;
+        await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, id]);
+        await syncNetBalance(db, id);
+      }
       const out = (await db.query(
         'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
         [id]
@@ -173,6 +180,13 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         refId: ledgerId,
         notes: 'دين علينا — معتمد',
       });
+      // خصم اختياري من «لنا» عند تسجيل «علينا» (مرآة لمنطق راتب لنا)
+      if (!isNaN(discountPct) && discountPct > 0 && rec > 0) {
+        const cut = Math.min(rec, amt * (discountPct / 100));
+        rec -= cut;
+        await db.query('UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2', [rec, id]);
+        await syncNetBalance(db, id);
+      }
       const out = (await db.query(
         'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
         [id]

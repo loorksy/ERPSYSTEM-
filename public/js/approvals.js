@@ -11,6 +11,23 @@
       .replace(/"/g, '&quot;');
   }
 
+  function accFmtMoney(n) {
+    if (typeof window.formatMoney === 'function') return window.formatMoney(n);
+    var v = typeof n === 'number' ? n : parseFloat(n);
+    if (isNaN(v)) v = 0;
+    var s = v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var sym = window.currencySymbol;
+    return sym && sym !== '' ? s + ' ' + sym : s;
+  }
+
+  function accSyncCurrencyUi() {
+    var sym = window.currencySymbol;
+    if (sym === undefined || sym === null) sym = '$';
+    document.querySelectorAll('.acc-currency-sym').forEach(function(el) {
+      el.textContent = sym || '';
+    });
+  }
+
   function accSyncBulkStep() {
     var modal = document.getElementById('accBulkModal');
     if (!modal) return;
@@ -46,23 +63,19 @@
   }
 
   function accBulkReviewKindCodeToRow(code) {
-    if (code === 'debt_receivable' || code === 'debt_to_us') return { amountKind: 'debt_receivable', salaryDirection: 'to_us' };
     if (code === 'debt_payable') return { amountKind: 'debt_payable', salaryDirection: 'to_them' };
-    if (code === 'salary_to_them') return { amountKind: 'salary', salaryDirection: 'to_them' };
-    return { amountKind: 'salary', salaryDirection: 'to_us' };
+    return { amountKind: 'debt_receivable', salaryDirection: 'to_us' };
   }
 
   function accRowToBulkReviewKindCode(row) {
-    if (row.amountKind === 'debt_receivable' || row.amountKind === 'debt_to_us') return 'debt_receivable';
     if (row.amountKind === 'debt_payable') return 'debt_payable';
-    if (row.amountKind === 'salary' && row.salaryDirection === 'to_them') return 'salary_to_them';
-    return 'salary_to_us';
+    return 'debt_receivable';
   }
 
   function accApplyBulkReviewKindToItems() {
     var sel = document.getElementById('accBulkReviewKind');
     if (!sel || !accBulkStagingItems.length) return;
-    var r = accBulkReviewKindCodeToRow(sel.value || 'salary_to_us');
+    var r = accBulkReviewKindCodeToRow(sel.value || 'debt_receivable');
     accBulkStagingItems.forEach(function(it) {
       it.amountKind = r.amountKind;
       it.salaryDirection = r.salaryDirection;
@@ -88,9 +101,9 @@
         name: r.name,
         amount: r.amount,
         parentRef: r.parentRef || '',
-        brokeragePct: '',
+        discountPct: '',
         salaryDirection: 'to_us',
-        amountKind: 'salary',
+        amountKind: 'debt_receivable',
         selected: true,
       };
     });
@@ -109,13 +122,6 @@
     });
   }
 
-  /** عمود وساطة يظهر لراتب لنا/علينا فقط */
-  function accBulkStagingShowsBrokerage() {
-    var rk = document.getElementById('accBulkReviewKind');
-    var v = rk && rk.value ? rk.value : 'salary_to_us';
-    return v === 'salary_to_us' || v === 'salary_to_them';
-  }
-
   function accSyncBulkSelectAllCheckbox() {
     var el = document.getElementById('accBulkSelectAll');
     if (!el || !accBulkStagingItems.length) return;
@@ -132,60 +138,42 @@
     var badgeText = badge && badge.querySelector('.acc-bulk-badge-text');
     if (badgeText) badgeText.textContent = accBulkStagingItems.length + ' صف';
     else if (badge) badge.textContent = accBulkStagingItems.length + ' صف';
-    var br = document.getElementById('accBulkBroker');
-    var defB = br && br.value !== '' && br.value != null ? br.value : '0';
     if (!accBulkStagingItems.length) {
       tb.innerHTML = '';
       return;
     }
 
-    var showBroker = accBulkStagingShowsBrokerage();
-
-    function rowBp(row, idx) {
-      var bpVal = row.brokeragePct !== '' && row.brokeragePct != null && row.brokeragePct !== undefined ? row.brokeragePct : defB;
-      return { bpVal: bpVal, lineNum: row.lineIndex != null ? row.lineIndex : idx + 1 };
-    }
-
-    function accBulkBpInputValue(bpVal, defB) {
-      var v = bpVal !== '' && bpVal != null && bpVal !== undefined ? String(bpVal) : String(defB !== '' && defB != null ? defB : '0');
-      if (v === '.' || v === '-' || v === '+' || v === '..' || v.trim() === '') v = '0';
-      return v;
+    function lineNum(row, idx) {
+      return row.lineIndex != null ? row.lineIndex : idx + 1;
     }
 
     var rows = accBulkStagingItems.map(function(row, idx) {
-      var r = rowBp(row, idx);
+      var ln = lineNum(row, idx);
       var isSel = row.selected !== false;
-      var brokerTd = '';
-      if (showBroker) {
-        brokerTd =
-          '<td class="acc-bulk-td acc-bulk-cell-broker p-3 align-middle" data-label="وساطة %">' +
-          '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full sm:w-20 px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-shadow" data-idx="' + idx + '" value="' + escHtml(accBulkBpInputValue(r.bpVal, defB)) + '"></td>';
-      }
+      var discVal = row.discountPct !== '' && row.discountPct != null && row.discountPct !== undefined ? escHtml(String(row.discountPct)) : '';
       return (
         '<tr class="acc-bulk-tr border-b border-slate-100 hover:bg-slate-50 transition-colors relative">' +
         '<td class="acc-bulk-td acc-bulk-cell-sel p-2 align-middle text-center" data-label="تحديد">' +
         '<input type="checkbox" class="acc-bulk-row-cb h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" data-idx="' + idx + '"' + (isSel ? ' checked' : '') + '></td>' +
-        '<td class="acc-bulk-td acc-bulk-cell-num p-3 align-middle text-slate-400 text-xs sm:w-10 text-center" data-label="#"><span class="acc-bulk-val">' + escHtml(r.lineNum) + '</span></td>' +
+        '<td class="acc-bulk-td acc-bulk-cell-num p-3 align-middle text-slate-400 text-xs sm:w-10 text-center" data-label="#"><span class="acc-bulk-val">' + escHtml(ln) + '</span></td>' +
         '<td class="acc-bulk-td acc-bulk-cell-name p-3 align-middle" data-label="المعتمد">' +
           '<div class="acc-bulk-val">' +
             '<div class="font-bold text-slate-800 text-sm">' + escHtml(row.name) + '</div>' +
             '<div class="font-mono text-slate-500 text-xs mt-0.5">' + escHtml(row.code) + '</div>' +
           '</div>' +
         '</td>' +
-        '<td class="acc-bulk-td acc-bulk-cell-amt p-3 align-middle" data-label="المبلغ"><span class="acc-bulk-val font-bold text-indigo-600 tabular-nums">' + escHtml(row.amount) + '</span></td>' +
-        brokerTd +
+        '<td class="acc-bulk-td acc-bulk-cell-amt p-3 align-middle" data-label="المبلغ"><span class="acc-bulk-val font-bold text-indigo-600 tabular-nums">' +
+        escHtml(accFmtMoney(parseFloat(String(row.amount != null ? row.amount : '').replace(/,/g, '')) || 0)) +
+        '</span></td>' +
+        '<td class="acc-bulk-td acc-bulk-cell-disc p-3 align-middle" data-label="خصم %">' +
+        '<input type="number" min="0" max="100" step="0.1" class="acc-bulk-disc w-full sm:w-24 px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" data-idx="' + idx + '" value="' + discVal + '" placeholder="—"></td>' +
         '<td class="acc-bulk-td acc-bulk-cell-act p-3 align-middle text-left sm:w-12" data-label="إجراء">' +
         '<button type="button" class="w-full sm:w-8 sm:h-8 inline-flex items-center justify-center rounded-lg text-red-500 bg-red-50 hover:bg-red-500 hover:text-white transition-colors py-2 sm:py-0 text-sm font-semibold sm:font-normal" data-acc-delete="' + idx + '"><span class="sm:hidden ml-2">حذف</span><i class="fas fa-trash-alt pointer-events-none"></i></button></td></tr>'
       );
     }).join('');
 
-    var colgroup = !showBroker
-      ? '<colgroup><col style="width:3%"><col style="width:5%"><col style="width:38%"><col style="width:18%"><col style="width:12%"></colgroup>'
-      : '<colgroup><col style="width:3%"><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:14%"><col style="width:10%"></colgroup>';
-
-    var brokerTh = !showBroker
-      ? ''
-      : '<th class="p-3 text-xs font-bold text-center">وساطة %</th>';
+    var colgroup =
+      '<colgroup><col style="width:3%"><col style="width:5%"><col style="width:30%"><col style="width:14%"><col style="width:12%"><col style="width:10%"></colgroup>';
 
     var thead =
       '<thead class="acc-bulk-thead">' +
@@ -196,11 +184,11 @@
       '<th class="p-3 text-xs font-bold text-center">#</th>' +
       '<th class="p-3 text-xs font-bold text-right">المعتمد</th>' +
       '<th class="p-3 text-xs font-bold text-right">المبلغ</th>' +
-      brokerTh +
+      '<th class="p-3 text-xs font-bold text-center">خصم %</th>' +
       '<th class="p-3 text-xs font-bold text-center"></th>' +
       '</tr></thead>';
 
-    var debtClass = !showBroker ? ' acc-bulk-debt-mode' : '';
+    var debtClass = ' acc-bulk-debt-mode';
     tb.innerHTML =
       '<div class="acc-bulk-scroll w-full min-w-0 overflow-x-auto">' +
       '<table class="acc-bulk-review w-full min-w-0 sm:min-w-[640px] text-right border-collapse text-sm' + debtClass + '">' +
@@ -208,18 +196,6 @@
       thead +
       '<tbody class="bg-white">' + rows + '</tbody></table></div>';
     accSyncBulkSelectAllCheckbox();
-    var dh = document.getElementById('accBulkDebtHint');
-    var rk = document.getElementById('accBulkReviewKind');
-    var rv = rk && rk.value ? rk.value : '';
-    if (dh) {
-      var isDebtRow = rv === 'debt_receivable' || rv === 'debt_payable';
-      dh.classList.toggle('hidden', !isDebtRow || !accBulkStagingItems.length);
-      if (isDebtRow) {
-        dh.textContent = rv === 'debt_payable'
-          ? 'دين علينا: يُضاف المبلغ كاملاً للصندوق الرئيسي ويظهر في «مطلوب دفع». لا وساطة.'
-          : 'دين لنا: على المعتمد بدون صندوق؛ يظهر كرصيد سالب (لنا). لا وساطة.';
-      }
-    }
   }
 
   function wireAccBulkStagingDelegation() {
@@ -228,10 +204,10 @@
     c.dataset.accBulkBound = '1';
     c.addEventListener('input', function(e) {
       var t = e.target;
-      if (!t.classList.contains('acc-bulk-bp')) return;
+      if (!t.classList.contains('acc-bulk-disc')) return;
       var idx = parseInt(t.getAttribute('data-idx'), 10);
       if (isNaN(idx) || !accBulkStagingItems[idx]) return;
-      accBulkStagingItems[idx].brokeragePct = t.value;
+      accBulkStagingItems[idx].discountPct = t.value;
     });
     c.addEventListener('change', function(e) {
       var t = e.target;
@@ -278,8 +254,6 @@
     if (st) st.classList.add('hidden');
     var tb = document.getElementById('accBulkStagingTable');
     if (tb) tb.innerHTML = '';
-    var dh = document.getElementById('accBulkDebtHint');
-    if (dh) dh.classList.add('hidden');
     accSyncBulkStep();
   };
 
@@ -295,22 +269,23 @@
       return;
     }
     var cid = document.getElementById('accBulkCycle').value;
-    var defBr = document.getElementById('accBulkBroker') ? document.getElementById('accBulkBroker').value : '';
-    var isSalary = picked.length && picked[0].amountKind === 'salary';
     var items = picked.map(function(r) {
-      return {
+      var it = {
         code: r.code,
         name: r.name,
         amount: r.amount,
         parentRef: r.parentRef,
-        brokeragePct: isSalary ? (r.brokeragePct !== '' && r.brokeragePct != null ? r.brokeragePct : defBr) : null,
         salaryDirection: r.salaryDirection,
         amountKind: r.amountKind === 'debt_to_us' ? 'debt_receivable' : r.amountKind,
       };
+      if (r.discountPct !== '' && r.discountPct != null && String(r.discountPct).trim() !== '') {
+        it.discountPct = r.discountPct;
+      }
+      return it;
     });
     apiCall('/api/accreditations/bulk-balance-commit', {
       method: 'POST',
-      body: JSON.stringify({ cycleId: cid || null, items: items, defaultBrokeragePct: defBr || null }),
+      body: JSON.stringify({ cycleId: cid || null, items: items, defaultBrokeragePct: null }),
     }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
       if (res.success) {
@@ -382,7 +357,7 @@
         return '<div class="rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-indigo-200/80 transition-colors" onclick="accOpen(' + a.id + ')">' +
           pin + '<h5 class="font-bold text-slate-900">' + escHtml(a.name || '') + '</h5>' +
           '<p class="text-xs text-slate-500">' + escHtml(a.code || '') + '</p>' +
-          '<p class="' + balCls + ' font-semibold mt-2 tabular-nums">' + net.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p></div>';
+          '<p class="' + balCls + ' font-semibold mt-2 tabular-nums">' + escHtml(accFmtMoney(net)) + '</p></div>';
       }).join('');
     });
   };
@@ -420,7 +395,7 @@
   function accDelRowHtml(a) {
     var name = escHtml(a.name || '');
     var code = escHtml(a.code || '');
-    var bal = (a.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+    var bal = accFmtMoney(a.balance_amount || 0);
     return (
       '<label class="acc-del-row flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm">' +
       '<input type="checkbox" class="acc-del-cb h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" value="' + a.id + '" checked>' +
@@ -588,20 +563,10 @@
     accClearBulkStaging();
     accBulkClearFileNameDisplay();
     fillCycleSelect('accBulkCycle', { defaultLatest: true, keepSelection: false });
-    var br = document.getElementById('accBulkBroker');
-    if (br) {
-      br.value = '';
-      if (!br.dataset.bound) {
-        br.dataset.bound = '1';
-        br.addEventListener('input', function() {
-          if (accBulkStagingItems.length) accRenderStagingTable();
-        });
-      }
-    }
     var method = document.getElementById('accBulkSourceMethod');
     if (method) method.value = 'file';
     var rk = document.getElementById('accBulkReviewKind');
-    if (rk) rk.value = 'salary_to_us';
+    if (rk) rk.value = 'debt_receivable';
     accSyncBulkSourcePanels();
     accSyncBulkStep();
     var modal = document.getElementById('accBulkModal');
@@ -727,16 +692,17 @@
       var rec = Number(e.balance_receivable) || 0;
       var netCls = net < -0.0001 ? 'text-red-600' : 'text-indigo-600';
       var balLines =
-        '<p class="' + netCls + ' font-semibold">الصافي: ' + net.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p>';
+        '<p class="' + netCls + ' font-semibold">الصافي: ' + escHtml(accFmtMoney(net)) + '</p>';
       if (rec > 0.0001) {
-        balLines += '<p class="text-xs text-red-600 font-medium mt-1">لنا (على المعتمد): −' + rec.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p>';
+        balLines += '<p class="text-xs text-red-600 font-medium mt-1">لنا (على المعتمد): −' + escHtml(accFmtMoney(rec)) + '</p>';
       }
       if (pay > 0.0001) {
-        balLines += '<p class="text-xs text-emerald-700 font-medium mt-1">علينا (مطلوب دفع): +' + pay.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p>';
+        balLines += '<p class="text-xs text-emerald-700 font-medium mt-1">علينا (مطلوب دفع): +' + escHtml(accFmtMoney(pay)) + '</p>';
       }
       document.getElementById('accDetailBal').innerHTML = balLines;
+      accSyncCurrencyUi();
       document.getElementById('accLedger').innerHTML = (res.ledger || []).map(function(l) {
-        return '<div class="py-2 border-b border-slate-50 flex justify-between"><span>' + (l.entry_type || '') + '</span><span>' + (l.amount || 0) + '</span></div>';
+        return '<div class="py-2 border-b border-slate-50 flex justify-between gap-2"><span>' + escHtml(l.entry_type || '') + '</span><span class="tabular-nums shrink-0">' + escHtml(accFmtMoney(l.amount)) + '</span></div>';
       }).join('') || '<p class="text-slate-400">فارغ</p>';
       document.getElementById('accAddAmountPanel').classList.add('hidden');
       document.getElementById('accTransferPanel').classList.add('hidden');
@@ -772,21 +738,15 @@
   };
 
   window.accAmountKindChange = function() {
-    var k = document.getElementById('accAmountKind');
-    var v = k && k.value ? k.value : 'salary';
-    var showSal = v === 'salary';
-    document.querySelectorAll('.acc-salary-only').forEach(function(el) {
-      el.classList.toggle('hidden', !showSal);
-    });
-    var dw = document.getElementById('accDiscountWrap');
-    if (dw) dw.classList.toggle('hidden', v !== 'salary' && v !== 'debt_receivable' && v !== 'debt_payable');
+    /* لنا / علينا فقط — خصم % ظاهر دائماً */
   };
 
   window.accShowAddAmount = function() {
     document.getElementById('accAddAmountPanel').classList.toggle('hidden');
     var ak = document.getElementById('accAmountKind');
-    if (ak) ak.value = 'salary';
+    if (ak) ak.value = 'debt_receivable';
     accAmountKindChange();
+    accSyncCurrencyUi();
   };
   window.accShowTransfer = function() {
     document.getElementById('accTransferPanel').classList.toggle('hidden');
@@ -801,12 +761,10 @@
 
   window.accSubmitAmount = function() {
     if (!currentId) return;
-    var kind = document.getElementById('accAmountKind') ? document.getElementById('accAmountKind').value : 'salary';
+    var kind = document.getElementById('accAmountKind') ? document.getElementById('accAmountKind').value : 'debt_receivable';
     var body = {
       amountKind: kind,
-      salaryDirection: document.getElementById('accSalaryDir').value,
       amount: document.getElementById('accAmt').value,
-      brokeragePct: document.getElementById('accBroker').value,
       cycleId: document.getElementById('accCycle').value || null,
     };
     var dp = document.getElementById('accDiscountPct');
@@ -893,7 +851,19 @@
     wireAccDeliverySelectAll();
     wireAccDelListDelegation();
     accSyncBulkSourcePanels();
-    accLoad();
+    fetch('/settings/currency', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.success && d.symbol !== undefined) window.currencySymbol = d.symbol;
+        accSyncCurrencyUi();
+        if (accBulkStagingItems.length) accRenderStagingTable();
+      })
+      .catch(function() {
+        accSyncCurrencyUi();
+      })
+      .finally(function() {
+        accLoad();
+      });
     accAmountKindChange();
   });
 })();
