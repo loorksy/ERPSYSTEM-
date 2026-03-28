@@ -183,6 +183,17 @@
         "disc disc"
         "action action";
     }
+    .acc-bulk-review.acc-bulk-debt-mode.acc-bulk-no-disc tbody tr.acc-bulk-tr {
+      grid-template-areas:
+        "sel num"
+        "name name"
+        "amount amount"
+        "action action";
+    }
+    .acc-bulk-review.acc-bulk-no-disc .acc-bulk-cell-disc,
+    .acc-bulk-review.acc-bulk-no-disc thead th:nth-child(5) {
+      display: none !important;
+    }
     .acc-bulk-review tbody td.acc-bulk-td {
       display: flex;
       flex-direction: column;
@@ -359,6 +370,15 @@
       line-height: 1.5;
     }
   }
+  /* بطاقات الاعتمادات: شبكة 2 عمود موبايل / 3 لابتوب، ألوان متناوبة */
+  #accCards.acc-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 1024px) {
+    #accCards.acc-cards-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
 </style>
 <div class="w-full min-w-0 flex flex-col" dir="rtl">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6 shrink-0">
@@ -380,7 +400,7 @@
     </div>
   </div>
   <div class="acc-approvals-list-shell rounded-2xl border border-slate-100 bg-white shadow-sm w-full flex flex-col overflow-hidden">
-    <div id="accCards" class="grid flex-1 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 sm:p-6 min-h-0 content-start">
+    <div id="accCards" class="acc-cards-grid grid flex-1 gap-3 sm:gap-4 p-4 sm:p-6 min-h-0 content-start">
       <div class="col-span-full acc-approvals-empty text-slate-400">
         <i class="fas fa-spinner fa-spin text-3xl text-indigo-400" aria-hidden="true"></i>
         <span class="text-sm font-medium">جاري التحميل...</span>
@@ -480,10 +500,11 @@
 
           <div id="accBulkReviewKindWrap" class="px-4 sm:px-5 py-3 border-b border-slate-100 bg-white">
             <label for="accBulkReviewKind" class="block text-xs font-semibold text-slate-600 mb-1.5">نوع الدين (لجميع الصفوف)</label>
-            <p class="text-[11px] text-slate-500 mb-2 leading-relaxed"><strong>لنا:</strong> دين على المعتمد بدون صندوق؛ «خصم %» يخصم من «علينا» إن وُجد. <strong>علينا:</strong> يُخصم من المبلغ؛ الصافي في الصندوق و«مطلوب دفع»؛ الخصم يُسجَّل كربح.</p>
+            <p class="text-[11px] text-slate-500 mb-2 leading-relaxed"><strong>لنا:</strong> دين على المعتمد فقط (بدون صندوق، بدون خصم %). <strong>علينا:</strong> صافي في الصندوق و«مطلوب دفع»؛ الخصم كربح. <strong>لهم:</strong> مثل علينا لكن بدون أي إيداع في الصندوق الرئيسي؛ يظهر في «مطلوب دفع» والخصم كربح.</p>
             <select id="accBulkReviewKind" class="w-full max-w-xl px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
               <option value="debt_receivable">لنا — دين على المعتمد</option>
               <option value="debt_payable">علينا — صندوق + مطلوب دفع</option>
+              <option value="debt_payable_no_fund">لهم — مطلوب دفع + ربح خصم (بدون صندوق رئيسي)</option>
             </select>
           </div>
           
@@ -589,14 +610,15 @@
       <select id="accAmountKind" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" onchange="accAmountKindChange()">
         <option value="debt_receivable">لنا — دين على المعتمد (بدون صندوق)</option>
         <option value="debt_payable">علينا — صندوق رئيسي + مطلوب دفع</option>
+        <option value="debt_payable_no_fund">لهم — مطلوب دفع + ربح خصم (بدون صندوق رئيسي)</option>
       </select>
       <label class="block text-[11px] text-slate-500 mb-0.5">المبلغ</label>
       <div class="flex rounded-lg border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/25 focus-within:border-indigo-400">
         <input type="number" id="accAmt" step="0.01" dir="ltr" class="flex-1 min-w-0 border-0 px-3 py-2 text-sm bg-transparent focus:ring-0" placeholder="0.00">
         <span class="acc-currency-sym flex items-center px-3 border-s border-slate-200 bg-slate-50 text-slate-600 text-sm font-semibold tabular-nums shrink-0" aria-hidden="true">$</span>
       </div>
-      <div id="accDiscountWrap">
-        <label class="block text-[11px] text-slate-500 mb-0.5">خصم % (اختياري — لنا: من «علينا» إن وُجد. علينا: من المبلغ نفسه؛ الصافي للصندوق ومطلوب الدفع، والخصم كربح)</label>
+      <div id="accDiscountWrap" class="hidden">
+        <label id="accDiscountLabel" class="block text-[11px] text-slate-500 mb-0.5">خصم %</label>
         <input type="number" id="accDiscountPct" step="0.1" min="0" max="100" placeholder="اتركه فارغاً إن لم يكن هناك خصم" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm">
       </div>
       <select id="accCycle" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"><option value="">— دورة مالية —</option></select>

@@ -32,8 +32,9 @@
     var m = {
       debt_to_us: 'دين لنا',
       debt_to_them: 'دين علينا',
+      debt_to_them_no_fund: 'لهم — مطلوب دفع (بدون صندوق)',
       salary: 'راتب',
-      payable_discount_profit: 'ربح خصم (علينا)',
+      payable_discount_profit: 'ربح خصم (علينا/لهم)',
     };
     return m[t] || t || '';
   }
@@ -74,11 +75,13 @@
 
   function accBulkReviewKindCodeToRow(code) {
     if (code === 'debt_payable') return { amountKind: 'debt_payable', salaryDirection: 'to_them' };
+    if (code === 'debt_payable_no_fund') return { amountKind: 'debt_payable_no_fund', salaryDirection: 'to_them' };
     return { amountKind: 'debt_receivable', salaryDirection: 'to_us' };
   }
 
   function accRowToBulkReviewKindCode(row) {
     if (row.amountKind === 'debt_payable') return 'debt_payable';
+    if (row.amountKind === 'debt_payable_no_fund') return 'debt_payable_no_fund';
     return 'debt_receivable';
   }
 
@@ -89,6 +92,7 @@
     accBulkStagingItems.forEach(function(it) {
       it.amountKind = r.amountKind;
       it.salaryDirection = r.salaryDirection;
+      if (r.amountKind === 'debt_receivable') it.discountPct = '';
     });
   }
 
@@ -198,7 +202,9 @@
       '<th class="p-3 text-xs font-bold text-center"></th>' +
       '</tr></thead>';
 
-    var debtClass = ' acc-bulk-debt-mode';
+    var rk = document.getElementById('accBulkReviewKind');
+    var showDisc = !rk || rk.value !== 'debt_receivable';
+    var debtClass = ' acc-bulk-debt-mode' + (showDisc ? '' : ' acc-bulk-no-disc');
     tb.innerHTML =
       '<div class="acc-bulk-scroll w-full min-w-0 overflow-x-auto">' +
       '<table class="acc-bulk-review w-full min-w-0 sm:min-w-[640px] text-right border-collapse text-sm' + debtClass + '">' +
@@ -278,6 +284,8 @@
       toast('حدّد صفاً واحداً على الأقل', 'error');
       return;
     }
+    var rk = document.getElementById('accBulkReviewKind');
+    var skipDisc = rk && rk.value === 'debt_receivable';
     var cid = document.getElementById('accBulkCycle').value;
     var items = picked.map(function(r) {
       var it = {
@@ -288,7 +296,7 @@
         salaryDirection: r.salaryDirection,
         amountKind: r.amountKind === 'debt_to_us' ? 'debt_receivable' : r.amountKind,
       };
-      if (r.discountPct !== '' && r.discountPct != null && String(r.discountPct).trim() !== '') {
+      if (!skipDisc && r.discountPct !== '' && r.discountPct != null && String(r.discountPct).trim() !== '') {
         it.discountPct = r.discountPct;
       }
       return it;
@@ -360,14 +368,44 @@
         box.innerHTML = accApprovalsEmptyStateHtml('empty');
         return;
       }
-      box.innerHTML = list.map(function(a) {
-        var pin = a.pinned ? '<i class="fas fa-thumbtack text-amber-500 ml-1"></i>' : '';
+      var cardPalettes = [
+        'border-violet-200/90 bg-gradient-to-br from-violet-50/95 to-white hover:border-violet-300',
+        'border-sky-200/90 bg-gradient-to-br from-sky-50/95 to-white hover:border-sky-300',
+        'border-emerald-200/90 bg-gradient-to-br from-emerald-50/95 to-white hover:border-emerald-300',
+        'border-amber-200/90 bg-gradient-to-br from-amber-50/95 to-white hover:border-amber-300',
+        'border-rose-200/90 bg-gradient-to-br from-rose-50/95 to-white hover:border-rose-300',
+        'border-indigo-200/90 bg-gradient-to-br from-indigo-50/95 to-white hover:border-indigo-300',
+        'border-teal-200/90 bg-gradient-to-br from-teal-50/95 to-white hover:border-teal-300',
+        'border-fuchsia-200/90 bg-gradient-to-br from-fuchsia-50/95 to-white hover:border-fuchsia-300',
+      ];
+      box.innerHTML = list.map(function(a, idx) {
+        var pin = a.pinned ? '<i class="fas fa-thumbtack text-amber-600 ml-1 drop-shadow-sm"></i>' : '';
         var net = Number(a.balance_amount) || 0;
-        var balCls = net < -0.0001 ? 'text-red-600' : 'text-indigo-600';
-        return '<div class="rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-indigo-200/80 transition-colors" onclick="accOpen(' + a.id + ')">' +
-          pin + '<h5 class="font-bold text-slate-900">' + escHtml(a.name || '') + '</h5>' +
-          '<p class="text-xs text-slate-500">' + escHtml(a.code || '') + '</p>' +
-          '<p class="' + balCls + ' font-semibold mt-2 tabular-nums">' + escHtml(accFmtMoney(net)) + '</p></div>';
+        var balCls = 'text-slate-600';
+        if (net > 0.0001) balCls = 'text-emerald-600';
+        else if (net < -0.0001) balCls = 'text-red-600';
+        var pal = cardPalettes[idx % cardPalettes.length];
+        return (
+          '<div class="rounded-2xl border p-4 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 ' +
+          pal +
+          '" onclick="accOpen(' +
+          a.id +
+          ')">' +
+          '<div class="flex items-start justify-between gap-2">' +
+          '<h5 class="font-bold text-slate-900 leading-snug flex-1 min-w-0">' +
+          escHtml(a.name || '') +
+          '</h5>' +
+          pin +
+          '</div>' +
+          '<p class="text-xs text-slate-500 mt-1 font-mono">' +
+          escHtml(a.code || '') +
+          '</p>' +
+          '<p class="' +
+          balCls +
+          ' font-bold mt-3 tabular-nums text-base sm:text-lg tracking-tight">' +
+          escHtml(accFmtMoney(net)) +
+          '</p></div>'
+        );
       }).join('');
     });
   };
@@ -748,7 +786,24 @@
   };
 
   window.accAmountKindChange = function() {
-    /* لنا / علينا فقط — خصم % ظاهر دائماً */
+    var ak = document.getElementById('accAmountKind');
+    var wrap = document.getElementById('accDiscountWrap');
+    var lbl = document.getElementById('accDiscountLabel');
+    if (!ak || !wrap) return;
+    var v = ak.value;
+    if (v === 'debt_receivable') {
+      wrap.classList.add('hidden');
+      var dpin = document.getElementById('accDiscountPct');
+      if (dpin) dpin.value = '';
+    } else {
+      wrap.classList.remove('hidden');
+      if (lbl) {
+        lbl.textContent =
+          v === 'debt_payable_no_fund'
+            ? 'خصم % (اختياري — لهم: صافي في مطلوب دفع فقط؛ الخصم كربح؛ بدون صندوق رئيسي)'
+            : 'خصم % (اختياري — علينا: صافي في الصندوق ومطلوب دفع؛ الخصم كربح)';
+      }
+    }
   };
 
   window.accShowAddAmount = function() {
@@ -778,7 +833,7 @@
       cycleId: document.getElementById('accCycle').value || null,
     };
     var dp = document.getElementById('accDiscountPct');
-    if (dp && dp.value !== '' && dp.value != null) body.discountPct = dp.value;
+    if (kind !== 'debt_receivable' && dp && dp.value !== '' && dp.value != null) body.discountPct = dp.value;
     apiCall('/api/accreditations/' + currentId + '/add-amount', {
       method: 'POST',
       body: JSON.stringify(body)

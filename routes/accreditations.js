@@ -95,8 +95,9 @@ router.post('/:id/pin', requireAuth, async (req, res) => {
 /**
  * إضافة مبلغ:
  * - راتب لنا/علينا: وساطة → صافي الربح، الباقي → الصندوق الرئيسي (لنا فقط).
- * - دين لنا (لنا): على المعتمد — balance_receivable، بدون صندوق، يظهر سالباً في الصافي.
- * - دين علينا (علينا): balance_payable + الصندوق بالصافي بعد خصم النسبة؛ الخصم → صافي الربح + صندوق الربح.
+ * - دين لنا (لنا): balance_receivable فقط، بدون صندوق وبدون خصم % من الواجهة.
+ * - دين علينا (علينا): balance_payable + الصندوق بالصافي؛ الخصم → صافي الربح + صندوق الربح.
+ * - لهم (debt_payable_no_fund): مثل علينا لكن بدون إيداع صندوق رئيسي؛ balance_payable + ربح خصم فقط.
  */
 router.post('/:id/add-amount', requireAuth, async (req, res) => {
   try {
@@ -115,30 +116,22 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     let rec = Number(ent.balance_receivable) || 0;
     const cid = cycleId ? parseInt(cycleId, 10) : null;
     const discountPct = discountPctRaw != null && discountPctRaw !== '' ? parseFloat(discountPctRaw) : null;
-    const debtMeta = !isNaN(discountPct) && discountPct > 0 ? JSON.stringify({ discountPct }) : null;
 
     const kind = amountKind || 'salary';
 
-    // دين لنا — على المعتمد (بدون صندوق)
+    // دين لنا — على المعتمد (بدون صندوق، بدون خصم % من الواجهة)
     if (kind === 'debt_receivable' || kind === 'debt_to_us') {
       rec += amt;
       await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
          VALUES ($1, 'debt_to_us', $2, 'USD', 'to_us', $3, $4, $5)`,
-        [id, amt, cid, notes || 'دين لنا — على المعتمد', debtMeta]
+        [id, amt, cid, notes || 'دين لنا — على المعتمد', null]
       );
       await db.query(
         'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
         [rec, id]
       );
       await syncNetBalance(db, id);
-      // خصم اختياري من «علينا» عند تسجيل «لنا» (نفس فكرة خصم من «لنا» عند راتب لنا)
-      if (!isNaN(discountPct) && discountPct > 0 && pay > 0) {
-        const cut = Math.min(pay, amt * (discountPct / 100));
-        pay -= cut;
-        await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, id]);
-        await syncNetBalance(db, id);
-      }
       const out = (await db.query(
         'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
         [id]
@@ -159,7 +152,9 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً من قسم الصناديق قبل تسجيل دين علينا.' });
       }
       const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(amt, discountPctRaw);
-      const ledgerMeta = metaJson || debtMeta;
+      const ledgerMeta =
+        metaJson ||
+        (!isNaN(discountPct) && discountPct > 0 ? JSON.stringify({ discountPct }) : null);
       const noteDebt = notes || (discountAmt > 0
         ? `دين علينا — صافي بعد خصم ${discountPct}%`
         : 'دين علينا — مطلوب دفع');
@@ -221,6 +216,60 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         message: discountAmt > 0
           ? 'تم تسجيل دين علينا (صافي) والخصم كربح'
           : 'تم تسجيل دين علينا والصندوق الرئيسي',
+        newBalance: out.balance_amount,
+        balance_payable: out.balance_payable,
+        balance_receivable: out.balance_receivable,
+      });
+    }
+
+    // لهم — مثل «علينا» (صافي + خصم ربح) لكن بدون أي إيداع في الصندوق الرئيسي
+    if (kind === 'debt_payable_no_fund') {
+      const debtMeta = !isNaN(discountPct) && discountPct > 0 ? JSON.stringify({ discountPct }) : null;
+      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(amt, discountPctRaw);
+      const ledgerMeta = metaJson || debtMeta;
+      const noteDebt = notes || (discountAmt > 0
+        ? `لهم — صافي بعد خصم ${discountPct}%`
+        : 'لهم — مطلوب دفع (بدون صندوق رئيسي)');
+      pay += netAmt;
+      const led = await db.query(
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+         VALUES ($1, 'debt_to_them_no_fund', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
+        [id, netAmt, cid, noteDebt, ledgerMeta]
+      );
+      const ledgerId = led.rows[0]?.id;
+      await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, id]);
+      await syncNetBalance(db, id);
+      if (discountAmt > 0) {
+        await insertNetProfitLedgerAndMirrorFund(db, {
+          userId: req.session.userId,
+          bucket: 'net_profit',
+          sourceType: 'accreditation_payable_discount',
+          amount: discountAmt,
+          currency: 'USD',
+          cycleId: cid,
+          refTable: 'accreditation_ledger',
+          refId: ledgerId,
+          notes: 'ربح خصم من دين لهم (معتمد — بدون صندوق رئيسي)',
+        });
+        await db.query(
+          `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+           VALUES ($1, 'payable_discount_profit', $2, 'USD', 'to_us', $3, $4, $5)`,
+          [
+            id,
+            discountAmt,
+            cid,
+            'ربح خصم من دين لهم',
+            JSON.stringify({ linkedDebtLedgerId: ledgerId, noMainFund: true }),
+          ]
+        );
+      }
+      const out = (await db.query(
+        'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+        [id]
+      )).rows[0];
+      return res.json({
+        success: true,
+        message: discountAmt > 0 ? 'تم تسجيل لهم (صافي) والخصم كربح' : 'تم تسجيل لهم — مطلوب دفع فقط',
         newBalance: out.balance_amount,
         balance_payable: out.balance_payable,
         balance_receivable: out.balance_receivable,

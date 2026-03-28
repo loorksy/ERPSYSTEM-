@@ -16,6 +16,34 @@
     else alert(m);
   }
 
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fundsPrimaryBalanceAmount(balances) {
+    if (!balances || !balances.length) return 0;
+    var usd = balances.find(function(b) {
+      return (b.currency || '').toUpperCase() === 'USD';
+    });
+    if (usd) return Number(usd.amount) || 0;
+    return Number(balances[0].amount) || 0;
+  }
+
+  var FUNDS_CARD_PALETTES = [
+    'border-violet-200/90 bg-gradient-to-br from-violet-50/95 to-white hover:border-violet-300',
+    'border-sky-200/90 bg-gradient-to-br from-sky-50/95 to-white hover:border-sky-300',
+    'border-emerald-200/90 bg-gradient-to-br from-emerald-50/95 to-white hover:border-emerald-300',
+    'border-amber-200/90 bg-gradient-to-br from-amber-50/95 to-white hover:border-amber-300',
+    'border-rose-200/90 bg-gradient-to-br from-rose-50/95 to-white hover:border-rose-300',
+    'border-indigo-200/90 bg-gradient-to-br from-indigo-50/95 to-white hover:border-indigo-300',
+    'border-teal-200/90 bg-gradient-to-br from-teal-50/95 to-white hover:border-teal-300',
+    'border-fuchsia-200/90 bg-gradient-to-br from-fuchsia-50/95 to-white hover:border-fuchsia-300',
+  ];
+
   function fillCountries() {
     var sel = document.getElementById('fundAddCountry');
     if (!sel || !window.FUNDS_COUNTRIES) return;
@@ -43,28 +71,66 @@
     if (!box) return;
     apiCall('/api/funds/list').then(function(res) {
       if (!res.success) {
-        box.innerHTML = '<p class="text-red-500 col-span-full text-center">' + (res.message || 'فشل') + '</p>';
+        box.innerHTML =
+          '<p class="text-red-600 col-span-full text-center py-12 font-medium">' + escHtml(res.message || 'فشل') + '</p>';
         return;
       }
       var list = res.funds || [];
       if (list.length === 0) {
-        box.innerHTML = '<p class="text-slate-400 col-span-full text-center py-12">لا توجد صناديع</p>';
+        box.innerHTML =
+          '<p class="text-slate-400 col-span-full text-center py-12">لا توجد صناديق</p>';
         return;
       }
-      box.innerHTML = list.map(function(f) {
-        var bal = (f.balances || []).map(function(b) {
-          return (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '');
-        }).join(' | ');
-        var main = f.is_main ? '<span class="text-amber-600 text-xs font-bold">رئيسي</span>' : '';
-        var debt = (f.openPayablesUsd || 0) > 0.0001;
-        var amtClass = debt ? 'text-red-600' : 'text-indigo-600';
-        var debtLine = debt
-          ? '<p class="text-xs text-red-500 mt-1">دين علينا: ' + (f.openPayablesUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD</p>'
+      box.innerHTML = list.map(function(f, idx) {
+        var balStr = (f.balances || [])
+          .map(function(b) {
+            var amt = Number(b.amount) || 0;
+            var num = amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return escHtml(num + ' ' + (b.currency || ''));
+          })
+          .join(' <span class="text-slate-300">|</span> ');
+        var primaryAmt = fundsPrimaryBalanceAmount(f.balances || []);
+        var balCls = 'text-slate-600';
+        if (primaryAmt > 0.0001) balCls = 'text-emerald-600';
+        else if (primaryAmt < -0.0001) balCls = 'text-red-600';
+        var mainBadge = f.is_main
+          ? '<span class="shrink-0 text-[0.65rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-200/80">رئيسي</span>'
           : '';
-        return '<div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md cursor-pointer" onclick="fundsOpenDetail(' + f.id + ')">' +
-          '<h5 class="font-bold text-slate-800">' + (f.name || '') + ' ' + main + '</h5>' +
-          '<p class="text-xs text-slate-500 mt-1">' + (f.fund_number || '') + ' · ' + (f.country || '') + '</p>' +
-          '<p class="text-sm font-semibold ' + amtClass + ' mt-2">' + (bal || '0') + '</p>' + debtLine + '</div>';
+        var debt = (f.openPayablesUsd || 0) > 0.0001;
+        var debtLine = debt
+          ? '<p class="text-xs font-semibold text-red-600 mt-2 pt-2 border-t border-red-100/80">دين علينا: ' +
+            escHtml(
+              (Number(f.openPayablesUsd) || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }) + ' USD'
+            ) +
+            '</p>'
+          : '';
+        var pal = FUNDS_CARD_PALETTES[idx % FUNDS_CARD_PALETTES.length];
+        return (
+          '<div class="rounded-2xl border p-4 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 ' +
+          pal +
+          '" onclick="fundsOpenDetail(' +
+          f.id +
+          ')">' +
+          '<div class="flex items-start justify-between gap-2">' +
+          '<h5 class="font-bold text-slate-900 leading-snug flex-1 min-w-0">' +
+          escHtml(f.name || '') +
+          '</h5>' +
+          mainBadge +
+          '</div>' +
+          '<p class="text-xs text-slate-500 mt-1 font-mono">' +
+          escHtml([f.fund_number, f.country].filter(Boolean).join(' · ')) +
+          '</p>' +
+          '<p class="' +
+          balCls +
+          ' font-bold mt-3 tabular-nums text-base sm:text-lg tracking-tight">' +
+          (balStr || '0.00') +
+          '</p>' +
+          debtLine +
+          '</div>'
+        );
       }).join('');
     });
     apiCall('/api/funds/transfer-companies/list').then(function(res) {
