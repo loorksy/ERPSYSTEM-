@@ -9,17 +9,13 @@
       <div class="flex gap-2 mb-6 flex-wrap" id="settingsTabsBar" role="tablist" aria-label="أقسام الإعدادات">
         <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200" data-settings-tab="settings-general">عام</button>
         <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-indigo-600 text-white shadow-md" data-settings-tab="settings-profile">الملف الشخصي</button>
+        <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200" data-settings-tab="settings-ai">الذكاء الاصطناعي</button>
+        <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200" data-settings-tab="settings-sheets">Google Sheets</button>
       </div>
 
       <!-- General Tab -->
       <div id="settings-general" class="settings-tab-panel hidden" data-settings-panel="settings-general">
         <div class="space-y-8">
-          <div id="settingsSheetsRedirectBanner" class="hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
-            <p class="text-sm font-medium text-emerald-800 flex items-start gap-2">
-              <i class="fas fa-check-circle mt-0.5 text-emerald-600"></i>
-              <span id="settingsSheetsRedirectBannerText"></span>
-            </p>
-          </div>
           <div>
             <h4 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-coins text-amber-500"></i> نوع العملة</h4>
             <p class="text-sm text-slate-600 mb-4">يتم عرض جميع المبالغ في النظام بأرقام غربية مع رمز العملة المحدد.</p>
@@ -110,6 +106,119 @@
         </div>
       </div>
 
+      <!-- AI Tab -->
+      <div id="settings-ai" class="settings-tab-panel hidden" data-settings-panel="settings-ai">
+        <div class="space-y-8">
+          <div class="p-5 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <i class="fas fa-robot text-emerald-600"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-800">OpenAI</h4>
+                <p class="text-xs text-slate-500">GPT-4o, GPT-4, GPT-3.5</p>
+              </div>
+              <span class="mr-auto text-xs font-medium py-1 px-3 rounded-full" id="openaiStatusBadge"></span>
+            </div>
+            <div class="flex gap-3 max-md:flex-col">
+              <input type="password" id="openaiKey" placeholder="sk-..." dir="ltr"
+                class="flex-1 py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400">
+              <button type="button" id="openaiSaveBtn" onclick="saveAIKey('openai')" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700 whitespace-nowrap">
+                <i class="fas fa-save"></i> حفظ
+              </button>
+            </div>
+            <div class="mt-4 hidden" id="openaiModelsSection">
+              <label class="block mb-2 font-semibold text-xs text-slate-600">اختر الموديل:</label>
+              <div class="flex gap-3 max-md:flex-col">
+                <select id="openaiModelSelect" onchange="selectModel('openai', this.value)"
+                  class="flex-1 py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-600">
+                </select>
+                <button type="button" onclick="refreshModels('openai')" class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.97] bg-slate-200 text-slate-700 hover:bg-slate-300 whitespace-nowrap">
+                  <i class="fas fa-sync-alt"></i> تحديث
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-5 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                <i class="fas fa-brain text-blue-600"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-800">Google Gemini</h4>
+                <p class="text-xs text-slate-500">Gemini Pro, Gemini Flash</p>
+              </div>
+              <span class="mr-auto text-xs font-medium py-1 px-3 rounded-full" id="geminiStatusBadge"></span>
+            </div>
+            <div class="flex gap-3 max-md:flex-col">
+              <input type="password" id="geminiKey" placeholder="AIza..." dir="ltr"
+                class="flex-1 py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 transition-all duration-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10 placeholder:text-slate-400">
+              <button type="button" id="geminiSaveBtn" onclick="saveAIKey('gemini')" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700 whitespace-nowrap">
+                <i class="fas fa-save"></i> حفظ
+              </button>
+            </div>
+            <div class="mt-4 hidden" id="geminiModelsSection">
+              <label class="block mb-2 font-semibold text-xs text-slate-600">اختر الموديل:</label>
+              <div class="flex gap-3 max-md:flex-col">
+                <select id="geminiModelSelect" onchange="selectModel('gemini', this.value)"
+                  class="flex-1 py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-600">
+                </select>
+                <button type="button" onclick="refreshModels('gemini')" class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.97] bg-slate-200 text-slate-700 hover:bg-slate-300 whitespace-nowrap">
+                  <i class="fas fa-sync-alt"></i> تحديث
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <p class="text-sm text-amber-700"><i class="fas fa-shield-halved ml-1"></i> مفاتيح API تُحفظ مشفّرة بالكامل على الخادم ولا يمكن قراءتها أو تسريبها.</p>
+          </div>
+          <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+            <p class="text-sm text-indigo-700"><i class="fas fa-link ml-1"></i> يتم ربط المفتاح والموديل تلقائياً بأداة <strong>ترتيب الرسائل</strong> — بعد الحفظ يمكنك الذهاب إلى ترتيب الرسائل واستخدام التحليل مباشرة.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Google Sheets Tab -->
+      <div id="settings-sheets" class="settings-tab-panel hidden" data-settings-panel="settings-sheets">
+        <div class="space-y-6">
+          <div class="p-5 bg-slate-50 rounded-xl border border-slate-200">
+            <h4 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fas fa-table text-[#0f9d58]"></i> الربط مع Google Sheets</h4>
+            <p class="text-sm text-slate-600 mb-4">اربط حسابك بـ Google لتصدير نتائج ترتيب الرسائل مباشرة إلى جدول بيانات. يمكنك إنشاء ورقة جديدة لكل تحليل أو إلحاق النتائج بورقة موجودة.</p>
+            <div id="sheetsStatusMessage" class="mb-4 hidden"></div>
+            <div id="sheetsAuthBlock">
+              <a href="/sheets/auth" id="sheetsGoogleBtn" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-[0.95rem] transition-all duration-300 cursor-pointer whitespace-nowrap active:scale-[0.97] bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                <span>تسجيل الدخول باستخدام Google</span>
+              </a>
+              <p id="sheetsNoEnvHint" class="mt-3 text-xs text-amber-600 hidden">أضف GOOGLE_CLIENT_ID و GOOGLE_CLIENT_SECRET في ملف .env ثم أعد تحميل الصفحة.</p>
+            </div>
+            <div id="sheetsAfterConnect" class="hidden">
+              <p class="text-sm text-emerald-600 font-medium mb-3"><i class="fas fa-check-circle ml-1"></i> متصل بحساب Google</p>
+              <div class="mb-4">
+                <label for="sheetsSpreadsheetId" class="block mb-2 font-semibold text-sm text-slate-800">معرّف جدول البيانات (Spreadsheet ID)</label>
+                <input type="text" id="sheetsSpreadsheetId" dir="ltr" placeholder="من رابط الجدول بعد /d/"
+                  class="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10">
+                <small class="block mt-1 text-xs text-slate-500">يمكنك إيجاده في رابط الجدول بعد /d/ وقبل /edit</small>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="sheetsSaveSpreadsheetBtn" onclick="saveSheetsSpreadsheet()" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.97] bg-indigo-600 text-white hover:bg-indigo-700">
+                  <i class="fas fa-save"></i> حفظ الجدول المختار
+                </button>
+                <button type="button" id="sheetsDisconnectBtn" onclick="disconnectSheets()" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer active:scale-[0.97] bg-slate-200 text-slate-700 hover:bg-slate-300">
+                  <i class="fas fa-unlink"></i> قطع الاتصال
+                </button>
+              </div>
+              <p class="mt-2 text-xs text-slate-500">قطع الاتصال يسمح لك بإعادة تسجيل الدخول بحساب آخر أو بتحديث الصلاحيات.</p>
+            </div>
+          </div>
+          <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+            <p class="text-sm text-indigo-700"><i class="fas fa-link ml-1"></i> بعد الربط واختيار جدول البيانات، ستظهر في صفحة <strong>ترتيب الرسائل</strong> زر «تصدير إلى Google Sheets» عند كل تحليل ناجح — يمكنك إنشاء ورقة جديدة باسم تختاره أو إلحاق النتائج بورقة موجودة.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -133,7 +242,7 @@
           <input type="checkbox" id="resetWipeAll" class="mt-1 rounded border-slate-300 text-red-600 focus:ring-red-500" onchange="onResetWipeAllChange()">
           <span>
             <span class="font-bold text-red-900 block">حذف كل شيء (البيانات التشغيلية)</span>
-            <span class="text-sm text-red-800/90 leading-relaxed">يشمل كل الفئات أدناه دفعة واحدة، مع الإبقاء على ربط Google ومفاتيح الذكاء المخزّنة على الخادم.</span>
+            <span class="text-sm text-red-800/90 leading-relaxed">يشمل جميع الفئات أدناه دفعة واحدة، ما عدا ربط Google Sheets والذكاء الاصطناعي (يُحفظان). لحذفهما اختر الفئتين من القائمة يدوياً.</span>
           </span>
         </label>
         <div>
@@ -176,6 +285,7 @@
     if (targetPanel) {
       targetPanel.classList.remove('hidden');
       targetPanel.style.removeProperty('display');
+      if (tabId === 'settings-sheets' && typeof loadSheetsStatus === 'function') loadSheetsStatus();
     }
     card.querySelectorAll('.settings-tab-btn').forEach(function(b) {
       b.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
@@ -196,33 +306,118 @@
   });
   var search = window.location.search || '';
   if (search.indexOf('sheets=') !== -1) {
-    showTab('settings-general');
-    var banner = document.getElementById('settingsSheetsRedirectBanner');
-    var bannerText = document.getElementById('settingsSheetsRedirectBannerText');
-    var bannerRow = banner && banner.querySelector('p');
-    var bannerIcon = banner && banner.querySelector('i');
-    if (banner && bannerText) {
-      banner.classList.remove('hidden');
+    showTab('settings-sheets');
+    var msg = document.getElementById('sheetsStatusMessage');
+    if (msg) {
+      msg.classList.remove('hidden');
       if (search.indexOf('sheets=connected') !== -1) {
-        banner.className = 'mb-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm';
-        if (bannerRow) bannerRow.className = 'text-sm font-medium text-emerald-800 flex items-start gap-2';
-        if (bannerIcon) bannerIcon.className = 'fas fa-check-circle mt-0.5 text-emerald-600';
-        bannerText.textContent = 'تم الربط بحساب Google بنجاح. يمكنك استخدام التصدير من صفحة ترتيب الرسائل عند الحاجة.';
+        msg.className = 'mb-4 p-3 rounded-lg bg-emerald-100 text-emerald-700 text-sm';
+        msg.textContent = 'تم الربط بحساب Google بنجاح. اختر جدول البيانات أدناه.';
       } else if (search.indexOf('sheets=no_credentials') !== -1) {
-        banner.className = 'mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm';
-        if (bannerRow) bannerRow.className = 'text-sm font-medium text-amber-900 flex items-start gap-2';
-        if (bannerIcon) bannerIcon.className = 'fas fa-triangle-exclamation mt-0.5 text-amber-600';
-        bannerText.textContent = 'لم يتم إعداد بيانات الاعتماد. أضف GOOGLE_CLIENT_ID و GOOGLE_CLIENT_SECRET في ملف .env ثم أعد تشغيل السيرفر.';
+        msg.className = 'mb-4 p-3 rounded-lg bg-amber-100 text-amber-700 text-sm';
+        msg.textContent = 'لم يتم إعداد بيانات الاعتماد. أضف GOOGLE_CLIENT_ID و GOOGLE_CLIENT_SECRET في .env';
       } else if (search.indexOf('sheets=callback_failed') !== -1 || search.indexOf('sheets=auth_failed') !== -1) {
-        banner.className = 'mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm';
-        if (bannerRow) bannerRow.className = 'text-sm font-medium text-red-900 flex items-start gap-2';
-        if (bannerIcon) bannerIcon.className = 'fas fa-times-circle mt-0.5 text-red-600';
-        bannerText.textContent = 'فشل الربط بـ Google. حاول مرة أخرى.';
+        msg.className = 'mb-4 p-3 rounded-lg bg-red-100 text-red-700 text-sm';
+        msg.textContent = 'فشل الربط. حاول مرة أخرى.';
       }
     }
     if (window.history && window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
   }
 })();
+
+async function loadSheetsStatus() {
+  try {
+    var res = await fetch('/sheets/status');
+    var data = await res.json();
+    if (!data.success) return;
+    var authBlock = document.getElementById('sheetsAuthBlock');
+    var afterConnect = document.getElementById('sheetsAfterConnect');
+    var googleBtn = document.getElementById('sheetsGoogleBtn');
+    var noEnv = document.getElementById('sheetsNoEnvHint');
+    if (!data.canAuth) {
+      if (noEnv) {
+        noEnv.classList.remove('hidden');
+        noEnv.textContent = 'أضف GOOGLE_CLIENT_ID و GOOGLE_CLIENT_SECRET في ملف .env في مجلد المشروع ثم أعد تشغيل السيرفر (npm run dev).';
+      }
+      if (googleBtn) googleBtn.style.display = '';
+    } else {
+      if (noEnv) noEnv.classList.add('hidden');
+      if (googleBtn) googleBtn.style.display = '';
+    }
+    if (data.connected) {
+      if (authBlock) authBlock.classList.add('hidden');
+      if (afterConnect) {
+        afterConnect.classList.remove('hidden');
+        var inp = document.getElementById('sheetsSpreadsheetId');
+        if (inp && data.spreadsheet_id) inp.value = data.spreadsheet_id;
+      }
+    } else {
+      if (authBlock) authBlock.classList.remove('hidden');
+      if (afterConnect) afterConnect.classList.add('hidden');
+    }
+  } catch (_) {}
+}
+function saveSheetsSpreadsheet() {
+  var inp = document.getElementById('sheetsSpreadsheetId');
+  var btn = document.getElementById('sheetsSaveSpreadsheetBtn');
+  var id = inp && inp.value ? inp.value.trim() : '';
+  if (!id) {
+    if (typeof showToast === 'function') showToast('أدخل معرّف جدول البيانات', 'error');
+    return;
+  }
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+  }
+  fetch('/sheets/save-spreadsheet', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ spreadsheet_id: id }),
+  })
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (d) {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> حفظ الجدول المختار';
+      }
+      if (typeof showToast === 'function')
+        showToast(d.message || (d.success ? 'تم الحفظ' : 'فشل'), d.success ? 'success' : 'error');
+    })
+    .catch(function () {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> حفظ الجدول المختار';
+      }
+      if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+    });
+}
+function disconnectSheets() {
+  var btn = document.getElementById('sheetsDisconnectBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري...';
+  }
+  fetch('/sheets/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (d) {
+      if (typeof showToast === 'function')
+        showToast(d.message || (d.success ? 'تم قطع الاتصال' : 'فشل'), d.success ? 'success' : 'error');
+      if (d.success) loadSheetsStatus();
+    })
+    .catch(function () {
+      if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+    })
+    .finally(function () {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-unlink"></i> قطع الاتصال';
+      }
+    });
+}
 
 async function saveCurrency(e) {
   e.preventDefault();
