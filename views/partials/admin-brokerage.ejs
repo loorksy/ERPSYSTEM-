@@ -1,24 +1,44 @@
-<div class="w-full max-w-2xl mx-auto space-y-8" dir="rtl">
-  <header class="flex items-center gap-3">
-    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
-      <i class="fas fa-percent text-xl"></i>
-    </div>
-    <div>
-      <h2 class="text-xl sm:text-2xl font-bold text-slate-900">وساطة إدارية</h2>
-      <p class="text-sm text-slate-500 mt-0.5">نسبة الوساطة تُسجّل ربحاً، والباقي يُضاف للصندوق الرئيسي.</p>
+<div class="w-full max-w-6xl mx-auto px-4 sm:px-0 pb-10 space-y-6" dir="rtl">
+  <header class="relative overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/90 via-white to-slate-50 shadow-sm">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_100%,rgba(245,158,11,0.1),transparent)] pointer-events-none"></div>
+    <div class="relative flex items-start gap-4 p-5 sm:p-7">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md">
+        <i class="fas fa-percent text-xl"></i>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-semibold text-amber-800 mb-0.5">توزيع الربح والصندوق</p>
+        <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">وساطة إدارية</h2>
+        <p class="text-sm text-slate-600 mt-1 leading-relaxed">نسبة الوساطة تُسجّل ربحاً، والباقي يُضاف للصندوق الرئيسي.</p>
+      </div>
     </div>
   </header>
-  <form id="abForm" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
-    <select id="abCycle" name="cycleId" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"><option value="">— دورة (اختياري) —</option></select>
-    <input type="number" name="amount" step="0.01" required placeholder="المبلغ" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400">
-    <input type="number" name="brokeragePct" step="0.1" required placeholder="نسبة الوساطة %" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400">
-    <textarea name="notes" placeholder="ملاحظات" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" rows="2"></textarea>
-    <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 active:scale-[0.99] transition">تسجيل</button>
-  </form>
-  <p id="abMsg" class="text-sm"></p>
 
-  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h3 class="text-lg font-bold text-slate-800 mb-1">سجل حركات</h3>
+  <form id="abForm" class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm space-y-4">
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold text-slate-600">الدورة (اختياري)</label>
+      <select id="abCycle" name="cycleId" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15"><option value="">— دورة (اختياري) —</option></select>
+    </div>
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold text-slate-600">المبلغ</label>
+      <input type="number" name="amount" step="0.01" required placeholder="المبلغ" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm font-mono tabular-nums focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15">
+    </div>
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold text-slate-600">نسبة الوساطة %</label>
+      <input type="number" name="brokeragePct" step="0.1" required placeholder="نسبة الوساطة %" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15">
+    </div>
+    <div class="space-y-1.5">
+      <label class="text-xs font-semibold text-slate-600">ملاحظات</label>
+      <textarea name="notes" placeholder="ملاحظات" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50/50 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/15" rows="2"></textarea>
+    </div>
+    <button type="submit" class="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20 hover:bg-indigo-700 active:scale-[0.99] transition">تسجيل</button>
+  </form>
+  <p id="abMsg" class="text-sm min-h-[1.25rem]"></p>
+
+  <section class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm">
+    <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"><i class="fas fa-book text-sm"></i></span>
+      سجل حركات
+    </h3>
     <p class="text-xs text-slate-500 mb-4">إدخالات الوساطة الإدارية والقيود المرتبطة في الدفتر.</p>
     <div id="abLedgerBox" class="text-sm text-slate-500 min-h-[80px]">جاري التحميل…</div>
   </section>

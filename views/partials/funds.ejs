@@ -1,16 +1,28 @@
-<div class="funds-page w-full max-w-5xl mx-auto" dir="rtl">
-  <div class="flex items-center justify-between mb-8 flex-wrap gap-3">
-    <h2 class="text-2xl font-bold text-slate-800">الصناديق</h2>
-    <div class="flex gap-2 flex-wrap">
-      <button type="button" onclick="fundsEditMain()" class="px-4 py-2.5 rounded-xl bg-amber-100 text-amber-800 text-sm font-semibold shadow-sm hover:bg-amber-200 active:scale-[0.99] transition">
-        <i class="fas fa-edit ml-1"></i> تعديل الصندوق الرئيسي
-      </button>
-      <button type="button" onclick="fundsOpenAdd()" class="btn-add">
-        <i class="fas fa-plus ml-2"></i>
-        إضافة صندوق
-      </button>
+<div class="funds-page w-full max-w-6xl mx-auto px-4 sm:px-0 pb-10" dir="rtl">
+  <header class="relative overflow-hidden rounded-2xl border border-teal-200/70 bg-gradient-to-br from-teal-50/90 via-white to-slate-50 shadow-sm mb-6 lg:mb-8">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,rgba(20,184,166,0.1),transparent)] pointer-events-none"></div>
+    <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 sm:p-7 funds-page-header">
+      <div class="flex items-start gap-4 min-w-0">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-md">
+          <i class="fas fa-wallet text-xl"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-teal-700 mb-0.5">أرصدة وصناديق</p>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">الصناديق</h2>
+          <p class="text-sm text-slate-600 mt-1 leading-relaxed">عرض وتعديل الصناديق والصندوق الرئيسي.</p>
+        </div>
+      </div>
+      <div class="flex gap-2 flex-wrap justify-center sm:justify-end shrink-0">
+        <button type="button" onclick="fundsEditMain()" class="px-4 py-2.5 rounded-xl bg-amber-100 text-amber-900 text-sm font-semibold shadow-sm border border-amber-200/80 hover:bg-amber-200 active:scale-[0.99] transition">
+          <i class="fas fa-edit ml-1"></i> تعديل الصندوق الرئيسي
+        </button>
+        <button type="button" onclick="fundsOpenAdd()" class="btn-add">
+          <i class="fas fa-plus ml-2"></i>
+          إضافة صندوق
+        </button>
+      </div>
     </div>
-  </div>
+  </header>
 
   <!-- تعديل الصندوق الرئيسي -->
   <div id="fundEditMainModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
@@ -52,8 +64,8 @@
   .funds-page .agency-card h5 { text-align: center; }
   .funds-page .agency-card .agency-meta,
   .funds-page .agency-card .agency-balance { text-align: center; }
-  .funds-page .flex.items-center.justify-between.mb-8 { flex-direction: column; text-align: center; }
-  .funds-page .flex.items-center.justify-between.mb-8 > h2 { width: 100%; }
+  .funds-page .funds-page-header { flex-direction: column; text-align: center; align-items: center; }
+  .funds-page .funds-page-header > div:first-child { flex-direction: column; align-items: center; }
 }
 </style>
 
