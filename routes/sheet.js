@@ -1474,10 +1474,10 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
         if (r.userId && (r.type.startsWith('سحب وكالة') || r.type === 'سحب إدارة')) {
           const src = r.type.startsWith('سحب وكالة') ? 'تدقيق وكيل من النظام' : 'تدقيق ادارة من النظام';
           auditEntries.push({
-            userId: r.userId,
+            memberUserId: r.userId,
             status: 'مدقق',
             source: src,
-            meta: { type: r.type, title: r.title, salaryAfterDiscount: r.salaryValue },
+            details: { type: r.type, title: r.title, salaryAfterDiscount: r.salaryValue },
           });
         }
       }
