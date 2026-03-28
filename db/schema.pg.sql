@@ -430,9 +430,15 @@ CREATE TABLE IF NOT EXISTS accreditation_entities (
   name TEXT NOT NULL,
   code TEXT,
   balance_amount REAL DEFAULT 0,
+  balance_payable REAL DEFAULT 0,
+  balance_receivable REAL DEFAULT 0,
   pinned INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ترقية قواعد قديمة: فصل «علينا» عن «لنا»
+ALTER TABLE accreditation_entities ADD COLUMN IF NOT EXISTS balance_payable REAL DEFAULT 0;
+ALTER TABLE accreditation_entities ADD COLUMN IF NOT EXISTS balance_receivable REAL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS accreditation_ledger (
   id SERIAL PRIMARY KEY,

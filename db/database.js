@@ -97,6 +97,30 @@ async function ensureFundsExcludeDashboardColumn() {
   }
 }
 
+/** فصل رصيد «علينا» عن «لنا» للمعتمدين + ترحيل من balance_amount */
+async function ensureAccreditationBalanceBuckets() {
+  if (!pgPool) return;
+  try {
+    await pgPool.query('ALTER TABLE accreditation_entities ADD COLUMN IF NOT EXISTS balance_payable REAL DEFAULT 0');
+    await pgPool.query('ALTER TABLE accreditation_entities ADD COLUMN IF NOT EXISTS balance_receivable REAL DEFAULT 0');
+    const r = await pgPool.query(
+      `SELECT COUNT(*)::int AS c FROM accreditation_entities
+       WHERE COALESCE(balance_payable,0) = 0 AND COALESCE(balance_receivable,0) = 0
+         AND COALESCE(balance_amount,0) <> 0`
+    );
+    if (r.rows[0].c > 0) {
+      await pgPool.query(
+        `UPDATE accreditation_entities SET
+          balance_payable = GREATEST(COALESCE(balance_amount,0), 0),
+          balance_receivable = GREATEST(-COALESCE(balance_amount,0), 0)
+         WHERE COALESCE(balance_payable,0) = 0 AND COALESCE(balance_receivable,0) = 0 AND COALESCE(balance_amount,0) <> 0`
+      );
+    }
+  } catch (e) {
+    console.warn('[DB] accreditation balance buckets:', e.message);
+  }
+}
+
 async function ensureMemberDirectoryTables() {
   if (!pgPool) return;
   const stmts = [
@@ -212,6 +236,7 @@ async function initDatabase() {
     await ensurePgSchema();
     await ensureFinancialCyclesUserInfoColumns();
     await ensureFundsExcludeDashboardColumn();
+    await ensureAccreditationBalanceBuckets();
     await ensureDeferredSalaryLinesTable();
     await ensureMemberDirectoryTables();
     await ensureAdminUser();

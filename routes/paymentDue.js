@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
+const { syncNetBalance } = require('../services/accreditationBalance');
 
 async function agencyBalance(db, subAgencyId) {
   const rows = (await db.query(
@@ -35,18 +36,19 @@ router.post('/settle', requireAuth, async (req, res) => {
 
     for (const aid of accIds) {
       const ent = (await db.query(
-        'SELECT id, balance_amount FROM accreditation_entities WHERE id = $1 AND user_id = $2',
+        'SELECT id, balance_payable FROM accreditation_entities WHERE id = $1 AND user_id = $2',
         [aid, userId]
       )).rows[0];
       if (!ent) continue;
-      const prev = ent.balance_amount || 0;
-      if (prev === 0) continue;
+      const pay = Number(ent.balance_payable) || 0;
+      if (pay <= 0.0001) continue;
       await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
          VALUES ($1, 'delivery', $2, 'USD', 'to_them', $3, $4)`,
-        [aid, Math.abs(prev), cid, 'تسليم — تصفير محاسبي']
+        [aid, pay, cid, 'تسليم — تصفير علينا دون صندوق']
       );
-      await db.query('UPDATE accreditation_entities SET balance_amount = 0 WHERE id = $1', [aid]);
+      await db.query('UPDATE accreditation_entities SET balance_payable = 0 WHERE id = $1', [aid]);
+      await syncNetBalance(db, aid);
     }
 
     for (const sid of subIds) {

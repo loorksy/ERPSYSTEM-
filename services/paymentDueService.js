@@ -4,8 +4,8 @@
  */
 async function computePaymentDue(db, userId) {
   const accRows = (await db.query(
-    `SELECT id, name, code, balance_amount FROM accreditation_entities
-     WHERE user_id = $1 AND balance_amount > 0.0001 ORDER BY name`,
+    `SELECT id, name, code, balance_amount, balance_payable FROM accreditation_entities
+     WHERE user_id = $1 AND COALESCE(balance_payable, 0) > 0.0001 ORDER BY name`,
     [userId]
   )).rows;
 
@@ -25,7 +25,7 @@ async function computePaymentDue(db, userId) {
 
   let totalUsd = 0;
   accRows.forEach((r) => {
-    totalUsd += Number(r.balance_amount) || 0;
+    totalUsd += Number(r.balance_payable != null ? r.balance_payable : r.balance_amount) || 0;
   });
   subRows.forEach((r) => {
     totalUsd += Number(r.balance) || 0;
@@ -37,7 +37,7 @@ async function computePaymentDue(db, userId) {
       id: r.id,
       name: r.name,
       code: r.code,
-      amountDueUsd: Number(r.balance_amount) || 0,
+      amountDueUsd: Number(r.balance_payable != null ? r.balance_payable : r.balance_amount) || 0,
     })),
     subAgencies: subRows.map((r) => ({
       id: r.id,

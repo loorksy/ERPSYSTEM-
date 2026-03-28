@@ -1,5 +1,6 @@
 const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('./ledgerService');
+const { syncNetBalance, applySalaryToThem } = require('./accreditationBalance');
 
 /**
  * استيراد أرصدة معتمدين من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
@@ -46,11 +47,19 @@ function buildBulkPreview(rows) {
  * @param {object[]} items — { code, name?, amount, parentRef?, brokeragePct?, salaryDirection?, amountKind? }
  * @param {string} [amountKind] — 'salary' | 'debt_to_us' لكل صف أو افتراضي
  */
+function normalizeBulkAmountKind(k) {
+  if (k === 'debt_to_us') return 'debt_receivable';
+  return k || 'salary';
+}
+
 async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId, defaultBrokeragePct) {
   if (!items || !items.length) {
     return { success: false, message: 'لا توجد صفوف', imported: 0, errors: [] };
   }
-  const needsMainFund = items.some((it) => (it.amountKind === 'debt_to_us' ? false : true));
+  const needsMainFund = items.some((it) => {
+    const k = normalizeBulkAmountKind(it.amountKind);
+    return k === 'salary' || k === 'debt_payable';
+  });
   let mainFundId = null;
   if (needsMainFund) {
     mainFundId = await getMainFundId(db, userId);
@@ -76,7 +85,9 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     if (isNaN(pct) || pct < 0) pct = 0;
     pct = Math.min(100, pct);
     const salaryDirection = it.salaryDirection === 'to_them' ? 'to_them' : 'to_us';
-    const amountKind = it.amountKind === 'debt_to_us' ? 'debt_to_us' : 'salary';
+    const amountKind = normalizeBulkAmountKind(it.amountKind);
+    const discRaw = it.discountPct != null && it.discountPct !== '' ? parseFloat(it.discountPct) : null;
+    const debtMeta = !isNaN(discRaw) && discRaw > 0 ? JSON.stringify({ discountPct: discRaw }) : null;
 
     if (!code || isNaN(bal) || bal <= 0) {
       errs.push(`صف ${i + 1}: بيانات غير صالحة`);
@@ -84,36 +95,85 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     }
 
     let ent = (await db.query(
-      'SELECT id, balance_amount FROM accreditation_entities WHERE user_id = $1 AND (code = $2 OR name = $2) LIMIT 1',
+      'SELECT id, balance_payable, balance_receivable FROM accreditation_entities WHERE user_id = $1 AND (code = $2 OR name = $2) LIMIT 1',
       [userId, code]
     )).rows[0];
     if (!ent && name) {
       const ins = await db.query(
-        `INSERT INTO accreditation_entities (user_id, name, code) VALUES ($1, $2, $3) RETURNING id, balance_amount`,
+        `INSERT INTO accreditation_entities (user_id, name, code) VALUES ($1, $2, $3) RETURNING id, balance_payable, balance_receivable`,
         [userId, name, code]
       );
-      ent = { id: ins.rows[0].id, balance_amount: ins.rows[0].balance_amount || 0 };
+      ent = { id: ins.rows[0].id, balance_payable: 0, balance_receivable: 0 };
     }
     if (!ent) {
       errs.push(`صف ${i + 1}: لم يُوجد معتمد`);
       continue;
     }
 
-    if (amountKind === 'debt_to_us') {
+    let pay = Number(ent.balance_payable) || 0;
+    let rec = Number(ent.balance_receivable) || 0;
+
+    if (amountKind === 'debt_receivable') {
+      rec += bal;
       await db.query(
-        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
-         VALUES ($1, 'debt_to_us', $2, 'USD', 'to_us', $3, $4)`,
-        [ent.id, bal, cid, (it.notes && String(it.notes).trim()) || 'استيراد — دين لنا']
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+         VALUES ($1, 'debt_to_us', $2, 'USD', 'to_us', $3, $4, $5)`,
+        [ent.id, bal, cid, (it.notes && String(it.notes).trim()) || 'استيراد — دين لنا', debtMeta]
       );
-      const newBal = (ent.balance_amount || 0) - bal;
-      await db.query('UPDATE accreditation_entities SET balance_amount = $1 WHERE id = $2', [newBal, ent.id]);
+      await db.query(
+        'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
+        [rec, ent.id]
+      );
+      await syncNetBalance(db, ent.id);
       ok++;
       continue;
     }
 
-    const signed = salaryDirection === 'to_us' ? bal : -bal;
+    if (amountKind === 'debt_payable') {
+      pay += bal;
+      const led = await db.query(
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+         VALUES ($1, 'debt_to_them', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
+        [ent.id, bal, cid, (it.notes && String(it.notes).trim()) || 'استيراد — دين علينا', debtMeta]
+      );
+      const ledgerId = led.lastInsertRowid != null ? led.lastInsertRowid : led.rows[0]?.id;
+      await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, ent.id]);
+      await syncNetBalance(db, ent.id);
+      if (mainFundId) {
+        await adjustFundBalance(
+          db,
+          mainFundId,
+          'USD',
+          bal,
+          'accreditation_debt_payable',
+          'استيراد — دين علينا',
+          'accreditation_ledger',
+          ledgerId
+        );
+        await insertLedgerEntry(db, {
+          userId,
+          bucket: 'main_cash',
+          sourceType: 'accreditation_debt_payable',
+          amount: bal,
+          cycleId: cid,
+          refTable: 'accreditation_ledger',
+          refId: ledgerId,
+          notes: 'استيراد — دين علينا',
+        });
+      }
+      ok++;
+      continue;
+    }
+
     const brokerageAmount = pct > 0 ? bal * (pct / 100) : 0;
     const remainder = bal - brokerageAmount;
+    if (salaryDirection === 'to_us') {
+      pay += bal;
+    } else {
+      const br = applySalaryToThem(pay, rec, bal);
+      pay = br.pay;
+      rec = br.rec;
+    }
     const led = await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes)
        VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7) RETURNING id`,
@@ -128,8 +188,22 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
       ]
     );
     const ledgerId = led.lastInsertRowid != null ? led.lastInsertRowid : led.rows[0]?.id;
-    const newBal = (ent.balance_amount || 0) + signed;
-    await db.query('UPDATE accreditation_entities SET balance_amount = $1 WHERE id = $2', [newBal, ent.id]);
+
+    await db.query(
+      'UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3',
+      [pay, rec, ent.id]
+    );
+    await syncNetBalance(db, ent.id);
+
+    if (salaryDirection === 'to_us' && !isNaN(discRaw) && discRaw > 0 && rec > 0) {
+      const cut = Math.min(rec, bal * (discRaw / 100));
+      rec -= cut;
+      await db.query(
+        'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
+        [rec, ent.id]
+      );
+      await syncNetBalance(db, ent.id);
+    }
 
     if (brokerageAmount > 0) {
       await insertNetProfitLedgerAndMirrorFund(db, {

@@ -15,6 +15,11 @@ const {
   buildBulkPreview,
 } = require('../services/accreditationBulkImport');
 const { extractSpreadsheetIdFromUrl, fetchSheetRowsUsingStoredGoogleConfig } = require('../services/googleSheetReadService');
+const {
+  syncNetBalance,
+  applySalaryToThem,
+  applyTransferOut,
+} = require('../services/accreditationBalance');
 
 const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -44,7 +49,7 @@ router.get('/list', requireAuth, async (req, res) => {
   try {
     const db = getDb();
     const rows = (await db.query(
-      `SELECT id, name, code, balance_amount, pinned, is_primary, created_at
+      `SELECT id, name, code, balance_amount, balance_payable, balance_receivable, pinned, is_primary, created_at
        FROM accreditation_entities WHERE user_id = $1
        ORDER BY is_primary DESC, pinned DESC, name`,
       [req.session.userId]
@@ -86,30 +91,99 @@ router.post('/:id/pin', requireAuth, async (req, res) => {
   }
 });
 
-/** إضافة مبلغ: وساطة → صافي الربح، الباقي → الصندوق الرئيسي — أو «دين لنا» دون وساطة/صندوق */
+/**
+ * إضافة مبلغ:
+ * - راتب لنا/علينا: وساطة → صافي الربح، الباقي → الصندوق الرئيسي (لنا فقط).
+ * - دين لنا (لنا): على المعتمد — balance_receivable، بدون صندوق، يظهر سالباً في الصافي.
+ * - دين علينا (علينا): علينا — balance_payable + إيداع كامل بالصندوق الرئيسي + مطلوب دفع.
+ */
 router.post('/:id/add-amount', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { salaryDirection, amount, brokeragePct, cycleId, notes, amountKind } = req.body || {};
+    const { salaryDirection, amount, brokeragePct, cycleId, notes, amountKind, discountPct: discountPctRaw } = req.body || {};
     const amt = parseFloat(amount);
     if (!id || isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'مبلغ غير صالح' });
     const db = getDb();
     const ent = (await db.query(
-      'SELECT id, balance_amount FROM accreditation_entities WHERE id = $1 AND user_id = $2',
+      'SELECT id, balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1 AND user_id = $2',
       [id, req.session.userId]
     )).rows[0];
     if (!ent) return res.json({ success: false, message: 'غير موجود' });
 
-    if (amountKind === 'debt_to_us') {
-      const cid = cycleId ? parseInt(cycleId, 10) : null;
+    let pay = Number(ent.balance_payable) || 0;
+    let rec = Number(ent.balance_receivable) || 0;
+    const cid = cycleId ? parseInt(cycleId, 10) : null;
+    const discountPct = discountPctRaw != null && discountPctRaw !== '' ? parseFloat(discountPctRaw) : null;
+    const debtMeta = !isNaN(discountPct) && discountPct > 0 ? JSON.stringify({ discountPct }) : null;
+
+    const kind = amountKind || 'salary';
+
+    // دين لنا — على المعتمد (بدون صندوق)
+    if (kind === 'debt_receivable' || kind === 'debt_to_us') {
+      rec += amt;
       await db.query(
-        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
-         VALUES ($1, 'debt_to_us', $2, 'USD', 'to_us', $3, $4)`,
-        [id, amt, cid, notes || 'دين لنا — على المعتمد']
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+         VALUES ($1, 'debt_to_us', $2, 'USD', 'to_us', $3, $4, $5)`,
+        [id, amt, cid, notes || 'دين لنا — على المعتمد', debtMeta]
       );
-      const newBal = (ent.balance_amount || 0) - amt;
-      await db.query('UPDATE accreditation_entities SET balance_amount = $1 WHERE id = $2', [newBal, id]);
-      return res.json({ success: true, message: 'تم تسجيل دين لنا', newBalance: newBal });
+      await db.query(
+        'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
+        [rec, id]
+      );
+      await syncNetBalance(db, id);
+      const out = (await db.query(
+        'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+        [id]
+      )).rows[0];
+      return res.json({
+        success: true,
+        message: 'تم تسجيل دين لنا على المعتمد',
+        newBalance: out.balance_amount,
+        balance_payable: out.balance_payable,
+        balance_receivable: out.balance_receivable,
+      });
+    }
+
+    // دين علينا — نضيف للصندوق الرئيسي ومطلوب الدفع
+    if (kind === 'debt_payable') {
+      const mainFundId = await getMainFundId(db, req.session.userId);
+      if (!mainFundId) {
+        return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً من قسم الصناديق قبل تسجيل دين علينا.' });
+      }
+      pay += amt;
+      const led = await db.query(
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+         VALUES ($1, 'debt_to_them', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
+        [id, amt, cid, notes || 'دين علينا — مطلوب دفع', debtMeta]
+      );
+      const ledgerId = led.rows[0]?.id;
+      await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, id]);
+      await syncNetBalance(db, id);
+      await adjustFundBalance(
+        db, mainFundId, 'USD', amt, 'accreditation_debt_payable',
+        'دين علينا — معتمد', 'accreditation_ledger', ledgerId
+      );
+      await insertLedgerEntry(db, {
+        userId: req.session.userId,
+        bucket: 'main_cash',
+        sourceType: 'accreditation_debt_payable',
+        amount: amt,
+        cycleId: cid,
+        refTable: 'accreditation_ledger',
+        refId: ledgerId,
+        notes: 'دين علينا — معتمد',
+      });
+      const out = (await db.query(
+        'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+        [id]
+      )).rows[0];
+      return res.json({
+        success: true,
+        message: 'تم تسجيل دين علينا والصندوق الرئيسي',
+        newBalance: out.balance_amount,
+        balance_payable: out.balance_payable,
+        balance_receivable: out.balance_receivable,
+      });
     }
 
     const mainFundId = await getMainFundId(db, req.session.userId);
@@ -120,15 +194,38 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     const brokerageAmount = !isNaN(pct) && pct > 0 ? amt * (pct / 100) : 0;
     const remainder = amt - brokerageAmount;
     const dir = salaryDirection === 'to_us' ? 'to_us' : 'to_them';
-    const signed = dir === 'to_us' ? amt : -amt;
+
+    if (dir === 'to_us') {
+      pay += amt;
+    } else {
+      const br = applySalaryToThem(pay, rec, amt);
+      pay = br.pay;
+      rec = br.rec;
+    }
+
     const led = await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes)
        VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7) RETURNING id`,
-      [id, amt, dir, !isNaN(pct) ? pct : null, brokerageAmount || null, cycleId ? parseInt(cycleId, 10) : null, notes || null]
+      [id, amt, dir, !isNaN(pct) ? pct : null, brokerageAmount || null, cid, notes || null]
     );
     const ledgerId = led.rows[0]?.id;
-    const newBal = (ent.balance_amount || 0) + signed;
-    await db.query('UPDATE accreditation_entities SET balance_amount = $1 WHERE id = $2', [newBal, id]);
+
+    await db.query(
+      'UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3',
+      [pay, rec, id]
+    );
+    await syncNetBalance(db, id);
+
+    // خصم اختياري من «لنا» عند إضافة مبلغ يزيد رصيد «علينا» (راتب لنا)
+    if (dir === 'to_us' && !isNaN(discountPct) && discountPct > 0 && rec > 0) {
+      const cut = Math.min(rec, amt * (discountPct / 100));
+      rec -= cut;
+      await db.query(
+        'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
+        [rec, id]
+      );
+      await syncNetBalance(db, id);
+    }
 
     if (brokerageAmount > 0) {
       await insertNetProfitLedgerAndMirrorFund(db, {
@@ -136,7 +233,7 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         bucket: 'net_profit',
         sourceType: 'accreditation_brokerage',
         amount: brokerageAmount,
-        cycleId: cycleId ? parseInt(cycleId, 10) : null,
+        cycleId: cid,
         refTable: 'accreditation_ledger',
         refId: ledgerId,
         notes: 'وساطة معتمد',
@@ -152,13 +249,23 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         bucket: 'main_cash',
         sourceType: 'accreditation_remainder',
         amount: remainder,
-        cycleId: cycleId ? parseInt(cycleId, 10) : null,
+        cycleId: cid,
         refTable: 'accreditation_ledger',
         refId: ledgerId,
         notes: 'باقي بعد الوساطة',
       });
     }
-    res.json({ success: true, message: 'تم التسجيل', newBalance: newBal });
+    const out = (await db.query(
+      'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+      [id]
+    )).rows[0];
+    res.json({
+      success: true,
+      message: 'تم التسجيل',
+      newBalance: out.balance_amount,
+      balance_payable: out.balance_payable,
+      balance_receivable: out.balance_receivable,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }
@@ -267,7 +374,7 @@ router.post('/bulk-balance-sheet-url', requireAuth, async (req, res) => {
   }
 });
 
-/** تسليم: تصفير أرصدة معتمدين (بدون خصم من الصندوق) */
+/** تسليم: تصفير «علينا» فقط (balance_payable) — دون خصم من الصندوق الرئيسي */
 router.post('/delivery-settle', requireAuth, async (req, res) => {
   try {
     const { cycleId, accreditationIds } = req.body || {};
@@ -277,18 +384,22 @@ router.post('/delivery-settle', requireAuth, async (req, res) => {
     const db = getDb();
     for (const aid of ids) {
       const ent = (await db.query(
-        'SELECT id, balance_amount FROM accreditation_entities WHERE id = $1 AND user_id = $2',
+        'SELECT id, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1 AND user_id = $2',
         [aid, req.session.userId]
       )).rows[0];
       if (!ent) continue;
-      const prev = ent.balance_amount || 0;
-      if (prev === 0) continue;
+      const pay = Number(ent.balance_payable) || 0;
+      if (pay <= 0.0001) continue;
       await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes)
          VALUES ($1, 'delivery', $2, 'USD', 'to_them', $3, $4)`,
-        [aid, Math.abs(prev), cid, 'تسليم راتب — تصفير محاسبي']
+        [aid, pay, cid, 'تسليم — تصفير مطلوب الدفع (علينا) دون صندوق']
       );
-      await db.query('UPDATE accreditation_entities SET balance_amount = 0 WHERE id = $1', [aid]);
+      await db.query(
+        'UPDATE accreditation_entities SET balance_payable = 0 WHERE id = $1',
+        [aid]
+      );
+      await syncNetBalance(db, aid);
     }
     res.json({ success: true, message: 'تم التسليم' });
   } catch (e) {
@@ -308,17 +419,17 @@ router.get('/with-balance', requireAuth, async (req, res) => {
     const cycleId = req.query.cycleId ? parseInt(req.query.cycleId, 10) : null;
     if (!cycleId) {
       const rows = (await db.query(
-        `SELECT id, name, code, balance_amount FROM accreditation_entities
-         WHERE user_id = $1 AND balance_amount > 0.0001 ORDER BY name`,
+        `SELECT id, name, code, balance_amount, balance_payable, balance_receivable FROM accreditation_entities
+         WHERE user_id = $1 AND COALESCE(balance_payable, 0) > 0.0001 ORDER BY name`,
         [userId]
       )).rows;
       return res.json({ success: true, list: rows, cycleId: null });
     }
     const rows = (await db.query(
-      `SELECT e.id, e.name, e.code, e.balance_amount
+      `SELECT e.id, e.name, e.code, e.balance_amount, e.balance_payable, e.balance_receivable
        FROM accreditation_entities e
        WHERE e.user_id = $1
-         AND e.balance_amount > 0.0001
+         AND COALESCE(e.balance_payable, 0) > 0.0001
          AND EXISTS (
            SELECT 1 FROM accreditation_ledger l
            WHERE l.accreditation_id = e.id AND l.cycle_id = $2
@@ -362,15 +473,32 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
         [amt, cid, req.session.userId]
       );
     }
-    const prevBal = ent.balance_amount || 0;
-    const newBal = prevBal - amt;
+    let pay = Number(ent.balance_payable) || 0;
+    let rec = Number(ent.balance_receivable) || 0;
+    const buckets = applyTransferOut(pay, rec, amt);
+    pay = buckets.pay;
+    rec = buckets.rec;
     await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, notes, meta_json)
        VALUES ($1, 'transfer', $2, 'USD', $3, $4)`,
       [id, amt, notes || null, metaJson]
     );
-    await db.query('UPDATE accreditation_entities SET balance_amount = $1 WHERE id = $2', [newBal, id]);
-    res.json({ success: true, message: 'تم التحويل', newBalance: newBal });
+    await db.query(
+      'UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3',
+      [pay, rec, id]
+    );
+    await syncNetBalance(db, id);
+    const out = (await db.query(
+      'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+      [id]
+    )).rows[0];
+    res.json({
+      success: true,
+      message: 'تم التحويل',
+      newBalance: out.balance_amount,
+      balance_payable: out.balance_payable,
+      balance_receivable: out.balance_receivable,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }

@@ -486,9 +486,10 @@
             <select id="accBulkReviewKind" class="w-full max-w-xl px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
               <option value="salary_to_us">راتب لنا (وساطة + صندوق حسب الاتجاه)</option>
               <option value="salary_to_them">راتب علينا (وساطة + صندوق حسب الاتجاه)</option>
-              <option value="debt_to_us">دين لنا — على المعتمد (بدون وساطة/صندوق)</option>
+              <option value="debt_receivable">دين لنا — على المعتمد (بدون صندوق، رصيد سالب)</option>
+              <option value="debt_payable">دين علينا — صندوق رئيسي + مطلوب دفع</option>
             </select>
-            <p id="accBulkDebtHint" class="hidden text-[11px] text-slate-500 mt-2 leading-relaxed">لا تُستخدم نسبة الوساطة مع نوع «دين لنا».</p>
+            <p id="accBulkDebtHint" class="hidden text-[11px] text-slate-500 mt-2 leading-relaxed"></p>
           </div>
           
           <div id="accBulkStagingTable" class="w-full"></div>
@@ -592,7 +593,8 @@
     <div id="accAddAmountPanel" class="hidden space-y-2 mb-4 p-4 rounded-xl bg-slate-50">
       <select id="accAmountKind" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm" onchange="accAmountKindChange()">
         <option value="salary">راتب (وساطة + صندوق حسب الاتجاه)</option>
-        <option value="debt_to_us">دين لنا — على المعتمد (بدون وساطة/صندوق)</option>
+        <option value="debt_receivable">دين لنا — على المعتمد (بدون صندوق)</option>
+        <option value="debt_payable">دين علينا — صندوق رئيسي + مطلوب دفع</option>
       </select>
       <select id="accSalaryDir" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm acc-salary-only">
         <option value="to_us">راتب لنا</option>
@@ -600,6 +602,10 @@
       </select>
       <input type="number" id="accAmt" step="0.01" placeholder="المبلغ" class="w-full px-3 py-2 rounded-lg border border-slate-200">
       <input type="number" id="accBroker" step="0.1" placeholder="نسبة الوساطة %" class="w-full px-3 py-2 rounded-lg border border-slate-200 acc-salary-only">
+      <div id="accDiscountWrap" class="hidden">
+        <label class="block text-[11px] text-slate-500 mb-0.5">خصم % (اختياري — من «لنا» عند إضافة مبلغ يزيد «علينا»)</label>
+        <input type="number" id="accDiscountPct" step="0.1" min="0" max="100" placeholder="مثال: 0 أو 10" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm">
+      </div>
       <select id="accCycle" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"><option value="">— دورة مالية —</option></select>
       <button type="button" onclick="accSubmitAmount()" class="w-full py-2 rounded-lg bg-indigo-600 text-white text-sm">تسجيل</button>
     </div>

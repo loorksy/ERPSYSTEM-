@@ -46,13 +46,15 @@
   }
 
   function accBulkReviewKindCodeToRow(code) {
-    if (code === 'debt_to_us') return { amountKind: 'debt_to_us', salaryDirection: 'to_us' };
+    if (code === 'debt_receivable' || code === 'debt_to_us') return { amountKind: 'debt_receivable', salaryDirection: 'to_us' };
+    if (code === 'debt_payable') return { amountKind: 'debt_payable', salaryDirection: 'to_them' };
     if (code === 'salary_to_them') return { amountKind: 'salary', salaryDirection: 'to_them' };
     return { amountKind: 'salary', salaryDirection: 'to_us' };
   }
 
   function accRowToBulkReviewKindCode(row) {
-    if (row.amountKind === 'debt_to_us') return 'debt_to_us';
+    if (row.amountKind === 'debt_receivable' || row.amountKind === 'debt_to_us') return 'debt_receivable';
+    if (row.amountKind === 'debt_payable') return 'debt_payable';
     if (row.amountKind === 'salary' && row.salaryDirection === 'to_them') return 'salary_to_them';
     return 'salary_to_us';
   }
@@ -107,9 +109,11 @@
     });
   }
 
-  function accBulkStagingKindIsDebt() {
+  /** عمود وساطة يظهر لراتب لنا/علينا فقط */
+  function accBulkStagingShowsBrokerage() {
     var rk = document.getElementById('accBulkReviewKind');
-    return rk && rk.value === 'debt_to_us';
+    var v = rk && rk.value ? rk.value : 'salary_to_us';
+    return v === 'salary_to_us' || v === 'salary_to_them';
   }
 
   function accSyncBulkSelectAllCheckbox() {
@@ -135,7 +139,7 @@
       return;
     }
 
-    var isDebt = accBulkStagingKindIsDebt();
+    var showBroker = accBulkStagingShowsBrokerage();
 
     function rowBp(row, idx) {
       var bpVal = row.brokeragePct !== '' && row.brokeragePct != null && row.brokeragePct !== undefined ? row.brokeragePct : defB;
@@ -152,7 +156,7 @@
       var r = rowBp(row, idx);
       var isSel = row.selected !== false;
       var brokerTd = '';
-      if (!isDebt) {
+      if (showBroker) {
         brokerTd =
           '<td class="acc-bulk-td acc-bulk-cell-broker p-3 align-middle" data-label="وساطة %">' +
           '<input type="number" min="0" max="100" step="0.01" class="acc-bulk-bp w-full sm:w-20 px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-shadow" data-idx="' + idx + '" value="' + escHtml(accBulkBpInputValue(r.bpVal, defB)) + '"></td>';
@@ -175,11 +179,11 @@
       );
     }).join('');
 
-    var colgroup = isDebt
+    var colgroup = !showBroker
       ? '<colgroup><col style="width:3%"><col style="width:5%"><col style="width:38%"><col style="width:18%"><col style="width:12%"></colgroup>'
       : '<colgroup><col style="width:3%"><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:14%"><col style="width:10%"></colgroup>';
 
-    var brokerTh = isDebt
+    var brokerTh = !showBroker
       ? ''
       : '<th class="p-3 text-xs font-bold text-center">وساطة %</th>';
 
@@ -196,7 +200,7 @@
       '<th class="p-3 text-xs font-bold text-center"></th>' +
       '</tr></thead>';
 
-    var debtClass = isDebt ? ' acc-bulk-debt-mode' : '';
+    var debtClass = !showBroker ? ' acc-bulk-debt-mode' : '';
     tb.innerHTML =
       '<div class="acc-bulk-scroll w-full min-w-0 overflow-x-auto">' +
       '<table class="acc-bulk-review w-full min-w-0 sm:min-w-[640px] text-right border-collapse text-sm' + debtClass + '">' +
@@ -205,8 +209,16 @@
       '<tbody class="bg-white">' + rows + '</tbody></table></div>';
     accSyncBulkSelectAllCheckbox();
     var dh = document.getElementById('accBulkDebtHint');
+    var rk = document.getElementById('accBulkReviewKind');
+    var rv = rk && rk.value ? rk.value : '';
     if (dh) {
-      dh.classList.toggle('hidden', !accBulkStagingKindIsDebt() || !accBulkStagingItems.length);
+      var isDebtRow = rv === 'debt_receivable' || rv === 'debt_payable';
+      dh.classList.toggle('hidden', !isDebtRow || !accBulkStagingItems.length);
+      if (isDebtRow) {
+        dh.textContent = rv === 'debt_payable'
+          ? 'دين علينا: يُضاف المبلغ كاملاً للصندوق الرئيسي ويظهر في «مطلوب دفع». لا وساطة.'
+          : 'دين لنا: على المعتمد بدون صندوق؛ يظهر كرصيد سالب (لنا). لا وساطة.';
+      }
     }
   }
 
@@ -284,16 +296,16 @@
     }
     var cid = document.getElementById('accBulkCycle').value;
     var defBr = document.getElementById('accBulkBroker') ? document.getElementById('accBulkBroker').value : '';
-    var isDebt = picked.length && picked[0].amountKind === 'debt_to_us';
+    var isSalary = picked.length && picked[0].amountKind === 'salary';
     var items = picked.map(function(r) {
       return {
         code: r.code,
         name: r.name,
         amount: r.amount,
         parentRef: r.parentRef,
-        brokeragePct: isDebt ? null : (r.brokeragePct !== '' && r.brokeragePct != null ? r.brokeragePct : defBr),
+        brokeragePct: isSalary ? (r.brokeragePct !== '' && r.brokeragePct != null ? r.brokeragePct : defBr) : null,
         salaryDirection: r.salaryDirection,
-        amountKind: r.amountKind,
+        amountKind: r.amountKind === 'debt_to_us' ? 'debt_receivable' : r.amountKind,
       };
     });
     apiCall('/api/accreditations/bulk-balance-commit', {
@@ -365,10 +377,12 @@
       }
       box.innerHTML = list.map(function(a) {
         var pin = a.pinned ? '<i class="fas fa-thumbtack text-amber-500 ml-1"></i>' : '';
+        var net = Number(a.balance_amount) || 0;
+        var balCls = net < -0.0001 ? 'text-red-600' : 'text-indigo-600';
         return '<div class="rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-indigo-200/80 transition-colors" onclick="accOpen(' + a.id + ')">' +
           pin + '<h5 class="font-bold text-slate-900">' + escHtml(a.name || '') + '</h5>' +
           '<p class="text-xs text-slate-500">' + escHtml(a.code || '') + '</p>' +
-          '<p class="text-indigo-600 font-semibold mt-2 tabular-nums">' + (a.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p></div>';
+          '<p class="' + balCls + ' font-semibold mt-2 tabular-nums">' + net.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p></div>';
       }).join('');
     });
   };
@@ -708,7 +722,19 @@
       var e = res.entity;
       currentPinned = !!e.pinned;
       document.getElementById('accDetailTitle').textContent = e.name || '';
-      document.getElementById('accDetailBal').textContent = 'الرصيد: ' + (e.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+      var net = Number(e.balance_amount) || 0;
+      var pay = Number(e.balance_payable) || 0;
+      var rec = Number(e.balance_receivable) || 0;
+      var netCls = net < -0.0001 ? 'text-red-600' : 'text-indigo-600';
+      var balLines =
+        '<p class="' + netCls + ' font-semibold">الصافي: ' + net.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p>';
+      if (rec > 0.0001) {
+        balLines += '<p class="text-xs text-red-600 font-medium mt-1">لنا (على المعتمد): −' + rec.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p>';
+      }
+      if (pay > 0.0001) {
+        balLines += '<p class="text-xs text-emerald-700 font-medium mt-1">علينا (مطلوب دفع): +' + pay.toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</p>';
+      }
+      document.getElementById('accDetailBal').innerHTML = balLines;
       document.getElementById('accLedger').innerHTML = (res.ledger || []).map(function(l) {
         return '<div class="py-2 border-b border-slate-50 flex justify-between"><span>' + (l.entry_type || '') + '</span><span>' + (l.amount || 0) + '</span></div>';
       }).join('') || '<p class="text-slate-400">فارغ</p>';
@@ -747,10 +773,13 @@
 
   window.accAmountKindChange = function() {
     var k = document.getElementById('accAmountKind');
-    var show = !k || k.value === 'salary';
+    var v = k && k.value ? k.value : 'salary';
+    var showSal = v === 'salary';
     document.querySelectorAll('.acc-salary-only').forEach(function(el) {
-      el.classList.toggle('hidden', !show);
+      el.classList.toggle('hidden', !showSal);
     });
+    var dw = document.getElementById('accDiscountWrap');
+    if (dw) dw.classList.toggle('hidden', v !== 'salary' && v !== 'debt_receivable' && v !== 'debt_payable');
   };
 
   window.accShowAddAmount = function() {
@@ -772,15 +801,19 @@
 
   window.accSubmitAmount = function() {
     if (!currentId) return;
+    var kind = document.getElementById('accAmountKind') ? document.getElementById('accAmountKind').value : 'salary';
+    var body = {
+      amountKind: kind,
+      salaryDirection: document.getElementById('accSalaryDir').value,
+      amount: document.getElementById('accAmt').value,
+      brokeragePct: document.getElementById('accBroker').value,
+      cycleId: document.getElementById('accCycle').value || null,
+    };
+    var dp = document.getElementById('accDiscountPct');
+    if (dp && dp.value !== '' && dp.value != null) body.discountPct = dp.value;
     apiCall('/api/accreditations/' + currentId + '/add-amount', {
       method: 'POST',
-      body: JSON.stringify({
-        amountKind: document.getElementById('accAmountKind') ? document.getElementById('accAmountKind').value : 'salary',
-        salaryDirection: document.getElementById('accSalaryDir').value,
-        amount: document.getElementById('accAmt').value,
-        brokeragePct: document.getElementById('accBroker').value,
-        cycleId: document.getElementById('accCycle').value || null
-      })
+      body: JSON.stringify(body)
     }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
       if (res.success) accOpen(currentId);

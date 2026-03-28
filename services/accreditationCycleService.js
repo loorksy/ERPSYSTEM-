@@ -3,6 +3,7 @@ const { getCycleColumns } = require('./payrollSearchService');
 const { parseDecimal } = require('../utils/numbers');
 const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry } = require('./ledgerService');
+const { syncNetBalance } = require('./accreditationBalance');
 
 function columnLetterToIndex(letter) {
   if (letter == null || letter === '') return null;
@@ -50,8 +51,8 @@ async function ensurePrimaryAccreditationAfterCycleCreate(db, userId, cycleId, a
     )).rows[0];
     if (!existing) {
       const r = await db.query(
-        `INSERT INTO accreditation_entities (user_id, name, code, balance_amount, is_primary)
-         VALUES ($1, $2, $3, 0, 1) RETURNING id`,
+        `INSERT INTO accreditation_entities (user_id, name, code, balance_amount, balance_payable, balance_receivable, is_primary)
+         VALUES ($1, $2, $3, 0, 0, 0, 1) RETURNING id`,
         [userId, 'معتمد رئيسي', 'PRIMARY']
       );
       return { skipped: false, id: r.rows[0].id, total: 0 };
@@ -76,17 +77,18 @@ async function ensurePrimaryAccreditationAfterCycleCreate(db, userId, cycleId, a
   let accId;
   if (!existing) {
     const ins = await db.query(
-      `INSERT INTO accreditation_entities (user_id, name, code, balance_amount, is_primary)
-       VALUES ($1, $2, $3, $4, 1) RETURNING id`,
+      `INSERT INTO accreditation_entities (user_id, name, code, balance_amount, balance_payable, balance_receivable, is_primary)
+       VALUES ($1, $2, $3, $4, $4, 0, 1) RETURNING id`,
       [userId, 'معتمد رئيسي', 'PRIMARY', netTotal]
     );
     accId = ins.rows[0].id;
   } else {
     accId = existing.id;
     await db.query(
-      'UPDATE accreditation_entities SET balance_amount = balance_amount + $1 WHERE id = $2',
+      'UPDATE accreditation_entities SET balance_payable = COALESCE(balance_payable,0) + $1 WHERE id = $2',
       [netTotal, accId]
     );
+    await syncNetBalance(db, accId);
   }
 
   const dupLedger = (await db.query(
