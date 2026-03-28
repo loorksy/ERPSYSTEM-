@@ -298,10 +298,10 @@
       color: rgb(220 38 38) !important;
     }
   }
-  /* مسافة فوق شريط التنقل الثابت + زر + العائم (~72px) */
+  /* موبايل: مسافة سفلية داخل الجسم فقط (النافذة لم تعد تغطي الشريط السفلي) */
   @media (max-width: 1023px) {
     #accBulkModalBody {
-      padding-bottom: max(6.5rem, calc(5.25rem + env(safe-area-inset-bottom, 0px)));
+      padding-bottom: 1rem;
     }
   }
   /* حالة فارغة / تحميل داخل البطاقة — يعمل دون الاعتماد على فئات Tailwind في JS */
@@ -379,16 +379,28 @@
       gap: 1rem;
     }
   }
-  /* موبايل/تابلت: نافذة الاستيراد والتسليم بعرض الشاشة دون فراغ جانبي (fixed + 100vw كان يسبب إزاحة) */
+  /*
+   * موبايل/تابلت: النوافذ لا تغطي شريط الهيدر (60px) ولا شريط التنقل السفلي (65px) — يبقيا ظاهرين.
+   * سطح المكتب: بدون هامش يمين — كان lg:mr-[260px] يُظهر الشريط الجانبي بجانب النافذة.
+   */
   @media (max-width: 1023px) {
     #accBulkModal,
-    #accDeliveryModal {
+    #accDeliveryModal,
+    #accAddModal,
+    #accDetailModal {
+      top: calc(60px + env(safe-area-inset-top, 0px));
+      right: 0;
+      bottom: calc(65px + env(safe-area-inset-bottom, 0px));
+      left: 0;
+      width: 100%;
+      height: auto;
+      max-height: none;
       align-items: stretch;
       justify-content: flex-start;
+      padding: 0.5rem;
       padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
       padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
-      padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
-      padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+      box-sizing: border-box;
     }
     #accBulkModal .acc-bulk-modal-shell,
     #accDeliveryModal .acc-delivery-modal-shell {
@@ -396,9 +408,16 @@
       max-width: 100% !important;
       margin-left: 0 !important;
       margin-right: 0 !important;
-      min-height: min(100dvh, 100vh);
-      max-height: min(100dvh, 100vh);
+      min-height: 0 !important;
+      max-height: 100% !important;
+      flex: 1 1 auto;
       border-radius: 1rem;
+    }
+    #accAddModal > div.bg-white,
+    #accDetailModal > div.bg-white {
+      max-height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
   }
   /* قائمة تسليم المعتمدين: عمود متراصّ ومحاذاة وسط على الموبايل */
@@ -442,7 +461,7 @@
 </div>
 
 <div id="accBulkModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 sm:p-6 md:p-8 max-lg:p-2 max-lg:items-stretch max-lg:justify-start bg-slate-900/60 backdrop-blur-sm transition-opacity" dir="rtl" data-acc-step="import">
-  <div class="acc-bulk-modal-shell bg-white rounded-2xl sm:rounded-[2rem] max-lg:rounded-xl shadow-2xl w-full flex flex-col min-h-0 relative transform transition-all overflow-hidden mx-auto lg:mr-[260px]">
+  <div class="acc-bulk-modal-shell bg-white rounded-2xl sm:rounded-[2rem] max-lg:rounded-xl shadow-2xl w-full flex flex-col min-h-0 relative transform transition-all overflow-hidden mx-auto">
     
     <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-start sm:items-center bg-white/80 backdrop-blur-md z-10 shrink-0">
       <div class="flex items-center gap-3">
@@ -553,7 +572,7 @@
   </div>
 </div>
 <div id="accDeliveryModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 sm:p-6 md:p-8 max-lg:p-2 max-lg:items-stretch max-lg:justify-start bg-slate-900/60 backdrop-blur-sm transition-opacity" dir="rtl">
-  <div class="acc-delivery-modal-shell bg-white rounded-2xl sm:rounded-[2rem] max-lg:rounded-xl shadow-2xl w-full flex flex-col min-h-0 overflow-hidden mx-auto lg:mr-[260px]">
+  <div class="acc-delivery-modal-shell bg-white rounded-2xl sm:rounded-[2rem] max-lg:rounded-xl shadow-2xl w-full flex flex-col min-h-0 overflow-hidden mx-auto">
     <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-start sm:items-center bg-white/80 backdrop-blur-md z-10 shrink-0">
       <div class="flex items-center gap-3 min-w-0">
         <div class="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
@@ -594,8 +613,8 @@
   </div>
 </div>
 
-<div id="accAddModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]" dir="rtl">
-  <div class="bg-white rounded-2xl border border-slate-100 shadow-xl p-6 max-w-md w-full">
+<div id="accAddModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 max-lg:p-2 max-lg:items-stretch max-lg:justify-start bg-slate-900/50 backdrop-blur-[2px]" dir="rtl">
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-xl p-6 max-w-md w-full max-lg:max-h-full max-lg:flex max-lg:flex-col">
     <div class="flex items-start gap-3 mb-5">
       <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 border border-slate-100">
         <i class="fas fa-user-plus"></i>
@@ -622,8 +641,8 @@
   </div>
 </div>
 
-<div id="accDetailModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 bg-black/50">
-  <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+<div id="accDetailModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 max-lg:p-2 max-lg:items-stretch max-lg:justify-start bg-black/50">
+  <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] max-lg:max-h-full overflow-y-auto p-6">
     <div class="flex justify-between items-start mb-4">
       <div>
         <h4 id="accDetailTitle" class="text-lg font-bold"></h4>

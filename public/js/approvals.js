@@ -418,11 +418,11 @@
   window.accOpenAdd = function() {
     accCloseSidebarIfOpen();
     document.getElementById('accAddModal').classList.remove('hidden');
-    document.getElementById('accAddModal').classList.add('flex');
+    document.getElementById('accAddModal').classList.add('flex', 'flex-col');
   };
   window.accCloseAdd = function() {
     document.getElementById('accAddModal').classList.add('hidden');
-    document.getElementById('accAddModal').classList.remove('flex');
+    document.getElementById('accAddModal').classList.remove('flex', 'flex-col');
   };
 
   /** @returns {Promise<string>} قيمة المحدد بعد التعبئة (آخر دورة إن طُلب defaultLatest) */
@@ -628,14 +628,14 @@
     var body = document.getElementById('accBulkModalBody');
     if (body) body.scrollTop = 0;
     modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    modal.classList.add('flex', 'flex-col');
   };
   window.accCloseBulk = function() {
     var modal = document.getElementById('accBulkModal');
     var body = document.getElementById('accBulkModalBody');
     if (body) body.scrollTop = 0;
     modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    modal.classList.remove('flex', 'flex-col');
   };
   window.accSubmitBulk = function() {
     var f = document.getElementById('accBulkFile');
@@ -705,7 +705,7 @@
   window.accOpenDelivery = function() {
     accCloseSidebarIfOpen();
     document.getElementById('accDeliveryModal').classList.remove('hidden');
-    document.getElementById('accDeliveryModal').classList.add('flex');
+    document.getElementById('accDeliveryModal').classList.add('flex', 'flex-col');
     fillCycleSelect('accDelCycle').then(function() {
       var sel = document.getElementById('accDelCycle');
       accRefreshDeliveryList(sel && sel.value ? sel.value : '');
@@ -713,7 +713,7 @@
   };
   window.accCloseDelivery = function() {
     document.getElementById('accDeliveryModal').classList.add('hidden');
-    document.getElementById('accDeliveryModal').classList.remove('flex');
+    document.getElementById('accDeliveryModal').classList.remove('flex', 'flex-col');
   };
   window.accSubmitDelivery = function() {
     var boxes = document.querySelectorAll('.acc-del-cb:checked');
@@ -785,12 +785,12 @@
       });
       accCloseSidebarIfOpen();
       document.getElementById('accDetailModal').classList.remove('hidden');
-      document.getElementById('accDetailModal').classList.add('flex');
+      document.getElementById('accDetailModal').classList.add('flex', 'flex-col');
     });
   };
   window.accCloseDetail = function() {
     document.getElementById('accDetailModal').classList.add('hidden');
-    document.getElementById('accDetailModal').classList.remove('flex');
+    document.getElementById('accDetailModal').classList.remove('flex', 'flex-col');
     currentId = null;
   };
 
