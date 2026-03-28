@@ -159,9 +159,10 @@
     }
     .acc-bulk-review tbody tr.acc-bulk-tr {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-areas: 
-        "name number"
+      grid-template-columns: auto 1fr;
+      grid-template-areas:
+        "sel num"
+        "name name"
         "amount amount"
         "broker broker"
         "action action";
@@ -173,6 +174,13 @@
       background: #fff;
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
       position: relative;
+    }
+    .acc-bulk-review.acc-bulk-debt-mode tbody tr.acc-bulk-tr {
+      grid-template-areas:
+        "sel num"
+        "name name"
+        "amount amount"
+        "action action";
     }
     .acc-bulk-review tbody td.acc-bulk-td {
       display: flex;
@@ -204,15 +212,20 @@
     .acc-bulk-review tbody td.acc-bulk-td .acc-bulk-val {
       text-align: right;
     }
-    
-    /* Layout using nth-child */
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(1) {
-      grid-area: number;
+    .acc-bulk-review tbody td.acc-bulk-cell-sel {
+      grid-area: sel;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-sel::before { display: none !important; }
+    .acc-bulk-review tbody td.acc-bulk-cell-num {
+      grid-area: num;
       align-items: flex-end;
       justify-content: flex-start;
     }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(1)::before { display: none; }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(1) .acc-bulk-val {
+    .acc-bulk-review tbody td.acc-bulk-cell-num::before { display: none !important; }
+    .acc-bulk-review tbody td.acc-bulk-cell-num .acc-bulk-val {
       background: rgb(241 245 249);
       color: rgb(100 116 139);
       padding: 0.25rem 0.6rem;
@@ -220,13 +233,12 @@
       font-size: 0.75rem;
       font-weight: 700;
     }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(2) {
+    .acc-bulk-review tbody td.acc-bulk-cell-name {
       grid-area: name;
     }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(2)::before { display: none; }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(2) .acc-bulk-val { text-align: right !important; }
-    
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(3) {
+    .acc-bulk-review tbody td.acc-bulk-cell-name::before { display: none !important; }
+    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-val { text-align: right !important; }
+    .acc-bulk-review tbody td.acc-bulk-cell-amt {
       grid-area: amount;
       background: rgb(238 242 255);
       padding: 0.75rem 1rem !important;
@@ -237,12 +249,11 @@
       margin-top: 0.25rem;
       margin-bottom: 0.25rem;
     }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(3)::before { margin-bottom: 0; color: rgb(79 70 229); font-weight: 700; }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(3) .acc-bulk-val { font-size: 1.125rem; font-weight: 800; color: rgb(67 56 202); }
-    
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(4) { grid-area: broker; }
-    .acc-bulk-review tbody td.acc-bulk-td:nth-child(5) { 
-      grid-area: action; 
+    .acc-bulk-review tbody td.acc-bulk-cell-amt::before { margin-bottom: 0; color: rgb(79 70 229); font-weight: 700; }
+    .acc-bulk-review tbody td.acc-bulk-cell-amt .acc-bulk-val { font-size: 1.125rem; font-weight: 800; color: rgb(67 56 202); }
+    .acc-bulk-review tbody td.acc-bulk-cell-broker { grid-area: broker; }
+    .acc-bulk-review tbody td.acc-bulk-cell-act {
+      grid-area: action;
       justify-content: center;
       margin-top: 0.5rem;
     }
@@ -458,7 +469,7 @@
       </div>
 
       <div id="accBulkStaging" class="hidden animate-fade-in mx-auto w-full flex flex-col min-h-0">
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-visible flex flex-col min-h-0 relative">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col min-h-0 overflow-visible relative">
           <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-center bg-slate-50/50">
             <div>
               <h3 class="text-base font-bold text-slate-800">مراجعة البيانات</h3>
@@ -477,13 +488,16 @@
               <option value="salary_to_them">راتب علينا (وساطة + صندوق حسب الاتجاه)</option>
               <option value="debt_to_us">دين لنا — على المعتمد (بدون وساطة/صندوق)</option>
             </select>
+            <p id="accBulkDebtHint" class="hidden text-[11px] text-slate-500 mt-2 leading-relaxed">لا تُستخدم نسبة الوساطة مع نوع «دين لنا».</p>
           </div>
           
           <div id="accBulkStagingTable" class="w-full"></div>
-          
-          <div class="p-4 sm:p-5 border-t border-slate-100 bg-white sm:bg-slate-50/50 flex flex-col-reverse sm:flex-row justify-end gap-3 mt-auto relative z-10 w-full sm:sticky sm:bottom-0">
-            <button type="button" onclick="accClearBulkStaging()" class="px-6 py-3 sm:py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 transition-colors text-sm w-full sm:w-auto flex items-center justify-center gap-2"><i class="fas fa-undo"></i> تراجع وإلغاء</button>
-            <button type="button" onclick="accCommitBulk()" class="px-8 py-3 sm:py-2.5 rounded-xl bg-emerald-600 text-white font-bold shadow-md shadow-emerald-200 hover:bg-emerald-700 hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm w-full sm:w-auto flex items-center justify-center gap-2"><i class="fas fa-save"></i> حفظ واعتماد</button>
+
+          <div class="acc-bulk-staging-footer shrink-0 border-t border-slate-200 bg-gradient-to-b from-slate-50/95 to-white px-4 sm:px-6 py-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl mx-auto">
+              <button type="button" onclick="accClearBulkStaging()" class="order-2 sm:order-1 px-6 py-3 sm:py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 transition-colors text-sm w-full flex items-center justify-center gap-2"><i class="fas fa-undo"></i> تراجع وإلغاء</button>
+              <button type="button" onclick="accCommitBulk()" class="order-1 sm:order-2 px-6 py-3 sm:py-2.5 rounded-xl bg-emerald-600 text-white font-bold shadow-md shadow-emerald-200 hover:bg-emerald-700 hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm w-full flex items-center justify-center gap-2"><i class="fas fa-save"></i> حفظ واعتماد</button>
+            </div>
           </div>
         </div>
       </div>
@@ -516,9 +530,12 @@
         </select>
       </div>
 
-      <div class="flex items-center justify-between gap-2 mb-2 px-1">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-2 px-1">
         <span class="text-xs font-semibold text-slate-600">معتمدون برصيد</span>
-        <span class="text-[11px] text-slate-500">مرّر النافذة للأعلى/الأسفل</span>
+        <label class="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
+          <input type="checkbox" id="accDelSelectAll" class="acc-del-select-all h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" checked>
+          <span>تحديد الكل</span>
+        </label>
       </div>
       <div id="accDelList" class="space-y-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"></div>
     </div>
