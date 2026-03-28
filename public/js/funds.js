@@ -33,15 +33,16 @@
     return Number(balances[0].amount) || 0;
   }
 
-  var FUNDS_CARD_PALETTES = [
-    'border-violet-200/90 bg-gradient-to-br from-violet-50/95 to-white hover:border-violet-300',
-    'border-sky-200/90 bg-gradient-to-br from-sky-50/95 to-white hover:border-sky-300',
-    'border-emerald-200/90 bg-gradient-to-br from-emerald-50/95 to-white hover:border-emerald-300',
-    'border-amber-200/90 bg-gradient-to-br from-amber-50/95 to-white hover:border-amber-300',
-    'border-rose-200/90 bg-gradient-to-br from-rose-50/95 to-white hover:border-rose-300',
-    'border-indigo-200/90 bg-gradient-to-br from-indigo-50/95 to-white hover:border-indigo-300',
-    'border-teal-200/90 bg-gradient-to-br from-teal-50/95 to-white hover:border-teal-300',
-    'border-fuchsia-200/90 bg-gradient-to-br from-fuchsia-50/95 to-white hover:border-fuchsia-300',
+  /** نفس تدرجات بطاقات الوكالات الفرعية */
+  var agencyCardColors = [
+    'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)',
+    'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)',
+    'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)',
+    'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%)',
+    'linear-gradient(135deg, #cffafe 0%, #a5f3fc 50%, #67e8f9 100%)',
+    'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c4b5fd 100%)',
+    'linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%)',
+    'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)',
   ];
 
   function fillCountries() {
@@ -69,10 +70,11 @@
   window.fundsLoadList = function() {
     var box = document.getElementById('fundsCards');
     if (!box) return;
+    box.innerHTML = '<p class="text-slate-400 col-span-full text-center py-12">جاري التحميل...</p>';
     apiCall('/api/funds/list').then(function(res) {
       if (!res.success) {
         box.innerHTML =
-          '<p class="text-red-600 col-span-full text-center py-12 font-medium">' + escHtml(res.message || 'فشل') + '</p>';
+          '<p class="text-red-500 col-span-full text-center py-12">' + escHtml(res.message || 'فشل') + '</p>';
         return;
       }
       var list = res.funds || [];
@@ -88,17 +90,19 @@
             var num = amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             return escHtml(num + ' ' + (b.currency || ''));
           })
-          .join(' <span class="text-slate-300">|</span> ');
+          .join(' | ');
         var primaryAmt = fundsPrimaryBalanceAmount(f.balances || []);
-        var balCls = 'text-slate-600';
-        if (primaryAmt > 0.0001) balCls = 'text-emerald-600';
-        else if (primaryAmt < -0.0001) balCls = 'text-red-600';
-        var mainBadge = f.is_main
-          ? '<span class="shrink-0 text-[0.65rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-200/80">رئيسي</span>'
-          : '';
+        var textColor = '#64748b';
+        if (primaryAmt > 0.0001) textColor = '#047857';
+        else if (primaryAmt < -0.0001) textColor = '#b91c1c';
+        var metaParts = [];
+        if (f.is_main) metaParts.push('رئيسي');
+        if (f.fund_number) metaParts.push(String(f.fund_number));
+        if (f.country) metaParts.push(String(f.country));
+        var metaStr = metaParts.length ? metaParts.join(' · ') : '—';
         var debt = (f.openPayablesUsd || 0) > 0.0001;
         var debtLine = debt
-          ? '<p class="text-xs font-semibold text-red-600 mt-2 pt-2 border-t border-red-100/80">دين علينا: ' +
+          ? '<p class="agency-meta mt-2 pt-2 border-t border-white/40" style="color:#b91c1c;font-weight:600">دين علينا: ' +
             escHtml(
               (Number(f.openPayablesUsd) || 0).toLocaleString('en-US', {
                 minimumFractionDigits: 2,
@@ -107,25 +111,22 @@
             ) +
             '</p>'
           : '';
-        var pal = FUNDS_CARD_PALETTES[idx % FUNDS_CARD_PALETTES.length];
+        var bg = agencyCardColors[idx % agencyCardColors.length];
         return (
-          '<div class="rounded-2xl border p-4 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 ' +
-          pal +
-          '" onclick="fundsOpenDetail(' +
+          '<div class="agency-card fund-card relative" style="background:' +
+          bg +
+          '; color:#1e293b;" onclick="fundsOpenDetail(' +
           f.id +
           ')">' +
-          '<div class="flex items-start justify-between gap-2">' +
-          '<h5 class="font-bold text-slate-900 leading-snug flex-1 min-w-0">' +
+          '<h5>' +
           escHtml(f.name || '') +
           '</h5>' +
-          mainBadge +
-          '</div>' +
-          '<p class="text-xs text-slate-500 mt-1 font-mono">' +
-          escHtml([f.fund_number, f.country].filter(Boolean).join(' · ')) +
+          '<p class="agency-meta">' +
+          escHtml(metaStr) +
           '</p>' +
-          '<p class="' +
-          balCls +
-          ' font-bold mt-3 tabular-nums text-base sm:text-lg tracking-tight">' +
+          '<p class="agency-balance" style="color:' +
+          textColor +
+          '">رصيد: ' +
           (balStr || '0.00') +
           '</p>' +
           debtLine +

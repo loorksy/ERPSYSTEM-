@@ -11,6 +11,17 @@
       .replace(/"/g, '&quot;');
   }
 
+  var agencyCardColors = [
+    'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)',
+    'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)',
+    'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)',
+    'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%)',
+    'linear-gradient(135deg, #cffafe 0%, #a5f3fc 50%, #67e8f9 100%)',
+    'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c4b5fd 100%)',
+    'linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%)',
+    'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)',
+  ];
+
   function accFmtMoney(n) {
     if (typeof window.formatMoney === 'function') return window.formatMoney(n);
     var v = typeof n === 'number' ? n : parseFloat(n);
@@ -333,24 +344,24 @@
   function accApprovalsEmptyStateHtml(kind, msg) {
     if (kind === 'loading') {
       return (
-        '<div class="col-span-full acc-approvals-empty text-slate-400">' +
+        '<div class="col-span-full acc-approvals-empty text-slate-400 text-center">' +
         '<i class="fas fa-spinner fa-spin text-3xl text-indigo-400" aria-hidden="true"></i>' +
         '<span class="text-sm font-medium">جاري التحميل...</span></div>'
       );
     }
     if (kind === 'error') {
       return (
-        '<div class="col-span-full acc-approvals-empty text-slate-600">' +
+        '<div class="col-span-full acc-approvals-empty text-slate-600 text-center">' +
         '<i class="fas fa-circle-exclamation text-4xl text-red-400" aria-hidden="true"></i>' +
         '<p class="text-red-600 font-medium text-sm">' + escHtml(msg || 'حدث خطأ') + '</p></div>'
       );
     }
     return (
-      '<div class="col-span-full acc-approvals-empty text-slate-500">' +
+      '<div class="col-span-full acc-approvals-empty text-slate-500 text-center">' +
       '<span class="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">' +
       '<i class="fas fa-clipboard-list text-4xl" aria-hidden="true"></i></span>' +
       '<p class="font-medium text-slate-600">لا يوجد معتمدون</p>' +
-      '<p class="text-xs text-slate-400 max-w-sm leading-relaxed">أضف معتمداً من زر «إضافة معتمد» أو استورد أرصدة من «رفع أرصدة».</p></div>'
+      '<p class="text-xs text-slate-400 max-w-sm leading-relaxed mx-auto">أضف معتمداً من زر «إضافة معتمد» أو استورد أرصدة من «رفع أرصدة».</p></div>'
     );
   }
 
@@ -368,41 +379,31 @@
         box.innerHTML = accApprovalsEmptyStateHtml('empty');
         return;
       }
-      var cardPalettes = [
-        'border-violet-200/90 bg-gradient-to-br from-violet-50/95 to-white hover:border-violet-300',
-        'border-sky-200/90 bg-gradient-to-br from-sky-50/95 to-white hover:border-sky-300',
-        'border-emerald-200/90 bg-gradient-to-br from-emerald-50/95 to-white hover:border-emerald-300',
-        'border-amber-200/90 bg-gradient-to-br from-amber-50/95 to-white hover:border-amber-300',
-        'border-rose-200/90 bg-gradient-to-br from-rose-50/95 to-white hover:border-rose-300',
-        'border-indigo-200/90 bg-gradient-to-br from-indigo-50/95 to-white hover:border-indigo-300',
-        'border-teal-200/90 bg-gradient-to-br from-teal-50/95 to-white hover:border-teal-300',
-        'border-fuchsia-200/90 bg-gradient-to-br from-fuchsia-50/95 to-white hover:border-fuchsia-300',
-      ];
       box.innerHTML = list.map(function(a, idx) {
-        var pin = a.pinned ? '<i class="fas fa-thumbtack text-amber-600 ml-1 drop-shadow-sm"></i>' : '';
         var net = Number(a.balance_amount) || 0;
-        var balCls = 'text-slate-600';
-        if (net > 0.0001) balCls = 'text-emerald-600';
-        else if (net < -0.0001) balCls = 'text-red-600';
-        var pal = cardPalettes[idx % cardPalettes.length];
+        var textColor = '#64748b';
+        if (net > 0.0001) textColor = '#047857';
+        else if (net < -0.0001) textColor = '#b91c1c';
+        var pinHtml = a.pinned
+          ? '<span class="absolute top-2 right-2 text-amber-600" title="مثبت"><i class="fas fa-thumbtack"></i></span>'
+          : '';
+        var bg = agencyCardColors[idx % agencyCardColors.length];
         return (
-          '<div class="rounded-2xl border p-4 sm:p-5 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 ' +
-          pal +
-          '" onclick="accOpen(' +
+          '<div class="agency-card relative" style="background:' +
+          bg +
+          '; color:#1e293b;" onclick="accOpen(' +
           a.id +
           ')">' +
-          '<div class="flex items-start justify-between gap-2">' +
-          '<h5 class="font-bold text-slate-900 leading-snug flex-1 min-w-0">' +
+          pinHtml +
+          '<h5>' +
           escHtml(a.name || '') +
           '</h5>' +
-          pin +
-          '</div>' +
-          '<p class="text-xs text-slate-500 mt-1 font-mono">' +
-          escHtml(a.code || '') +
+          '<p class="agency-meta font-mono">' +
+          escHtml(a.code || '—') +
           '</p>' +
-          '<p class="' +
-          balCls +
-          ' font-bold mt-3 tabular-nums text-base sm:text-lg tracking-tight">' +
+          '<p class="agency-balance tabular-nums" style="color:' +
+          textColor +
+          '">رصيد: ' +
           escHtml(accFmtMoney(net)) +
           '</p></div>'
         );

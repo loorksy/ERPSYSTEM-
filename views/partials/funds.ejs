@@ -1,30 +1,13 @@
-<style>
-  #fundsCards.funds-cards-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  @media (min-width: 1024px) {
-    #fundsCards.funds-cards-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-</style>
-<div class="w-full min-w-0 flex flex-col" dir="rtl">
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6 shrink-0">
-    <div class="flex items-center gap-3 min-w-0">
-      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
-        <i class="fas fa-wallet text-xl"></i>
-      </div>
-      <div>
-        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">الصناديق</h2>
-        <p class="text-sm text-slate-500 mt-0.5">أرصدة الصناديق والتحويلات</p>
-      </div>
-    </div>
-    <div class="flex flex-wrap gap-2">
+<div class="funds-page w-full max-w-5xl mx-auto" dir="rtl">
+  <div class="flex items-center justify-between mb-8 flex-wrap gap-3">
+    <h2 class="text-2xl font-bold text-slate-800">الصناديق</h2>
+    <div class="flex gap-2 flex-wrap">
       <button type="button" onclick="fundsEditMain()" class="px-4 py-2.5 rounded-xl bg-amber-100 text-amber-800 text-sm font-semibold shadow-sm hover:bg-amber-200 active:scale-[0.99] transition">
         <i class="fas fa-edit ml-1"></i> تعديل الصندوق الرئيسي
       </button>
-      <button type="button" onclick="fundsOpenAdd()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-md hover:bg-indigo-700 active:scale-[0.99] transition">
-        <i class="fas fa-plus ml-2"></i> إضافة صندوق
+      <button type="button" onclick="fundsOpenAdd()" class="btn-add">
+        <i class="fas fa-plus ml-2"></i>
+        إضافة صندوق
       </button>
     </div>
   </div>
@@ -49,15 +32,30 @@
       </div>
     </div>
   </div>
-  <div class="funds-list-shell rounded-2xl border border-slate-100 bg-white shadow-sm w-full flex flex-col overflow-hidden">
-    <div id="fundsCards" class="funds-cards-grid grid gap-3 sm:gap-4 p-4 sm:p-6 min-h-0 content-start">
-      <div class="col-span-full flex flex-col items-center justify-center gap-2 text-slate-400 py-12">
-        <i class="fas fa-spinner fa-spin text-3xl text-indigo-400" aria-hidden="true"></i>
-        <span class="text-sm font-medium">جاري التحميل...</span>
-      </div>
-    </div>
+  <div id="fundsCards" class="agencies-grid">
+    <p class="text-slate-400 col-span-full text-center py-12">جاري التحميل...</p>
   </div>
 </div>
+
+<style>
+/* نفس شبكة وبطاقات الوكالات الفرعية — محاذاة وسط على الموبايل */
+.agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+.btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
+.btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+.agency-card { padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s; border: none; }
+.agency-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15); }
+.agency-card h5 { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+.agency-card .agency-meta { font-size: 0.8125rem; opacity: 0.9; margin-bottom: 0.25rem; }
+.agency-card .agency-balance { font-size: 0.875rem; font-weight: 600; }
+@media (max-width: 639px) {
+  .funds-page .agency-card { text-align: center; }
+  .funds-page .agency-card h5 { text-align: center; }
+  .funds-page .agency-card .agency-meta,
+  .funds-page .agency-card .agency-balance { text-align: center; }
+  .funds-page .flex.items-center.justify-between.mb-8 { flex-direction: column; text-align: center; }
+  .funds-page .flex.items-center.justify-between.mb-8 > h2 { width: 100%; }
+}
+</style>
 
 <div id="fundAddModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
   <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
