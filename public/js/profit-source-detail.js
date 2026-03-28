@@ -15,6 +15,7 @@
     transfer_discount_profit: 'ربح نسبة خصم التحويل',
     cycle_creation_discount_profit: 'ربح خصم التحويل (إنشاء دورة)',
     accreditation_brokerage: 'وساطة معتمدين',
+    accreditation_payable_discount: 'ربح خصم دين علينا (معتمد)',
     admin_brokerage: 'وساطة إدارية',
     shipping_sale_profit: 'ربح بيع شحن',
     sub_agency_share: 'حصة وكالة فرعية',

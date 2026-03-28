@@ -1,6 +1,7 @@
 const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('./ledgerService');
 const { syncNetBalance, applySalaryToThem } = require('./accreditationBalance');
+const { splitDebtPayableWithDiscount } = require('./accreditationDebtAmounts');
 
 /**
  * استيراد أرصدة معتمدين من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
@@ -136,21 +137,26 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     }
 
     if (amountKind === 'debt_payable') {
-      pay += bal;
+      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(bal, discRaw);
+      const ledgerMeta = metaJson || debtMeta;
+      const noteImp = (it.notes && String(it.notes).trim()) || (discountAmt > 0
+        ? `استيراد — دين علينا (صافي بعد خصم)`
+        : 'استيراد — دين علينا');
+      pay += netAmt;
       const led = await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
          VALUES ($1, 'debt_to_them', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
-        [ent.id, bal, cid, (it.notes && String(it.notes).trim()) || 'استيراد — دين علينا', debtMeta]
+        [ent.id, netAmt, cid, noteImp, ledgerMeta]
       );
       const ledgerId = led.lastInsertRowid != null ? led.lastInsertRowid : led.rows[0]?.id;
       await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, ent.id]);
       await syncNetBalance(db, ent.id);
-      if (mainFundId) {
+      if (mainFundId && netAmt > 0) {
         await adjustFundBalance(
           db,
           mainFundId,
           'USD',
-          bal,
+          netAmt,
           'accreditation_debt_payable',
           'استيراد — دين علينا',
           'accreditation_ledger',
@@ -160,18 +166,36 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
           userId,
           bucket: 'main_cash',
           sourceType: 'accreditation_debt_payable',
-          amount: bal,
+          amount: netAmt,
           cycleId: cid,
           refTable: 'accreditation_ledger',
           refId: ledgerId,
           notes: 'استيراد — دين علينا',
         });
       }
-      if (!isNaN(discRaw) && discRaw > 0 && rec > 0) {
-        const cut = Math.min(rec, bal * (discRaw / 100));
-        rec -= cut;
-        await db.query('UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2', [rec, ent.id]);
-        await syncNetBalance(db, ent.id);
+      if (discountAmt > 0) {
+        await insertNetProfitLedgerAndMirrorFund(db, {
+          userId,
+          bucket: 'net_profit',
+          sourceType: 'accreditation_payable_discount',
+          amount: discountAmt,
+          currency: 'USD',
+          cycleId: cid,
+          refTable: 'accreditation_ledger',
+          refId: ledgerId,
+          notes: 'ربح خصم من دين علينا (معتمد)',
+        });
+        await db.query(
+          `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+           VALUES ($1, 'payable_discount_profit', $2, 'USD', 'to_us', $3, $4, $5)`,
+          [
+            ent.id,
+            discountAmt,
+            cid,
+            'ربح خصم من دين علينا',
+            JSON.stringify({ linkedDebtLedgerId: ledgerId }),
+          ]
+        );
       }
       ok++;
       continue;

@@ -28,6 +28,16 @@
     });
   }
 
+  function accLedgerTypeLabel(t) {
+    var m = {
+      debt_to_us: 'دين لنا',
+      debt_to_them: 'دين علينا',
+      salary: 'راتب',
+      payable_discount_profit: 'ربح خصم (علينا)',
+    };
+    return m[t] || t || '';
+  }
+
   function accSyncBulkStep() {
     var modal = document.getElementById('accBulkModal');
     if (!modal) return;
@@ -702,7 +712,7 @@
       document.getElementById('accDetailBal').innerHTML = balLines;
       accSyncCurrencyUi();
       document.getElementById('accLedger').innerHTML = (res.ledger || []).map(function(l) {
-        return '<div class="py-2 border-b border-slate-50 flex justify-between gap-2"><span>' + escHtml(l.entry_type || '') + '</span><span class="tabular-nums shrink-0">' + escHtml(accFmtMoney(l.amount)) + '</span></div>';
+        return '<div class="py-2 border-b border-slate-50 flex justify-between gap-2"><span>' + escHtml(accLedgerTypeLabel(l.entry_type || '')) + '</span><span class="tabular-nums shrink-0">' + escHtml(accFmtMoney(l.amount)) + '</span></div>';
       }).join('') || '<p class="text-slate-400">فارغ</p>';
       document.getElementById('accAddAmountPanel').classList.add('hidden');
       document.getElementById('accTransferPanel').classList.add('hidden');

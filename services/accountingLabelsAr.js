@@ -11,6 +11,7 @@ const NET_PROFIT_SOURCE_LABELS = {
   transfer_discount_profit: 'ربح نسبة خصم التحويل',
   cycle_creation_discount_profit: 'ربح خصم التحويل (إنشاء دورة)',
   accreditation_brokerage: 'وساطة معتمدين',
+  accreditation_payable_discount: 'ربح خصم دين علينا (معتمد)',
   admin_brokerage: 'وساطة إدارية',
   shipping_sale_profit: 'ربح بيع شحن',
   sub_agency_share: 'حصة وكالة فرعية',
@@ -45,6 +46,7 @@ const FUND_LEDGER_TYPE_LABELS = {
   fund_allocation: 'تحويل لصندوق',
   fund_receive_from_main: 'وارد من الصندوق الرئيسي',
   accreditation_bulk: 'استيراد رصيد معتمد',
+  accreditation_debt_payable: 'دين علينا — معتمد',
   accreditation_remainder: 'باقي بعد الوساطة',
 };
 
