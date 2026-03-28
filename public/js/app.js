@@ -196,7 +196,6 @@ function initSidebar() {
 
   if (menuToggle) {
     menuToggle.addEventListener('click', () => {
-      sidebar.classList.remove('max-lg:translate-x-full');
       sidebar.classList.add('translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
       sidebarOverlay.classList.remove('hidden');
       sidebarOverlay.classList.add('block');
@@ -205,12 +204,13 @@ function initSidebar() {
   }
 
   function closeSidebar() {
-    sidebar.classList.add('max-lg:translate-x-full');
     sidebar.classList.remove('translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
     sidebarOverlay.classList.add('hidden');
     sidebarOverlay.classList.remove('block');
     document.body.style.overflow = '';
   }
+
+  window.closeSidebar = closeSidebar;
 
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
   if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);

@@ -11,6 +11,10 @@
       .replace(/"/g, '&quot;');
   }
 
+  function accCloseSidebarIfOpen() {
+    if (typeof window.closeSidebar === 'function') window.closeSidebar();
+  }
+
   var agencyCardColors = [
     'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)',
     'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)',
@@ -412,6 +416,7 @@
   };
 
   window.accOpenAdd = function() {
+    accCloseSidebarIfOpen();
     document.getElementById('accAddModal').classList.remove('hidden');
     document.getElementById('accAddModal').classList.add('flex');
   };
@@ -609,6 +614,7 @@
   }
 
   window.accOpenBulk = function() {
+    accCloseSidebarIfOpen();
     accClearBulkStaging();
     accBulkClearFileNameDisplay();
     fillCycleSelect('accBulkCycle', { defaultLatest: true, keepSelection: false });
@@ -697,6 +703,7 @@
   };
 
   window.accOpenDelivery = function() {
+    accCloseSidebarIfOpen();
     document.getElementById('accDeliveryModal').classList.remove('hidden');
     document.getElementById('accDeliveryModal').classList.add('flex');
     fillCycleSelect('accDelCycle').then(function() {
@@ -776,6 +783,7 @@
           s.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
         });
       });
+      accCloseSidebarIfOpen();
       document.getElementById('accDetailModal').classList.remove('hidden');
       document.getElementById('accDetailModal').classList.add('flex');
     });

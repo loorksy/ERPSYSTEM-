@@ -218,9 +218,18 @@
         display: none !important;
       }
     }
+    /* موبايل: إخفاء الشريط الجانبي بالكامل (تفادي ظهور شريط بسبب subpixel أو translate-x-full) */
+    @media (max-width: 63.99rem) {
+      #sidebar {
+        transform: translateX(calc(100% + 4px));
+      }
+      #sidebar.translate-x-0 {
+        transform: translateX(0);
+      }
+    }
   </style>
 </head>
-<body class="min-h-screen bg-slate-100 font-[Tajawal] text-slate-800">
+<body class="min-h-screen bg-slate-100 font-[Tajawal] text-slate-800 max-lg:overflow-x-hidden">
 
   <!-- Mobile Header (يُخفى عند فتح نافذة إنشاء/تعديل الدورة) -->
   <header id="mobileHeader" class="hidden lg:hidden fixed top-0 left-0 right-0 h-[60px] bg-white border-b border-slate-200 px-4 items-center justify-between z-[1000] shadow-sm max-lg:flex">
@@ -242,7 +251,7 @@
   <div class="hidden fixed inset-0 bg-black/50 z-[1000] backdrop-blur-sm" id="sidebarOverlay"></div>
 
   <!-- Sidebar -->
-  <aside class="fixed top-0 right-0 w-[260px] h-screen bg-[#1a1a2e] z-[1001] flex flex-col transition-all duration-300 overflow-y-auto overflow-x-hidden max-lg:translate-x-full" id="sidebar">
+  <aside class="fixed top-0 right-0 w-[260px] h-screen bg-[#1a1a2e] z-[1001] flex flex-col transition-all duration-300 overflow-y-auto overflow-x-hidden" id="sidebar">
     <!-- Logo -->
     <div class="p-5 flex items-center justify-between">
       <div class="flex items-center gap-3">
