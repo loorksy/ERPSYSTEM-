@@ -446,7 +446,7 @@
     var code = escHtml(a.code || '');
     var bal = accFmtMoney(a.balance_amount || 0);
     return (
-      '<label class="acc-del-row flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm">' +
+      '<label class="acc-del-row flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm text-center sm:text-right">' +
       '<input type="checkbox" class="acc-del-cb h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" value="' + a.id + '" checked>' +
       '<span class="flex-1 min-w-0 text-sm text-slate-800">' + name + (code ? ' <span class="text-slate-400 text-xs font-mono">' + code + '</span>' : '') + '</span>' +
       '<span class="shrink-0 text-sm font-bold text-emerald-600 tabular-nums">' + bal + '</span>' +

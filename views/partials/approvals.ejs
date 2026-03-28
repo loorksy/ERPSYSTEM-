@@ -80,12 +80,12 @@
       max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
     }
   }
-  /* استيراد: نمط لوحة الإجراء السريع (ضيق) — مراجعة: نمط بطاقة العملاء (عرض max-w-5xl) */
+  /* استيراد: نمط لوحة الإجراء السريع (ضيق) — مراجعة: نمط بطاقة العملاء (عرض max-w-5xl) — 100% وليس 100vw لتفادي شريط التمرير والفراغ الجانبي */
   #accBulkModal[data-acc-step="import"] .acc-bulk-modal-shell {
-    max-width: min(100vw - 1.25rem, 42rem);
+    max-width: min(100%, 42rem);
   }
   #accBulkModal[data-acc-step="review"] .acc-bulk-modal-shell {
-    max-width: min(100vw - 1.5rem, 64rem);
+    max-width: min(100%, 64rem);
   }
   .acc-bulk-src-btn {
     transition: all 0.2s ease;
@@ -233,8 +233,8 @@
     .acc-bulk-review tbody td.acc-bulk-cell-sel::before { display: none !important; }
     .acc-bulk-review tbody td.acc-bulk-cell-num {
       grid-area: num;
-      align-items: flex-end;
-      justify-content: flex-start;
+      align-items: center;
+      justify-content: center;
     }
     .acc-bulk-review tbody td.acc-bulk-cell-num::before { display: none !important; }
     .acc-bulk-review tbody td.acc-bulk-cell-num .acc-bulk-val {
@@ -249,20 +249,27 @@
       grid-area: name;
     }
     .acc-bulk-review tbody td.acc-bulk-cell-name::before { display: none !important; }
-    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-val { text-align: right !important; }
+    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-val {
+      text-align: center !important;
+      align-items: center;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-val > div {
+      text-align: center;
+      width: 100%;
+    }
     .acc-bulk-review tbody td.acc-bulk-cell-amt {
       grid-area: amount;
       background: rgb(238 242 255);
       padding: 0.75rem 1rem !important;
       border-radius: 0.75rem;
-      flex-direction: row;
-      justify-content: space-between;
+      flex-direction: column;
+      justify-content: center;
       align-items: center;
       margin-top: 0.25rem;
       margin-bottom: 0.25rem;
     }
-    .acc-bulk-review tbody td.acc-bulk-cell-amt::before { margin-bottom: 0; color: rgb(79 70 229); font-weight: 700; }
-    .acc-bulk-review tbody td.acc-bulk-cell-amt .acc-bulk-val { font-size: 1.125rem; font-weight: 800; color: rgb(67 56 202); }
+    .acc-bulk-review tbody td.acc-bulk-cell-amt::before { margin-bottom: 0.35rem; color: rgb(79 70 229); font-weight: 700; text-align: center; width: 100%; }
+    .acc-bulk-review tbody td.acc-bulk-cell-amt .acc-bulk-val { font-size: 1.125rem; font-weight: 800; color: rgb(67 56 202); text-align: center; }
     .acc-bulk-review tbody td.acc-bulk-cell-broker { grid-area: broker; }
     .acc-bulk-review tbody td.acc-bulk-cell-disc {
       grid-area: disc;
@@ -333,7 +340,7 @@
   }
   .acc-delivery-modal-shell {
     max-height: min(92vh, calc(100vh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
-    max-width: min(100vw - 1.25rem, 28rem);
+    max-width: min(100%, 28rem);
   }
   @supports (height: 100dvh) {
     .acc-delivery-modal-shell {
@@ -367,9 +374,54 @@
     .acc-approvals-page .agency-card .agency-balance { text-align: center; }
     .acc-approvals-page .flex.items-center.justify-between.mb-8 { flex-direction: column; text-align: center; }
     .acc-approvals-page .flex.items-center.justify-between.mb-8 > h2 { width: 100%; }
+    .acc-approvals-page .agencies-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+  /* موبايل/تابلت: نافذة الاستيراد والتسليم بعرض الشاشة دون فراغ جانبي (fixed + 100vw كان يسبب إزاحة) */
+  @media (max-width: 1023px) {
+    #accBulkModal,
+    #accDeliveryModal {
+      align-items: stretch;
+      justify-content: flex-start;
+      padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+      padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+      padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+    }
+    #accBulkModal .acc-bulk-modal-shell,
+    #accDeliveryModal .acc-delivery-modal-shell {
+      width: 100%;
+      max-width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      min-height: min(100dvh, 100vh);
+      max-height: min(100dvh, 100vh);
+      border-radius: 1rem;
+    }
+  }
+  /* قائمة تسليم المعتمدين: عمود متراصّ ومحاذاة وسط على الموبايل */
+  @media (max-width: 639px) {
+    #accDelList .acc-del-row {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      position: relative;
+      padding-top: 2.25rem;
+    }
+    #accDelList .acc-del-row .acc-del-cb {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+    }
+    #accDelList .acc-del-row > span.flex-1 {
+      width: 100%;
+    }
   }
 </style>
-<div class="acc-approvals-page w-full max-w-5xl mx-auto" dir="rtl">
+<div class="acc-approvals-page w-full max-w-5xl mx-auto min-w-0" dir="rtl">
   <div class="flex items-center justify-between mb-8 flex-wrap gap-3">
     <h2 class="text-2xl font-bold text-slate-800">الاعتمادات</h2>
     <div class="flex gap-2 flex-wrap justify-center sm:justify-end">
@@ -389,8 +441,8 @@
   </div>
 </div>
 
-<div id="accBulkModal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4 sm:p-6 md:p-8 bg-slate-900/60 backdrop-blur-sm transition-opacity" dir="rtl" data-acc-step="import">
-  <div class="acc-bulk-modal-shell bg-white rounded-2xl sm:rounded-[2rem] shadow-2xl w-full flex flex-col min-h-0 relative transform transition-all overflow-hidden mx-auto lg:mr-64 xl:mr-72">
+<div id="accBulkModal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4 sm:p-6 md:p-8 max-lg:p-2 max-lg:items-stretch max-lg:justify-start bg-slate-900/60 backdrop-blur-sm transition-opacity" dir="rtl" data-acc-step="import">
+  <div class="acc-bulk-modal-shell bg-white rounded-2xl sm:rounded-[2rem] max-lg:rounded-xl shadow-2xl w-full flex flex-col min-h-0 relative transform transition-all overflow-hidden mx-auto lg:mr-[260px]">
     
     <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-start sm:items-center bg-white/80 backdrop-blur-md z-10 shrink-0">
       <div class="flex items-center gap-3">
@@ -479,9 +531,7 @@
           </div>
 
           <div id="accBulkReviewKindWrap" class="px-4 sm:px-5 py-3 border-b border-slate-100 bg-white">
-            <label for="accBulkReviewKind" class="block text-xs font-semibold text-slate-600 mb-1.5">نوع الدين (لجميع الصفوف)</label>
-            <p class="text-[11px] text-slate-500 mb-2 leading-relaxed"><strong>لنا:</strong> دين على المعتمد فقط (بدون صندوق، بدون خصم %). <strong>علينا:</strong> صافي في الصندوق و«مطلوب دفع»؛ الخصم كربح. <strong>لهم:</strong> مثل علينا لكن بدون أي إيداع في الصندوق الرئيسي؛ يظهر في «مطلوب دفع» والخصم كربح.</p>
-            <select id="accBulkReviewKind" class="w-full max-w-xl px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
+            <select id="accBulkReviewKind" aria-label="نوع الدين" class="w-full max-w-xl px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
               <option value="debt_receivable">لنا — دين على المعتمد</option>
               <option value="debt_payable">علينا — صندوق + مطلوب دفع</option>
               <option value="debt_payable_no_fund">لهم — مطلوب دفع + ربح خصم (بدون صندوق رئيسي)</option>
@@ -502,8 +552,8 @@
     </div>
   </div>
 </div>
-<div id="accDeliveryModal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4 sm:p-6 md:p-8 bg-slate-900/60 backdrop-blur-sm transition-opacity" dir="rtl">
-  <div class="acc-delivery-modal-shell bg-white rounded-2xl sm:rounded-[2rem] shadow-2xl w-full flex flex-col min-h-0 overflow-hidden mx-auto lg:mr-64 xl:mr-72">
+<div id="accDeliveryModal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4 sm:p-6 md:p-8 max-lg:p-2 max-lg:items-stretch max-lg:justify-start bg-slate-900/60 backdrop-blur-sm transition-opacity" dir="rtl">
+  <div class="acc-delivery-modal-shell bg-white rounded-2xl sm:rounded-[2rem] max-lg:rounded-xl shadow-2xl w-full flex flex-col min-h-0 overflow-hidden mx-auto lg:mr-[260px]">
     <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-start sm:items-center bg-white/80 backdrop-blur-md z-10 shrink-0">
       <div class="flex items-center gap-3 min-w-0">
         <div class="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
