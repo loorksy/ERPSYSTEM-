@@ -1,19 +1,121 @@
-<div class="max-w-4xl mx-auto" dir="rtl">
-  <h2 class="text-2xl font-bold text-slate-800 mb-6">دين علينا — ملخص</h2>
-  <div id="payablesBox" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-    <p class="text-slate-400">جاري التحميل...</p>
-  </div>
+<div class="max-w-6xl mx-auto px-4 sm:px-0 pb-10 space-y-6 lg:space-y-8" dir="rtl" id="payablesPageRoot">
+  <!-- رأس -->
+  <header class="relative overflow-hidden rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50/90 via-white to-slate-50 shadow-sm">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,rgba(244,63,94,0.08),transparent)] pointer-events-none"></div>
+    <div class="relative p-5 sm:p-7 lg:p-8">
+      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-wider text-rose-600 mb-1">التزامات</p>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">دين علينا</h2>
+          <p class="text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">ملخص التزاماتنا المحسوبة من الأرصدة والسجلات، مع تفصيل يدوي من <span class="font-semibold text-slate-800">entity_payables</span>.</p>
+        </div>
+        <div class="flex flex-wrap gap-2 shrink-0">
+          <a href="/receivables-to-us" class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900 shadow-sm transition hover:bg-emerald-100">
+            <i class="fas fa-hand-holding-heart text-emerald-600 text-xs"></i>
+            ديين لنا
+          </a>
+          <a href="/debts" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-rose-200 hover:bg-rose-50">
+            <i class="fas fa-file-invoice-dollar text-rose-600 text-xs"></i>
+            صفحة الديون
+          </a>
+          <a href="/dashboard" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50">
+            <i class="fas fa-arrow-right text-xs opacity-70"></i>
+            لوحة التحكم
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- صف KPIs: موبايل عمودي، لابتوب شبكة -->
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+    <div class="lg:col-span-5 rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-600 to-rose-800 p-6 sm:p-8 text-white shadow-lg shadow-rose-900/20">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm"><i class="fas fa-scale-balanced text-xl"></i></span>
+        <div>
+          <p class="text-sm text-rose-100">إجمالي التزامات (من الحاسبة)</p>
+          <p class="text-xs text-rose-200/90">يشمل شحن، اعتمادات، يدوي، أرصدة سالبة…</p>
+        </div>
+      </div>
+      <p class="font-mono text-4xl sm:text-5xl font-bold tabular-nums tracking-tight" id="payablesHeroTotal">—</p>
+    </div>
+    <div class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-truck-fast text-sky-500"></i> شحن</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiShipping">—</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-certificate text-violet-500"></i> اعتمادات</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiAcc">—</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem] col-span-2 sm:col-span-1">
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-pen text-slate-500"></i> مسجّل يدوي</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiManual">—</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-building text-red-500"></i> شركات</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiCo">—</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-piggy-bank text-amber-500"></i> صناديق</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiFund">—</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-chart-line text-teal-500"></i> فرق تصريف</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiFx">—</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- شركات وصناديق سالبة — شبكة لابتوب -->
+  <section class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div class="flex items-center gap-3 border-b border-slate-100 bg-red-50/50 px-5 py-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-700"><i class="fas fa-building"></i></span>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">شركات تحويل (رصيد سالب)</h3>
+          <p class="text-xs text-slate-500">مديونية علينا تجاه الشركة</p>
+        </div>
+      </div>
+      <div id="payablesNegCompanies" class="min-h-[4rem] divide-y divide-slate-100"></div>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div class="flex items-center gap-3 border-b border-slate-100 bg-amber-50/50 px-5 py-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="fas fa-piggy-bank"></i></span>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">صناديق (رصيد سالب USD)</h3>
+          <p class="text-xs text-slate-500">التزامات بالدولار</p>
+        </div>
+      </div>
+      <div id="payablesNegFunds" class="min-h-[4rem] divide-y divide-slate-100"></div>
+    </div>
+  </section>
+
+  <!-- سجل الديون المسجّلة -->
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4">
+      <div class="flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-800"><i class="fas fa-list-check"></i></span>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">ديون مسجّلة يدوياً</h3>
+          <p class="text-xs text-slate-500">آخر 500 سجل من entity_payables</p>
+        </div>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[320px]">
+        <thead>
+          <tr class="border-b border-slate-200 bg-slate-50/90 text-right text-xs font-semibold text-slate-600">
+            <th class="px-4 py-3">النوع</th>
+            <th class="px-4 py-3">المعرّف</th>
+            <th class="px-4 py-3 text-left" dir="ltr">المبلغ</th>
+            <th class="px-4 py-3 hidden sm:table-cell">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody id="payablesTableBody" class="divide-y divide-slate-100">
+          <tr><td colspan="4" class="px-4 py-12 text-center text-slate-400"><i class="fas fa-circle-notch fa-spin text-indigo-500 mr-2"></i> جاري التحميل…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
-<script>
-fetch('/api/payables/overview', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(res) {
-  var box = document.getElementById('payablesBox');
-  if (!box || !res.success) return;
-  var h = '<p class="text-lg font-bold mb-4">إجمالي الديون (من الحاسبة): ' + (res.breakdown && res.breakdown.totalDebts != null ? res.breakdown.totalDebts.toFixed(2) : '0') + '</p>';
-  h += '<h3 class="font-bold text-slate-700 mb-2">ديون مسجّلة (entity_payables)</h3><ul class="text-sm space-y-2">';
-  (res.payables || []).slice(0, 50).forEach(function(p) {
-    h += '<li class="border-b border-slate-100 py-2">' + (p.entity_type || '') + ' #' + p.entity_id + ' — ' + (p.amount || 0) + ' ' + (p.currency || '') + '</li>';
-  });
-  h += '</ul>';
-  box.innerHTML = h;
-});
-</script>

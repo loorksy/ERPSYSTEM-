@@ -15,7 +15,13 @@
   }
 
   function listEmpty(msg) {
-    return '<p class="text-slate-400 py-2">' + esc(msg) + '</p>';
+    return (
+      '<div class="flex flex-col items-center justify-center py-10 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60">' +
+      '<i class="fas fa-inbox text-2xl text-slate-300 mb-2"></i>' +
+      '<p class="text-sm text-slate-500">' +
+      esc(msg) +
+      '</p></div>'
+    );
   }
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -23,13 +29,15 @@
     if (!totalEl) return;
 
     fetch('/dashboard/receivables-to-us', { credentials: 'same-origin' })
-      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        return r.json();
+      })
       .then(function(d) {
         if (!d.success) {
           totalEl.textContent = '—';
           var err = d.message || 'فشل التحميل';
           var ag = document.getElementById('recvAgencies');
-          if (ag) ag.innerHTML = '<p class="text-red-600">' + esc(err) + '</p>';
+          if (ag) ag.innerHTML = '<p class="text-red-600 text-sm p-4">' + esc(err) + '</p>';
           return;
         }
         totalEl.textContent = fmt(d.totalUsd);
@@ -39,11 +47,20 @@
           if (!d.subAgencies || !d.subAgencies.length) {
             ag.innerHTML = listEmpty('لا يوجد دين لنا مسجّل من الوكالات (لا رصيد سالب للوكالة)');
           } else {
-            ag.innerHTML = '<ul class="divide-y divide-slate-100">' + d.subAgencies.map(function(x) {
-              var amt = x.amountOwedToUs != null ? x.amountOwedToUs : Math.abs(parseFloat(x.balanceRaw) || 0);
-              return '<li class="py-2 flex justify-between gap-4"><span>' + esc(x.name) +
-                '</span><span class="font-semibold text-emerald-700 tabular-nums">' + fmt(amt) + '</span></li>';
-            }).join('') + '</ul>';
+            ag.innerHTML = d.subAgencies
+              .map(function(x) {
+                var amt = x.amountOwedToUs != null ? x.amountOwedToUs : Math.abs(parseFloat(x.balanceRaw) || 0);
+                return (
+                  '<div class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50/90 to-white px-4 py-3.5 transition hover:border-emerald-200 hover:shadow-sm">' +
+                  '<span class="text-sm font-medium text-slate-800 min-w-0 truncate">' +
+                  esc(x.name) +
+                  '</span>' +
+                  '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-emerald-700">' +
+                  fmt(amt) +
+                  '</span></div>'
+                );
+              })
+              .join('');
           }
         }
 
@@ -51,10 +68,19 @@
         if (ac) {
           var alist = d.accreditations || [];
           ac.innerHTML = alist.length
-            ? '<ul class="divide-y divide-slate-100">' + alist.map(function(x) {
-              return '<li class="py-2 flex justify-between gap-4"><span>' + esc(x.name) +
-                '</span><span class="font-semibold tabular-nums text-emerald-700">' + fmt(x.amountOwedToUs) + '</span></li>';
-            }).join('') + '</ul>'
+            ? alist
+                .map(function(x) {
+                  return (
+                    '<div class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50/90 to-white px-4 py-3.5 transition hover:border-violet-200 hover:shadow-sm">' +
+                    '<span class="text-sm font-medium text-slate-800 min-w-0 truncate">' +
+                    esc(x.name) +
+                    '</span>' +
+                    '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-emerald-700">' +
+                    fmt(x.amountOwedToUs) +
+                    '</span></div>'
+                  );
+                })
+                .join('')
             : listEmpty('لا أرصدة معتمدين لنا (رصيد سالب)');
         }
 
@@ -62,17 +88,34 @@
         if (mb) {
           var mlist = d.members || [];
           mb.innerHTML = mlist.length
-            ? '<ul class="divide-y divide-slate-100">' + mlist.map(function(x) {
-              return '<li class="py-2 flex justify-between gap-4"><span class="font-mono">' + esc(x.memberUserId) +
-                '</span><span class="font-semibold tabular-nums text-emerald-700">' + fmt(x.amountOwedToUs) + '</span></li>';
-            }).join('') + '</ul>'
+            ? mlist
+                .map(function(x) {
+                  return (
+                    '<div class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50/90 to-white px-4 py-3.5 transition hover:border-indigo-200 hover:shadow-sm">' +
+                    '<span class="font-mono text-sm text-slate-700">' +
+                    esc(x.memberUserId) +
+                    '</span>' +
+                    '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-emerald-700">' +
+                    fmt(x.amountOwedToUs) +
+                    '</span></div>'
+                  );
+                })
+                .join('')
             : listEmpty('لا ديون مستخدمين على العضو');
         }
 
         var rt = document.getElementById('recvReturns');
         if (rt) {
           var rp = d.returnsPendingUsd != null ? d.returnsPendingUsd : 0;
-          rt.textContent = rp > 0.0001 ? 'إجمالي مرتجعات معلّقة: ' + fmt(rp) : 'لا مرتجعات معلّقة مسجّلة.';
+          if (rp > 0.0001) {
+            rt.innerHTML =
+              '<span class="inline-flex items-center gap-2 rounded-xl bg-orange-50 border border-orange-100 px-4 py-3 font-mono font-bold text-orange-900 tabular-nums">' +
+              fmt(rp) +
+              '</span><span class="block mt-3 text-xs text-slate-500">إجمالي مرتجعات معلّقة (USD تقريباً)</span>';
+          } else {
+            rt.innerHTML =
+              '<span class="text-slate-500"><i class="fas fa-check-circle text-emerald-500 ml-1"></i> لا مرتجعات معلّقة مسجّلة.</span>';
+          }
         }
       })
       .catch(function() {
