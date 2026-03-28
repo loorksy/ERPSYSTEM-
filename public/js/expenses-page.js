@@ -14,28 +14,28 @@
     var tbody = document.getElementById('expUnifiedBody');
     var src = document.getElementById('expUnifiedFilter');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-8 text-center text-sm text-slate-400">جاري التحميل…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-sm text-slate-400"><i class="fas fa-circle-notch fa-spin text-indigo-500 ml-2"></i> جاري التحميل…</td></tr>';
     var q = new URLSearchParams();
     if (src && src.value) q.set('sourceType', src.value);
     apiCall('/api/expenses/ledger-unified?' + q.toString()).then(function(res) {
       if (!res.success) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-8 text-center text-sm text-red-600">' + (res.message || 'فشل') + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-sm text-red-600">' + (res.message || 'فشل') + '</td></tr>';
         return;
       }
       var rows = res.rows || [];
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-8 text-center text-sm text-slate-400">لا سجلات</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-sm text-slate-400">لا سجلات مطابقة</td></tr>';
         return;
       }
       tbody.innerHTML = rows.map(function(r) {
         var d = r.created_at ? new Date(r.created_at).toLocaleString('ar-SA') : '—';
         var kind = r.source_kind === 'manual_entry' ? 'يدوي' : 'دفتر';
-        return '<tr class="border-b border-slate-100 hover:bg-slate-50/80">' +
-          '<td class="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">' + d + '</td>' +
-          '<td class="px-3 py-2.5 font-mono text-sm tabular-nums text-slate-900">' + fmt(r.amount) + '</td>' +
-          '<td class="px-3 py-2.5 text-sm text-slate-800">' + (r.source_type || '') + '</td>' +
-          '<td class="px-3 py-2.5 text-xs text-slate-600">' + kind + '</td>' +
-          '<td class="px-3 py-2.5 text-sm text-slate-600 max-w-xs truncate" title="' + String(r.notes || '').replace(/"/g, '&quot;') + '">' + (r.notes || '') + '</td></tr>';
+        return '<tr class="hover:bg-slate-50/90 transition-colors">' +
+          '<td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">' + d + '</td>' +
+          '<td class="px-4 py-3 font-mono text-sm tabular-nums text-slate-900 text-left" dir="ltr">' + fmt(r.amount) + '</td>' +
+          '<td class="px-4 py-3 text-sm text-slate-800">' + (r.source_type || '') + '</td>' +
+          '<td class="px-4 py-3"><span class="inline-flex rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">' + kind + '</span></td>' +
+          '<td class="px-4 py-3 text-sm text-slate-600 max-w-[12rem] sm:max-w-xs truncate" title="' + String(r.notes || '').replace(/"/g, '&quot;') + '">' + (r.notes || '') + '</td></tr>';
       }).join('');
     });
   };

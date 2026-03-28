@@ -170,20 +170,22 @@ window.homeCloseFundModal = function() {
 function initHomeSheetsStatus() {
   var el = document.getElementById('homeSheetsStatus');
   if (!el) return;
+  var base =
+    'inline-flex items-center rounded-full px-2 py-0.5 text-[0.6rem] sm:text-[0.65rem] font-semibold';
   fetch('/sheets/status', { credentials: 'same-origin' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.success && data.connected) {
-        el.textContent = 'مفعل';
-        el.className = 'text-xs font-medium py-0.5 px-2.5 rounded-full bg-emerald-50 text-emerald-600';
+        el.textContent = 'متصل';
+        el.className = base + ' bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80';
       } else {
-        el.textContent = 'غير مفعل';
-        el.className = 'text-xs font-medium py-0.5 px-2.5 rounded-full bg-red-50 text-red-500';
+        el.textContent = 'غير متصل';
+        el.className = base + ' bg-amber-50 text-amber-800 ring-1 ring-amber-200/80';
       }
     })
     .catch(function() {
-      el.textContent = 'غير مفعل';
-      el.className = 'text-xs font-medium py-0.5 px-2.5 rounded-full bg-red-50 text-red-500';
+      el.textContent = 'غير متصل';
+      el.className = base + ' bg-amber-50 text-amber-800 ring-1 ring-amber-200/80';
     });
 }
 
