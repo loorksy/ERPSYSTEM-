@@ -67,20 +67,39 @@
   }
 </style>
 <div class="max-w-5xl">
-  <div id="settingsCard" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden" data-tabs-container="settings">
-    <div class="flex items-center gap-3 py-5 px-6 border-b border-slate-100">
-      <i class="fas fa-cog text-xl text-indigo-600"></i>
-      <h3 class="text-lg font-bold">الإعدادات</h3>
-    </div>
-    <div class="p-6 md:p-10">
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-6 flex-wrap" id="settingsTabsBar" role="tablist" aria-label="أقسام الإعدادات">
-        <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200" data-settings-tab="settings-general">عام</button>
-        <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-indigo-600 text-white shadow-md" data-settings-tab="settings-profile">الملف الشخصي</button>
-        <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200" data-settings-tab="settings-ai">الذكاء الاصطناعي</button>
-        <button type="button" role="tab" class="settings-tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 bg-slate-100 text-slate-600 hover:bg-slate-200" data-settings-tab="settings-sheets">Google Sheets</button>
+  <div id="settingsCard" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col min-w-0" data-tabs-container="settings">
+    <header class="shrink-0 flex items-center gap-3 py-5 px-4 sm:px-6 border-b border-slate-100 bg-white">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
+        <i class="fas fa-cog text-xl"></i>
       </div>
+      <div class="min-w-0">
+        <h3 class="text-lg font-bold text-slate-900 truncate">الإعدادات</h3>
+        <p class="mt-0.5 text-sm text-slate-500 leading-snug">العملة، الحساب، الذكاء، وربط Google</p>
+      </div>
+    </header>
 
+    <div class="shrink-0 border-b border-slate-100 bg-white px-4 py-3 md:px-6">
+      <nav id="settingsTabsBar" class="rounded-xl bg-slate-100 p-1 grid grid-cols-4 gap-0 shadow-inner touch-manipulation" role="tablist" aria-label="أقسام الإعدادات">
+        <button type="button" role="tab" class="settings-tab-btn flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors min-w-0" data-settings-tab="settings-general">
+          <i class="fas fa-sliders-h shrink-0 text-[0.9em] sm:text-[0.95em]"></i>
+          <span class="leading-tight text-center">عام</span>
+        </button>
+        <button type="button" role="tab" class="settings-tab-btn flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-semibold text-indigo-700 bg-white shadow-sm ring-1 ring-slate-200/90 transition-colors min-w-0" data-settings-tab="settings-profile">
+          <i class="fas fa-user-circle shrink-0 text-[0.9em] sm:text-[0.95em]"></i>
+          <span class="leading-tight text-center line-clamp-2">الملف الشخصي</span>
+        </button>
+        <button type="button" role="tab" class="settings-tab-btn flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors min-w-0" data-settings-tab="settings-ai">
+          <i class="fas fa-robot shrink-0 text-[0.9em] sm:text-[0.95em]"></i>
+          <span class="leading-tight text-center line-clamp-2">الذكاء الاصطناعي</span>
+        </button>
+        <button type="button" role="tab" class="settings-tab-btn flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors min-w-0" data-settings-tab="settings-sheets">
+          <i class="fas fa-table shrink-0 text-[0.9em] sm:text-[0.95em] text-emerald-600"></i>
+          <span class="leading-tight text-center line-clamp-2">Google Sheets</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="p-6 md:p-10">
       <!-- General Tab -->
       <div id="settings-general" class="settings-tab-panel hidden" data-settings-panel="settings-general">
         <div class="space-y-8">
@@ -351,6 +370,11 @@
 (function() {
   var card = document.getElementById('settingsCard');
   if (!card) return;
+  var SETTINGS_TAB_BASE =
+    'settings-tab-btn flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm transition-colors touch-manipulation min-w-0';
+  var SETTINGS_TAB_INACTIVE = SETTINGS_TAB_BASE + ' font-medium text-slate-600 hover:text-slate-900';
+  var SETTINGS_TAB_ACTIVE =
+    SETTINGS_TAB_BASE + ' font-semibold text-indigo-700 bg-white shadow-sm ring-1 ring-slate-200/90';
   function showTab(tabId) {
     var panels = card.querySelectorAll('.settings-tab-panel');
     var targetPanel = card.querySelector('[data-settings-panel="' + tabId + '"]');
@@ -364,14 +388,10 @@
       if (tabId === 'settings-sheets' && typeof loadSheetsStatus === 'function') loadSheetsStatus();
     }
     card.querySelectorAll('.settings-tab-btn').forEach(function(b) {
-      b.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
-      b.classList.add('bg-slate-100', 'text-slate-600');
+      b.className = SETTINGS_TAB_INACTIVE;
     });
     var btn = card.querySelector('[data-settings-tab="' + tabId + '"]');
-    if (btn) {
-      btn.classList.remove('bg-slate-100', 'text-slate-600');
-      btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
-    }
+    if (btn) btn.className = SETTINGS_TAB_ACTIVE;
   }
   card.addEventListener('click', function(e) {
     var btn = e.target.closest('.settings-tab-btn');

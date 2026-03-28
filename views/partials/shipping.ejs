@@ -43,23 +43,23 @@
       </div>
     </header>
 
-    <!-- شريط تبويبات — أربعة أقسام (شبكة 2×2 على الموبايل) -->
+    <!-- شريط تبويبات — أربعة أقسام في صف واحد (أيقونة + نص؛ عمودي على الشاشات الضيقة) -->
     <div class="shrink-0 border-b border-slate-100 bg-white px-4 py-3 md:px-6">
-      <nav class="rounded-xl bg-slate-100 p-1 grid grid-cols-2 sm:grid-cols-4 gap-0 shadow-inner touch-manipulation" role="tablist" aria-label="أقسام الشحن">
-        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-carriers')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-          <i class="fas fa-truck-moving shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
-          <span class="leading-tight text-center">وكالات الشحن</span>
+      <nav class="rounded-xl bg-slate-100 p-1 grid grid-cols-4 gap-0 shadow-inner touch-manipulation" role="tablist" aria-label="أقسام الشحن">
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-carriers')" class="shipping-tab-link flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors min-w-0">
+          <i class="fas fa-truck-moving shrink-0 text-[0.9em] sm:text-[0.95em]"></i>
+          <span class="leading-tight text-center line-clamp-2">وكالات الشحن</span>
         </button>
-        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-main')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-semibold text-indigo-700 bg-white shadow-sm ring-1 ring-slate-200/90 transition-colors">
-          <i class="fas fa-right-left shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-main')" class="shipping-tab-link flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-semibold text-indigo-700 bg-white shadow-sm ring-1 ring-slate-200/90 transition-colors min-w-0">
+          <i class="fas fa-right-left shrink-0 text-[0.9em] sm:text-[0.95em]"></i>
           <span class="leading-tight text-center">الشحن</span>
         </button>
-        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-salary-swap')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-          <i class="fas fa-exchange-alt shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
-          <span class="leading-tight text-center">تبديل راتب</span>
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-salary-swap')" class="shipping-tab-link flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors min-w-0">
+          <i class="fas fa-exchange-alt shrink-0 text-[0.9em] sm:text-[0.95em]"></i>
+          <span class="leading-tight text-center line-clamp-2">تبديل راتب</span>
         </button>
-        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-packages')" class="shipping-tab-link flex h-12 items-center justify-center gap-1.5 px-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-          <i class="fas fa-box-open shrink-0 text-[0.85em] sm:text-[0.95em]"></i>
+        <button type="button" role="tab" onclick="switchShippingTab(this, 'shipping-packages')" class="shipping-tab-link flex h-14 sm:h-12 flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 rounded-lg text-[0.62rem] sm:text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors min-w-0">
+          <i class="fas fa-box-open shrink-0 text-[0.9em] sm:text-[0.95em]"></i>
           <span class="leading-tight text-center">الباقات</span>
         </button>
       </nav>
