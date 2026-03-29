@@ -45,12 +45,17 @@
             </span>
             <div>
               <p id="payrollAuditSessionTitle" class="text-sm font-bold text-amber-950">التدقيق نشط لهذه الدورة</p>
-              <p id="payrollAuditSessionSub" class="text-xs text-amber-900/80 mt-1">يُحفظ اختيار الدورة والجدول والأعمدة في هذا الجهاز. بعد أول «تدقيق» ناجح يظهر زر إغلاق الجلسة. الحالة تبقى في السيرفر حتى تضغط إغلاق التدقيق.</p>
+              <p id="payrollAuditSessionSub" class="text-xs text-amber-900/80 mt-1">يُحفظ اختيار الدورة والجدول والأعمدة في هذا الجهاز. استخدم «إغلاق التدقيق» عند الانتهاء من العمل على هذه الدورة. إذا رأيت أن الجلسة مغلقة ولم تكن قد أغلقتها، اضغط «إعادة فتح جلسة التدقيق».</p>
             </div>
           </div>
-          <button type="button" id="payrollCloseAuditBtn" onclick="payrollCloseAuditSession()" class="hidden inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl font-semibold text-sm bg-amber-700 text-white hover:bg-amber-800 active:scale-[0.98] transition shrink-0">
-            إغلاق التدقيق
-          </button>
+          <div id="payrollAuditSessionActions" class="flex flex-col sm:flex-row gap-2 shrink-0">
+            <button type="button" id="payrollCloseAuditBtn" onclick="payrollCloseAuditSession()" class="hidden inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl font-semibold text-sm bg-amber-700 text-white hover:bg-amber-800 active:scale-[0.98] transition">
+              إغلاق التدقيق
+            </button>
+            <button type="button" id="payrollReopenAuditBtn" onclick="payrollReopenAuditSession()" class="hidden inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl font-semibold text-sm bg-slate-700 text-white hover:bg-slate-800 active:scale-[0.98] transition">
+              إعادة فتح جلسة التدقيق
+            </button>
+          </div>
         </div>
         <p id="payrollAuditSessionClosedNote" class="hidden mt-3 text-sm font-medium text-emerald-800 border-t border-amber-200/60 pt-3"><i class="fas fa-check-circle ml-1"></i> تم إغلاق جلسة التدقيق لهذه الدورة.</p>
       </div>
@@ -194,12 +199,6 @@
 
 <script>
 var PAYROLL_DRAFT_KEY = 'payrollAuditDraftV1';
-
-function payrollAuditHasRunForCycle(cycleId) {
-  try {
-    return localStorage.getItem('payroll_audit_has_run_' + cycleId) === '1';
-  } catch (_) { return false; }
-}
 
 function payrollMarkAuditRun(cycleId) {
   try {
@@ -351,9 +350,11 @@ async function payrollRefreshAuditSession() {
   var optionsSection = document.getElementById('payrollOptionsSection');
   var banner = document.getElementById('payrollAuditSessionBanner');
   var btn = document.getElementById('payrollCloseAuditBtn');
+  var reopenBtn = document.getElementById('payrollReopenAuditBtn');
   var closedNote = document.getElementById('payrollAuditSessionClosedNote');
   var titleEl = document.getElementById('payrollAuditSessionTitle');
   var subEl = document.getElementById('payrollAuditSessionSub');
+  var subOpen = 'يُحفظ اختيار الدورة والجدول والأعمدة في هذا الجهاز. استخدم «إغلاق التدقيق» عند الانتهاء من العمل على هذه الدورة.';
   if (!banner || !sel || !sel.value) {
     if (banner) banner.classList.add('hidden');
     return;
@@ -362,28 +363,37 @@ async function payrollRefreshAuditSession() {
     if (banner) banner.classList.add('hidden');
     return;
   }
+  banner.classList.remove('hidden');
   try {
     var res = await fetch('/api/sheet/cycle/' + encodeURIComponent(sel.value) + '/audit-session', { credentials: 'same-origin' });
     var data = await res.json();
     if (!data.success) {
-      banner.classList.add('hidden');
+      if (titleEl) titleEl.textContent = 'جلسة التدقيق';
+      if (subEl) subEl.textContent = 'تعذّر تحميل حالة الجلسة من السيرفر. تحقق من الاتصال أو أعد تحميل الصفحة.';
+      if (btn) btn.classList.remove('hidden');
+      if (reopenBtn) reopenBtn.classList.add('hidden');
+      if (closedNote) closedNote.classList.add('hidden');
       return;
     }
-    banner.classList.remove('hidden');
     if (data.closed) {
       if (btn) btn.classList.add('hidden');
+      if (reopenBtn) reopenBtn.classList.remove('hidden');
       if (closedNote) closedNote.classList.remove('hidden');
       if (titleEl) titleEl.textContent = 'تم إغلاق التدقيق';
-      if (subEl) subEl.textContent = 'يمكنك متابعة العمل؛ لإعادة فتح جلسة تدقيق جديدة لاحقاً قد نضيف خياراً من الإعدادات.';
+      if (subEl) subEl.textContent = 'هذه الدورة مُعلَّمة كمغلقة في النظام. يمكنك إعادة فتح الجلسة للمتابعة، أو متابعة العمل بدون تغيير الحالة.';
     } else {
-      var hasRun = payrollAuditHasRunForCycle(sel.value);
-      if (btn) btn.classList.toggle('hidden', !hasRun);
+      if (btn) btn.classList.remove('hidden');
+      if (reopenBtn) reopenBtn.classList.add('hidden');
       if (closedNote) closedNote.classList.add('hidden');
       if (titleEl) titleEl.textContent = 'التدقيق نشط لهذه الدورة';
-      if (subEl) subEl.textContent = 'يُحفظ اختيار الدورة والجدول والأعمدة في هذا الجهاز. بعد أول «تدقيق» ناجح يظهر زر إغلاق الجلسة. الحالة تبقى في السيرفر حتى تضغط إغلاق التدقيق.';
+      if (subEl) subEl.textContent = subOpen;
     }
   } catch (_) {
-    banner.classList.add('hidden');
+    if (titleEl) titleEl.textContent = 'جلسة التدقيق';
+    if (subEl) subEl.textContent = 'تعذّر الاتصال بالسيرفر لتحديث حالة الجلسة. الشريط يبقى ظاهراً — أعد المحاولة بعد قليل.';
+    if (btn) btn.classList.remove('hidden');
+    if (reopenBtn) reopenBtn.classList.add('hidden');
+    if (closedNote) closedNote.classList.add('hidden');
   }
 }
 
@@ -404,6 +414,33 @@ async function payrollCloseAuditSession() {
     var data = await res.json();
     if (data.success) {
       if (typeof showToast === 'function') showToast('تم إغلاق جلسة التدقيق', 'success');
+      await payrollRefreshAuditSession();
+    } else {
+      if (typeof showToast === 'function') showToast(data.message || 'فشل', 'error');
+    }
+  } catch (_) {
+    if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+  }
+  if (btn) { btn.disabled = false; }
+}
+
+async function payrollReopenAuditSession() {
+  var sel = document.getElementById('payrollCycleSelect');
+  if (!sel || !sel.value) {
+    if (typeof showToast === 'function') showToast('اختر الدورة أولاً', 'error');
+    return;
+  }
+  var btn = document.getElementById('payrollReopenAuditBtn');
+  if (btn) { btn.disabled = true; }
+  try {
+    var res = await fetch('/api/sheet/cycle/' + encodeURIComponent(sel.value) + '/reopen-audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin'
+    });
+    var data = await res.json();
+    if (data.success) {
+      if (typeof showToast === 'function') showToast('تم إعادة فتح جلسة التدقيق', 'success');
       await payrollRefreshAuditSession();
     } else {
       if (typeof showToast === 'function') showToast(data.message || 'فشل', 'error');

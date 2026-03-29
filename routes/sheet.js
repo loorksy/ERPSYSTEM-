@@ -1617,4 +1617,22 @@ router.post('/cycle/:cycleId/close-audit', requireAuth, async (req, res) => {
   }
 });
 
+/** إعادة فتح جلسة التدقيق (مسح تاريخ الإغلاق) */
+router.post('/cycle/:cycleId/reopen-audit', requireAuth, async (req, res) => {
+  try {
+    const cycleId = parseInt(req.params.cycleId, 10);
+    if (!cycleId) return res.json({ success: false, message: 'معرّف الدورة غير صالح' });
+    const db = getDb();
+    const r = await db.query(
+      `UPDATE financial_cycles SET payroll_audit_closed_at = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [cycleId, req.session.userId]
+    );
+    if (!r.rows.length) return res.json({ success: false, message: 'الدورة غير موجودة' });
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل إعادة فتح الجلسة' });
+  }
+});
+
 module.exports = router;
