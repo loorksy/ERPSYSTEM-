@@ -74,6 +74,10 @@ async function removeDeferredLinesForAuditedUsers(db, userId, cycleId, memberUse
     'DELETE FROM deferred_salary_lines WHERE user_id = $1 AND cycle_id = $2 AND member_user_id = ANY($3::text[])',
     [userId, cycleId, ids]
   );
+  try {
+    const { syncPrimaryAccreditationWithDeferred } = require('./primaryAccreditationDeferredSync');
+    await syncPrimaryAccreditationWithDeferred(db, userId);
+  } catch (_) {}
 }
 
 async function getMemberDeferredHistory(db, userId, memberUserId) {
@@ -138,6 +142,11 @@ async function mergeMemberDeferredIntoCycle(db, userId, memberUserId, targetCycl
     });
   } catch (_) {}
 
+  try {
+    const { syncPrimaryAccreditationWithDeferred } = require('./primaryAccreditationDeferredSync');
+    await syncPrimaryAccreditationWithDeferred(db, userId);
+  } catch (_) {}
+
   return {
     success: true,
     consolidatedTotal: total,
@@ -178,6 +187,10 @@ async function reduceDeferredLinesForMember(db, userId, memberUserId, amountToRe
       );
     }
   }
+  try {
+    const { syncPrimaryAccreditationWithDeferred } = require('./primaryAccreditationDeferredSync');
+    await syncPrimaryAccreditationWithDeferred(db, userId);
+  } catch (_) {}
 }
 
 /**
@@ -206,6 +219,10 @@ async function addDeferredAdjustmentToMemberLines(db, userId, memberUserId, amou
        updated_at = CURRENT_TIMESTAMP`,
     [userId, cycleId, mid, amt]
   );
+  try {
+    const { syncPrimaryAccreditationWithDeferred } = require('./primaryAccreditationDeferredSync');
+    await syncPrimaryAccreditationWithDeferred(db, userId);
+  } catch (_) {}
 }
 
 module.exports = {

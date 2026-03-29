@@ -10,6 +10,25 @@
     </div>
   </div>
 
+  <!-- جلسة التدقيق (مفتوحة حتى «إغلاق التدقيق» — من السيرفر) -->
+  <div id="payrollAuditSessionBanner" class="hidden max-w-4xl mx-auto rounded-2xl border border-amber-200/90 bg-gradient-to-l from-amber-50 to-amber-100/50 p-4 sm:p-5 shadow-sm">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-200/80 text-amber-900">
+          <i class="fas fa-clipboard-check"></i>
+        </span>
+        <div>
+          <p id="payrollAuditSessionTitle" class="text-sm font-bold text-amber-950">التدقيق نشط لهذه الدورة</p>
+          <p id="payrollAuditSessionSub" class="text-xs text-amber-900/80 mt-1">أكمل معلومات المستخدمين والمؤجل ثم اضغط «إغلاق التدقيق» عند الانتهاء. الحالة تُحفظ في النظام حتى بعد مغادرة الصفحة.</p>
+        </div>
+      </div>
+      <button type="button" id="payrollCloseAuditBtn" onclick="payrollCloseAuditSession()" class="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl font-semibold text-sm bg-amber-700 text-white hover:bg-amber-800 active:scale-[0.98] transition shrink-0">
+        إغلاق التدقيق
+      </button>
+    </div>
+    <p id="payrollAuditSessionClosedNote" class="hidden mt-3 text-sm font-medium text-emerald-800 border-t border-amber-200/60 pt-3"><i class="fas fa-check-circle ml-1"></i> تم إغلاق جلسة التدقيق لهذه الدورة.</p>
+  </div>
+
   <!-- 1. مزامنة الدورة المالية -->
   <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <div class="p-4 sm:p-6">
@@ -213,6 +232,68 @@ document.getElementById('payrollAgentColorText').addEventListener('input', syncP
 document.getElementById('payrollMgmtColor').addEventListener('input', syncPayrollMgmtColorFromPicker);
 document.getElementById('payrollMgmtColorText').addEventListener('input', syncPayrollMgmtColor);
 
+async function payrollRefreshAuditSession() {
+  var sel = document.getElementById('payrollCycleSelect');
+  var banner = document.getElementById('payrollAuditSessionBanner');
+  var btn = document.getElementById('payrollCloseAuditBtn');
+  var closedNote = document.getElementById('payrollAuditSessionClosedNote');
+  var titleEl = document.getElementById('payrollAuditSessionTitle');
+  var subEl = document.getElementById('payrollAuditSessionSub');
+  if (!banner || !sel || !sel.value) {
+    if (banner) banner.classList.add('hidden');
+    return;
+  }
+  try {
+    var res = await fetch('/api/sheet/cycle/' + encodeURIComponent(sel.value) + '/audit-session', { credentials: 'same-origin' });
+    var data = await res.json();
+    if (!data.success) {
+      banner.classList.add('hidden');
+      return;
+    }
+    banner.classList.remove('hidden');
+    if (data.closed) {
+      if (btn) btn.classList.add('hidden');
+      if (closedNote) closedNote.classList.remove('hidden');
+      if (titleEl) titleEl.textContent = 'تم إغلاق التدقيق';
+      if (subEl) subEl.textContent = 'يمكنك متابعة العمل؛ لإعادة فتح جلسة تدقيق جديدة لاحقاً قد نضيف خياراً من الإعدادات.';
+    } else {
+      if (btn) btn.classList.remove('hidden');
+      if (closedNote) closedNote.classList.add('hidden');
+      if (titleEl) titleEl.textContent = 'التدقيق نشط لهذه الدورة';
+      if (subEl) subEl.textContent = 'أكمل معلومات المستخدمين والمؤجل ثم اضغط «إغلاق التدقيق» عند الانتهاء. الحالة تُحفظ في النظام حتى بعد مغادرة الصفحة.';
+    }
+  } catch (_) {
+    banner.classList.add('hidden');
+  }
+}
+
+async function payrollCloseAuditSession() {
+  var sel = document.getElementById('payrollCycleSelect');
+  if (!sel || !sel.value) {
+    if (typeof showToast === 'function') showToast('اختر الدورة أولاً', 'error');
+    return;
+  }
+  var btn = document.getElementById('payrollCloseAuditBtn');
+  if (btn) { btn.disabled = true; }
+  try {
+    var res = await fetch('/api/sheet/cycle/' + encodeURIComponent(sel.value) + '/close-audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin'
+    });
+    var data = await res.json();
+    if (data.success) {
+      if (typeof showToast === 'function') showToast('تم إغلاق جلسة التدقيق', 'success');
+      await payrollRefreshAuditSession();
+    } else {
+      if (typeof showToast === 'function') showToast(data.message || 'فشل', 'error');
+    }
+  } catch (_) {
+    if (typeof showToast === 'function') showToast('خطأ في الاتصال', 'error');
+  }
+  if (btn) { btn.disabled = false; }
+}
+
 async function payrollLoadCycles() {
   var sel = document.getElementById('payrollCycleSelect');
   var hint = document.getElementById('payrollCycleHint');
@@ -270,6 +351,7 @@ function columnLetter(i) {
       if (typeof showToast === 'function') showToast(syncData.message, 'warning');
     }
     await payrollLoadCycleColumns(cycleId);
+    await payrollRefreshAuditSession();
   } catch (_) {}
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> تحميل الدورة'; }
   if (typeof showToast === 'function') showToast('تم تحميل الدورة. اختر جدول البيانات وحدد الأعمدة ثم انقر تنفيذ.', 'success');
@@ -537,6 +619,7 @@ async function payrollExecute() {
       }
       if (typeof showToast === 'function') showToast(toastMsg, data.applied ? 'success' : 'warning');
       if (typeof window.refreshDeferredBalanceCard === 'function') window.refreshDeferredBalanceCard();
+      if (typeof payrollRefreshAuditSession === 'function') payrollRefreshAuditSession();
     } else {
       if (typeof showToast === 'function') showToast(data.message || 'فشل التنفيذ', 'error');
     }
@@ -584,7 +667,9 @@ async function payrollLoadSettings() {
 }
 
 (function initPayrollPage() {
-  payrollLoadCycles();
+  var csel = document.getElementById('payrollCycleSelect');
+  if (csel) csel.addEventListener('change', function() { payrollRefreshAuditSession(); });
+  payrollLoadCycles().then(function() { return payrollRefreshAuditSession(); });
   payrollLoadSettings();
 })();
 </script>

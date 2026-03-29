@@ -179,8 +179,36 @@ function runPayrollAuditCore({
   };
 }
 
+/**
+ * أرقام مستخدمين مكررة في عمود المعرف في جدول معلومات المستخدمين (بعد صف العناوين إن وُجد).
+ * @returns {{ duplicateIds: string[], duplicateRowNumbers: number[] }}
+ */
+function findDuplicateUserInfoMemberIds(userInfoRows, userInfoUserIdCol) {
+  const COL_C = columnLetterToIndex(userInfoUserIdCol || 'C') ?? 2;
+  const allRows = Array.isArray(userInfoRows) ? userInfoRows : [];
+  const dataStart = allRows.length > 0 && isHeaderRowUserInfo(allRows[0], COL_C) ? 1 : 0;
+  const seen = new Map();
+  const duplicateIds = [];
+  const duplicateRowNumbers = [];
+  for (let i = dataStart; i < allRows.length; i++) {
+    const id = normalizeUserId(allRows[i][COL_C]);
+    if (!id) continue;
+    if (seen.has(id)) {
+      duplicateIds.push(id);
+      duplicateRowNumbers.push(i + 1);
+    } else {
+      seen.set(id, i + 1);
+    }
+  }
+  return {
+    duplicateIds: [...new Set(duplicateIds)],
+    duplicateRowNumbers,
+  };
+}
+
 module.exports = {
   runPayrollAuditCore,
   isHeaderRowUserInfo,
   isHeaderRowCycle,
+  findDuplicateUserInfoMemberIds,
 };

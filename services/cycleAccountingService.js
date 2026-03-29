@@ -3,6 +3,7 @@ const { parseDecimal } = require('../utils/numbers');
 const { normalizeUserId } = require('./payrollSearchService');
 const { insertNetProfitLedgerAndMirrorFund } = require('./ledgerService');
 const { replaceDeferredLinesForCycle } = require('./deferredSalaryService');
+const { syncPrimaryAccreditationWithDeferred } = require('./primaryAccreditationDeferredSync');
 const { computeSalaryWithDiscount, getCycleColumns } = require('./payrollSearchService');
 const { getMainFundId, adjustFundBalance } = require('./fundService');
 
@@ -223,6 +224,9 @@ async function rebuildDeferredFromLocalAgentData(userId, cycleId) {
         });
       }
     }
+    try {
+      await syncPrimaryAccreditationWithDeferred(db, userId);
+    } catch (_) {}
     return {
       success: true,
       deferredBalance: 0,
@@ -275,6 +279,10 @@ async function rebuildDeferredFromLocalAgentData(userId, cycleId) {
       });
     }
   }
+
+  try {
+    await syncPrimaryAccreditationWithDeferred(db, userId);
+  } catch (_) {}
 
   return { success: true, deferredBalance: totalDeferred, users, transferDiscountProfit };
 }

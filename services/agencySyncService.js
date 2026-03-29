@@ -335,6 +335,10 @@ async function fetchDeferredBalanceUsers(cycleId, userId, sheetsApi) {
   )).rows[0];
   if (hasAnyAuditCacheRow?.e !== true) {
     await replaceDeferredLinesForCycle(db, userId, cycleId, []);
+    try {
+      const { syncPrimaryAccreditationWithDeferred } = require('./primaryAccreditationDeferredSync');
+      await syncPrimaryAccreditationWithDeferred(db, userId);
+    } catch (_) {}
     return [];
   }
 
@@ -422,6 +426,11 @@ async function fetchDeferredBalanceUsers(cycleId, userId, sheetsApi) {
       });
     }
   }
+
+  try {
+    const { syncPrimaryAccreditationWithDeferred } = require('./primaryAccreditationDeferredSync');
+    await syncPrimaryAccreditationWithDeferred(db, userId);
+  } catch (_) {}
 
   return result;
 }

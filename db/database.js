@@ -222,6 +222,20 @@ async function ensureUserSimpleFinancialTermsColumn() {
   }
 }
 
+/** مزامنة المؤجل مع المعتمد الرئيسي + جلسة إغلاق التدقيق */
+async function ensurePayrollDeferredSyncAndAuditSessionColumns() {
+  if (!pgPool) return;
+  try {
+    await pgPool.query('ALTER TABLE payroll_settings ADD COLUMN IF NOT EXISTS last_deferred_offset_applied REAL DEFAULT 0');
+    await pgPool.query('ALTER TABLE payroll_settings ADD COLUMN IF NOT EXISTS deferred_sync_baseline_done INTEGER DEFAULT 0');
+    await pgPool.query('ALTER TABLE financial_cycles ADD COLUMN IF NOT EXISTS payroll_audit_closed_at TIMESTAMP NULL');
+  } catch (e) {
+    if (!/already exists|duplicate column/i.test(String(e.message))) {
+      console.warn('[DB] payroll deferred sync / audit session:', e.message);
+    }
+  }
+}
+
 async function ensureAdminUser() {
   if (!pgPool) return;
   const r = await query('SELECT * FROM users WHERE username = $1', [process.env.ADMIN_USERNAME || 'admin']);
@@ -249,6 +263,7 @@ async function initDatabase() {
     await ensureFundsExcludeDashboardColumn();
     await ensureAccreditationBalanceBuckets();
     await ensureDeferredSalaryLinesTable();
+    await ensurePayrollDeferredSyncAndAuditSessionColumns();
     await ensureMemberDirectoryTables();
     await ensureUserSimpleFinancialTermsColumn();
     await ensureAdminUser();

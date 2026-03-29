@@ -18,7 +18,7 @@ const {
   batchUpdateRequestsInChunks,
   sleep,
 } = require('../services/googleSheetsReadHelpers');
-const { runPayrollAuditCore } = require('../services/payrollAuditEngine');
+const { runPayrollAuditCore, findDuplicateUserInfoMemberIds } = require('../services/payrollAuditEngine');
 const { normalizeUserId } = require('../services/payrollSearchService');
 
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:3000'}/sheets/callback`;
@@ -785,6 +785,21 @@ router.post('/payroll-audit-local', requireAuth, async (req, res) => {
       });
     }
 
+    const dupLocal = findDuplicateUserInfoMemberIds(userInfoRows, userInfoUserIdCol);
+    if (dupLocal.duplicateIds.length > 0) {
+      return res.json({
+        success: false,
+        code: 'USER_INFO_DUPLICATE_IDS',
+        message:
+          'جدول معلومات المستخدمين يحتوي رقم مستخدم مكرراً. أزل التكرار (صفوف: ' +
+          dupLocal.duplicateRowNumbers.slice(0, 20).join(', ') +
+          (dupLocal.duplicateRowNumbers.length > 20 ? '…' : '') +
+          ').',
+        duplicateIds: dupLocal.duplicateIds,
+        duplicateRowNumbers: dupLocal.duplicateRowNumbers,
+      });
+    }
+
     const userInfoHash = hashUserInfoRows(userInfoRows);
     if (cycle.payroll_audit_user_info_hash && cycle.payroll_audit_user_info_hash === userInfoHash && !forcePayrollReaudit) {
       return res.json({
@@ -1069,6 +1084,21 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
       range: `'${mainSheetTitle}'!A:ZZ`
     });
     const allRows = (mainData.data.values || []);
+    const dupCheck = findDuplicateUserInfoMemberIds(allRows, userInfoUserIdCol);
+    if (dupCheck.duplicateIds.length > 0) {
+      return res.json({
+        success: false,
+        code: 'USER_INFO_DUPLICATE_IDS',
+        message:
+          'جدول معلومات المستخدمين يحتوي رقم مستخدم مكرراً في عمود المعرف. أزل التكرار (صفوف: ' +
+          dupCheck.duplicateRowNumbers.slice(0, 20).join(', ') +
+          (dupCheck.duplicateRowNumbers.length > 20 ? '…' : '') +
+          ').',
+        duplicateIds: dupCheck.duplicateIds,
+        duplicateRowNumbers: dupCheck.duplicateRowNumbers,
+        spreadsheetUrl: meta.data.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
+      });
+    }
     const userInfoHash = hashUserInfoRows(allRows);
     if (cycle.payroll_audit_user_info_hash && cycle.payroll_audit_user_info_hash === userInfoHash && !forcePayrollReaudit) {
       return res.json({
@@ -1247,6 +1277,12 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
     const payrollSheetDelayMs = parseInt(process.env.SHEETS_PAYROLL_SHEET_DELAY_MS || '1200', 10) || 1200;
     let payrollSheetIter = 0;
 
+    const auditedMemberIdsRows = (await db.query(
+      `SELECT member_user_id FROM payroll_user_audit_cache WHERE user_id = $1 AND cycle_id = $2 AND audit_status = $3`,
+      [req.session.userId, cycleId, 'مدقق']
+    )).rows;
+    const auditedMemberIdsSet = new Set((auditedMemberIdsRows || []).map((r) => String(r.member_user_id)));
+
     /** نسخ الصفوف ولصقها في أوراق جدول الإدارة (حسب اسم الورقة من عمود D) مع التلوين — مع حماية من التكرار: لا نلصق صفاً سبق تدقيقه أو لُصق يدوياً */
     for (const title of Object.keys(byTitle)) {
       if (payrollSheetIter > 0 && payrollSheetDelayMs > 0) await sleep(payrollSheetDelayMs);
@@ -1275,10 +1311,10 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
         } catch (_) {}
       }
 
-      /** نلصق فقط الصفوف التي رقم المستخدم فيها غير موجود في الورقة بعد */
+      /** نلصق فقط الصفوف التي رقم المستخدم فيها غير موجود في الورقة بعد ولم يُسجَّل كمدقق في هذه الدورة */
       const itemsToPaste = items.filter(it => {
         const id = normalizeUserId(it.managementRow[cycleMgmtCol]);
-        return id && !existingInSheetIds.has(id);
+        return id && !existingInSheetIds.has(id) && !auditedMemberIdsSet.has(id);
       });
       if (itemsToPaste.length === 0) continue;
 
@@ -1540,6 +1576,44 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
   } catch (e) {
     console.error('payroll-execute error', e);
     res.json({ success: false, message: e.message || 'فشل تنفيذ التدقيق' });
+  }
+});
+
+/** حالة جلسة التدقيق (تبقى مفتوحة حتى يضغط المستخدم «إغلاق التدقيق» — مخزّنة في DB) */
+router.get('/cycle/:cycleId/audit-session', requireAuth, async (req, res) => {
+  try {
+    const cycleId = parseInt(req.params.cycleId, 10);
+    if (!cycleId) return res.json({ success: false, message: 'معرّف الدورة غير صالح' });
+    const db = getDb();
+    const row = (await db.query(
+      'SELECT id, payroll_audit_closed_at FROM financial_cycles WHERE id = $1 AND user_id = $2',
+      [cycleId, req.session.userId]
+    )).rows[0];
+    if (!row) return res.json({ success: false, message: 'الدورة غير موجودة' });
+    res.json({
+      success: true,
+      closed: !!row.payroll_audit_closed_at,
+      closedAt: row.payroll_audit_closed_at || null,
+    });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+router.post('/cycle/:cycleId/close-audit', requireAuth, async (req, res) => {
+  try {
+    const cycleId = parseInt(req.params.cycleId, 10);
+    if (!cycleId) return res.json({ success: false, message: 'معرّف الدورة غير صالح' });
+    const db = getDb();
+    const r = await db.query(
+      `UPDATE financial_cycles SET payroll_audit_closed_at = COALESCE(payroll_audit_closed_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2 RETURNING payroll_audit_closed_at`,
+      [cycleId, req.session.userId]
+    );
+    if (!r.rows.length) return res.json({ success: false, message: 'الدورة غير موجودة' });
+    res.json({ success: true, closedAt: r.rows[0].payroll_audit_closed_at });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل إغلاق التدقيق' });
   }
 });
 
