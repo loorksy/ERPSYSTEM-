@@ -1,3 +1,4 @@
+
 # LorkERP - نظام المحاسبة المتكامل
 
 نظام محاسبة متجاوب يعمل على الموبايل واللابتوب، مبني بلغة عربية كاملة مع دعم RTL.
@@ -3801,3 +3802,181 @@ pm2 startup
 
 ```
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+flowchart TD
+
+%% ================= AUTH =================
+A[Start] --> B[/Login Page/]
+B -->|Valid| C[Create Session]
+B -->|Invalid| B
+C --> D[/Dashboard/]
+
+%% ================= CORE NAV =================
+D --> NAV[System Navigation]
+
+NAV --> S1[Sheet]
+NAV --> S2[Payroll]
+NAV --> S3[Search]
+NAV --> S4[Clients]
+NAV --> S5[Members]
+NAV --> S6[Adjustments]
+NAV --> S7[Messages]
+NAV --> S8[Approvals]
+NAV --> S9[Agencies]
+NAV --> S10[Funds]
+NAV --> S11[Debts]
+NAV --> S12[Shipping]
+NAV --> S13[Expenses]
+NAV --> S14[FX Spread]
+NAV --> S15[Reports]
+NAV --> S16[Settings]
+
+%% ================= QUICK ACTION =================
+D --> QA[Quick Action (+)]
+
+QA --> QA1[Expense]
+QA --> QA2[Transfer Company]
+QA --> QA3[Fund Transfer]
+QA --> QA4[Agency Bonus]
+QA --> QA5[FX Operation]
+QA --> QA6[Debt Add]
+QA --> QA7[Shipping]
+
+%% ================= PAYROLL ENGINE =================
+S2 --> P1[Fetch Google Sheets]
+P1 --> P2[Validate Data]
+P2 --> P3[Apply Adjustments]
+P3 --> P4[Calculate Salary]
+
+P4 --> P5{Salary State}
+
+P5 -->|Deferred| P6[Deferred Salary Table]
+P5 -->|Due| P7[Payment Due System]
+P5 -->|Paid| P8[Ledger Entry]
+
+%% ================= MEMBERS =================
+S5 --> M1[List Members]
+M1 --> M2[View Member]
+M2 --> M3[Edit Info]
+M2 --> M4[Adjust Salary]
+M2 --> M5[Link Agency]
+
+%% ================= ADJUSTMENTS =================
+S6 --> A1[Add Adjustment]
+A1 --> A2{Type}
+A2 -->|Bonus| A3[Increase Salary]
+A2 -->|Deduction| A4[Decrease Salary]
+
+%% ================= FUNDS =================
+S10 --> F1[List Funds]
+F1 --> F2[Deposit]
+F1 --> F3[Withdraw]
+F1 --> F4[Transfer Between Funds]
+
+F2 --> F5[Ledger Update]
+F3 --> F5
+F4 --> F5
+
+%% ================= APPROVALS =================
+S8 --> AP1[List Approvals]
+AP1 --> AP2[Add Balance]
+AP2 --> AP3[Commission Calculation]
+AP3 --> F5
+
+%% ================= AGENCIES =================
+S9 --> AG1[List Agencies]
+AG1 --> AG2[Bonus Agency]
+AG1 --> AG3[Deduct Salary]
+AG1 --> AG4[Deduct Shipping]
+
+AG2 --> F5
+AG3 --> F5
+AG4 --> F5
+
+%% ================= TRANSFER COMPANIES =================
+NAV --> TC[Transfer Companies]
+
+TC --> TC1[Send Money]
+TC --> TC2[Receive Money]
+
+TC1 --> F5
+TC2 --> F5
+
+%% ================= SHIPPING =================
+S12 --> SH1[Sell Shipping]
+S12 --> SH2[Buy Shipping]
+
+SH2 --> SH3{Salary Swap?}
+SH3 -->|Yes| P4
+SH3 -->|No| F5
+
+SH1 --> F5
+
+%% ================= DEBTS =================
+S11 --> D1[List Debts]
+D1 --> D2[Add Debt]
+D1 --> D3[Pay Debt]
+
+D2 --> F5
+D3 --> F5
+
+%% ================= EXPENSES =================
+S13 --> EX1[Add Expense]
+EX1 --> F5
+
+%% ================= FX =================
+S14 --> FX1[Currency Input]
+FX1 --> FX2[Conversion]
+FX2 --> F5
+
+%% ================= REPORTS =================
+S15 --> R1[Collect Data]
+R1 --> R2[Aggregate]
+R2 --> R3[Generate PDF]
+
+%% ================= SHEET =================
+S1 --> SHET1[Manual Entries]
+SHET1 --> F5
+
+%% ================= SEARCH =================
+S3 --> SR1[Search Engine]
+SR1 --> SR2[Results → Navigate]
+
+%% ================= SETTINGS =================
+S16 --> SET1[Financial Terms]
+S16 --> SET2[Labels]
+S16 --> SET3[System Config]
+
+%% ================= CORE ENGINE =================
+F5 --> CORE[Central Ledger System]
+
+CORE --> DB[(Database)]
+CORE --> REP[Reports]
+CORE --> BAL[Balances Update]
+
+%% ================= END =================
+BAL --> END[End Flow]
