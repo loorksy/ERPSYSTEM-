@@ -2,6 +2,8 @@
   var currentId = null;
   var currentPinned = false;
   var accBulkStagingItems = [];
+  /** معرف المعتمد عند فتح «إضافة مبلغ» أو «تحويل» من بطاقة القائمة */
+  var accShortcutModalId = null;
 
   function escHtml(s) {
     if (s == null) return '';
@@ -1008,9 +1010,176 @@
     window.location.href = '/approvals/' + id;
   };
 
+  function accFillListModalSelects() {
+    return Promise.all([
+      apiCall('/api/sub-agencies/cycles/list'),
+      apiCall('/api/funds/list'),
+      apiCall('/api/transfer-companies/list'),
+    ]).then(function(results) {
+      var c = results[0];
+      var f = results[1];
+      var t = results[2];
+      var sel = document.getElementById('accListCycle');
+      if (sel) {
+        sel.innerHTML = '<option value="">— دورة —</option>';
+        ((c && c.cycles) || []).forEach(function(x) {
+          sel.innerHTML += '<option value="' + x.id + '">' + (x.name || x.id) + '</option>';
+        });
+      }
+      var sf = document.getElementById('accListTfFund');
+      if (sf) {
+        sf.innerHTML = '<option value="">— صندوق —</option>';
+        ((f && f.funds) || []).forEach(function(x) {
+          sf.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
+        });
+      }
+      var sc = document.getElementById('accListTfCompany');
+      if (sc) {
+        sc.innerHTML = '<option value="">— شركة —</option>';
+        ((t && t.companies) || []).forEach(function(x) {
+          sc.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
+        });
+      }
+    });
+  }
+
   window.accOpenShortcut = function(id, kind) {
+    accCloseSidebarIfOpen();
+    accShortcutModalId = id;
     var k = kind === 'transfer' ? 'transfer' : 'add';
-    window.location.href = '/approvals/' + id + '?open=' + k;
+    apiCall('/api/accreditations/' + id).then(function(res) {
+      if (!res.success || !res.entity) {
+        toast(res.message || 'تعذر تحميل المعتمد', 'error');
+        accShortcutModalId = null;
+        return;
+      }
+      var name = res.entity.name || '';
+      var sub = document.getElementById(k === 'add' ? 'accListAddAmountModalSubtitle' : 'accListTransferModalSubtitle');
+      if (sub) sub.textContent = name;
+      accFillListModalSelects().then(function() {
+        accSyncCurrencyUi();
+        if (k === 'add') {
+          var ak = document.getElementById('accListAddAmountKind');
+          if (ak) ak.value = 'debt_receivable';
+          if (typeof window.accListAmountKindChange === 'function') window.accListAmountKindChange();
+          var amtIn = document.getElementById('accListAmt');
+          if (amtIn) amtIn.value = '';
+          var dp = document.getElementById('accListDiscountPct');
+          if (dp) dp.value = '';
+          var mAdd = document.getElementById('accListAddAmountModal');
+          if (mAdd) {
+            mAdd.classList.remove('hidden');
+            mAdd.classList.add('flex');
+          }
+        } else {
+          var tf = document.getElementById('accListTfType');
+          if (tf) tf.value = 'manual';
+          if (typeof window.accListTfTypeChange === 'function') window.accListTfTypeChange();
+          var tfa = document.getElementById('accListTfAmt');
+          if (tfa) tfa.value = '';
+          var mTf = document.getElementById('accListTransferModal');
+          if (mTf) {
+            mTf.classList.remove('hidden');
+            mTf.classList.add('flex');
+          }
+        }
+      });
+    });
+  };
+
+  window.accCloseListAddAmountModal = function() {
+    accShortcutModalId = null;
+    var m = document.getElementById('accListAddAmountModal');
+    if (m) {
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+  };
+
+  window.accCloseListTransferModal = function() {
+    accShortcutModalId = null;
+    var m = document.getElementById('accListTransferModal');
+    if (m) {
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+  };
+
+  window.accListAmountKindChange = function() {
+    var ak = document.getElementById('accListAddAmountKind');
+    var wrap = document.getElementById('accListDiscountWrap');
+    var lbl = document.getElementById('accListDiscountLabel');
+    if (!ak || !wrap) return;
+    var v = ak.value;
+    if (v === 'debt_receivable') {
+      wrap.classList.add('hidden');
+      var dpin = document.getElementById('accListDiscountPct');
+      if (dpin) dpin.value = '';
+    } else {
+      wrap.classList.remove('hidden');
+      if (lbl) {
+        lbl.textContent =
+          v === 'debt_payable_no_fund'
+            ? 'خصم % (اختياري — لهم: صافي في مطلوب دفع فقط؛ الخصم كربح؛ بدون صندوق رئيسي)'
+            : 'خصم % (اختياري — علينا: صافي في الصندوق ومطلوب دفع؛ الخصم كربح)';
+      }
+    }
+  };
+
+  window.accListTfTypeChange = function() {
+    var t = document.getElementById('accListTfType');
+    if (!t) return;
+    var v = t.value;
+    var ff = document.getElementById('accListTfFund');
+    if (ff) ff.classList.toggle('hidden', v !== 'fund');
+    var cc = document.getElementById('accListTfCompany');
+    if (cc) cc.classList.toggle('hidden', v !== 'company');
+    var sh = document.getElementById('accListTfShipHint');
+    if (sh) sh.classList.toggle('hidden', v !== 'shipping');
+  };
+
+  window.accListSubmitAmount = function() {
+    var id = accShortcutModalId;
+    if (!id) return;
+    var kind = document.getElementById('accListAddAmountKind')
+      ? document.getElementById('accListAddAmountKind').value
+      : 'debt_receivable';
+    var body = {
+      amountKind: kind,
+      amount: document.getElementById('accListAmt').value,
+      cycleId: document.getElementById('accListCycle').value || null,
+    };
+    var dp = document.getElementById('accListDiscountPct');
+    if (kind !== 'debt_receivable' && dp && dp.value !== '' && dp.value != null) body.discountPct = dp.value;
+    apiCall('/api/accreditations/' + id + '/add-amount', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }).then(function(res) {
+      toast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        accCloseListAddAmountModal();
+        accLoad();
+      }
+    });
+  };
+
+  window.accListSubmitTransfer = function() {
+    var id = accShortcutModalId;
+    if (!id) return;
+    var t = document.getElementById('accListTfType').value;
+    var body = {
+      transferType: t === 'fund' ? 'fund' : t === 'company' ? 'company' : 'manual',
+      amount: document.getElementById('accListTfAmt').value,
+      fundId: document.getElementById('accListTfFund').value,
+      companyId: document.getElementById('accListTfCompany').value,
+    };
+    apiCall('/api/accreditations/' + id + '/transfer', { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
+      toast(res.message || '', res.success ? 'success' : 'error');
+      if (res.success) {
+        accCloseListTransferModal();
+        accLoad();
+      }
+    });
   };
   window.accCloseDetail = function() {
     window.location.href = '/approvals';
