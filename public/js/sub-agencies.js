@@ -103,7 +103,20 @@
     apiCall('/api/sub-agencies/' + currentAgencyId).then(function(res) {
       if (!res.success) return;
       const a = res.agency;
-      document.getElementById('subAgencyDashboardTitle').textContent = a.name || 'لوحة الوكالة';
+      var titleEl = document.getElementById('subAgencyDashboardTitle');
+      if (titleEl) titleEl.textContent = a.name || 'لوحة الوكالة';
+      var balVal = document.getElementById('subAgencyBalanceValue');
+      var balStatus = document.getElementById('subAgencyBalanceStatus');
+      if (balVal && a) {
+        var bal = a.balance != null ? a.balance : 0;
+        balVal.textContent = window.formatMoney ? window.formatMoney(bal) : bal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+      }
+      if (balStatus && a) {
+        var b = a.balance != null ? a.balance : 0;
+        balStatus.textContent = b >= 0 ? 'دائن' : 'مديون';
+        balStatus.className = 'rounded-lg px-2 py-0.5 text-[11px] font-bold sm:text-xs ' +
+          (b >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800');
+      }
     });
     const cycleId = document.getElementById('subAgencyCycleSelect').value;
     apiCall('/api/sub-agencies/' + currentAgencyId + '/profit' + (cycleId ? '?cycleId=' + cycleId : '')).then(function(res) {
@@ -256,7 +269,7 @@
   window.subAgenciesLoadTransactions = function() {
     if (!currentAgencyId) return;
     const listEl = document.getElementById('subAgencyTxList');
-    listEl.innerHTML = '<p class="text-slate-400 text-center py-4">جاري التحميل...</p>';
+    listEl.innerHTML = '<p class="text-slate-400 text-center py-10 text-sm">جاري التحميل...</p>';
     const params = new URLSearchParams();
     const type = document.getElementById('subAgencyTxTypeFilter').value;
     const from = document.getElementById('subAgencyTxFrom').value;
@@ -266,22 +279,22 @@
     if (to) params.set('toDate', to);
     apiCall('/api/sub-agencies/' + currentAgencyId + '/transactions?' + params.toString()).then(function(res) {
       if (!res.success) {
-        listEl.innerHTML = '<p class="text-red-500 text-center py-4">' + (res.message || 'فشل') + '</p>';
+        listEl.innerHTML = '<p class="text-red-500 text-center py-10 text-sm">' + (res.message || 'فشل') + '</p>';
         return;
       }
       const rows = res.transactions || [];
       if (rows.length === 0) {
-        listEl.innerHTML = '<p class="text-slate-400 text-center py-4">لا توجد معاملات</p>';
+        listEl.innerHTML = '<p class="text-slate-400 text-center py-10 text-sm">لا توجد معاملات</p>';
         return;
       }
       listEl.innerHTML = rows.map(function(r) {
         const isPlus = r.type === 'profit' || r.type === 'reward';
-        const cls = isPlus ? 'color:#047857' : 'color:#b91c1c';
+        const cls = isPlus ? 'text-emerald-700' : 'text-red-700';
         const sign = isPlus ? '+' : '-';
         const date = r.created_at ? new Date(r.created_at).toLocaleDateString('ar-SA') : '-';
-        return '<div class="tx-item">' +
-          '<div class="flex-1 min-w-0"><span class="font-semibold" style="' + cls + '">' + (r.typeLabel || r.type) + '</span> ' + sign + (window.formatMoney ? window.formatMoney(r.amount || 0) : (r.amount || 0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $') + (r.notes ? ' <span class="text-slate-500 text-sm">- ' + r.notes + '</span>' : '') + '</div>' +
-          '<div class="text-xs text-slate-400">' + date + '</div>' +
+        return '<div class="flex flex-col gap-1 border-b border-slate-100/90 bg-white px-3 py-3 last:border-b-0 hover:bg-slate-50/80 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:px-4">' +
+          '<div class="min-w-0 flex-1 text-sm leading-relaxed"><span class="font-semibold ' + cls + '">' + (r.typeLabel || r.type) + '</span> ' + sign + (window.formatMoney ? window.formatMoney(r.amount || 0) : (r.amount || 0).toLocaleString('en-US',{minimumFractionDigits:2}) + ' $') + (r.notes ? ' <span class="text-slate-500 break-words">- ' + r.notes + '</span>' : '') + '</div>' +
+          '<div class="shrink-0 text-[11px] tabular-nums text-slate-400 sm:text-xs sm:text-end">' + date + '</div>' +
           '</div>';
       }).join('');
     });
