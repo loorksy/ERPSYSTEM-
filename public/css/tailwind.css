@@ -160,9 +160,6 @@
     --radius-xl: 0.75rem;
     --radius-2xl: 1rem;
     --radius-3xl: 1.5rem;
-    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     --ease-out: cubic-bezier(0, 0, 0.2, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --blur-sm: 8px;
@@ -813,6 +810,9 @@
   }
   .max-h-\[min\(42vh\,22rem\)\] {
     max-height: min(42vh, 22rem);
+  }
+  .max-h-\[min\(92dvh\,calc\(100dvh-1\.25rem-env\(safe-area-inset-top\,0px\)-env\(safe-area-inset-bottom\,0px\)\)\)\] {
+    max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));
   }
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
