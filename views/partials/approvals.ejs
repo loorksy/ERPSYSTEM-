@@ -248,9 +248,9 @@
       </div>
       <label class="block text-[11px] font-medium text-slate-600">دورة مالية</label>
       <select id="accListCycle" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option value="">— دورة —</option></select>
-      <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end sm:gap-3">
-        <button type="button" onclick="accCloseListAddAmountModal()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:min-h-0 sm:w-auto">إلغاء</button>
-        <button type="button" onclick="accListSubmitAmount()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 sm:min-h-0 sm:w-auto">تسجيل</button>
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-stretch sm:justify-start sm:gap-3">
+        <button type="button" onclick="accListSubmitAmount()" class="inline-flex min-h-[2.75rem] w-full shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 sm:min-w-[8.5rem] sm:w-auto">تسجيل</button>
+        <button type="button" onclick="accCloseListAddAmountModal()" class="inline-flex min-h-[2.75rem] w-full shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:min-w-[8.5rem] sm:w-auto">إلغاء</button>
       </div>
     </div>
   </div>
@@ -285,9 +285,9 @@
       <select id="accListTfFund" class="hidden w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"></select>
       <select id="accListTfCompany" class="hidden w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"></select>
       <p id="accListTfShipHint" class="hidden rounded-lg border border-amber-100 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">سجّل عملية الشحن من قسم الشحن ثم اربطها لاحقاً إن لزم.</p>
-      <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end sm:gap-3">
-        <button type="button" onclick="accCloseListTransferModal()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:min-h-0 sm:w-auto">إلغاء</button>
-        <button type="button" onclick="accListSubmitTransfer()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/25 transition hover:bg-indigo-700 sm:min-h-0 sm:w-auto">تنفيذ</button>
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-stretch sm:justify-start sm:gap-3">
+        <button type="button" onclick="accListSubmitTransfer()" class="inline-flex min-h-[2.75rem] w-full shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 sm:min-w-[8.5rem] sm:w-auto">تنفيذ</button>
+        <button type="button" onclick="accCloseListTransferModal()" class="inline-flex min-h-[2.75rem] w-full shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:min-w-[8.5rem] sm:w-auto">إلغاء</button>
       </div>
     </div>
   </div>
