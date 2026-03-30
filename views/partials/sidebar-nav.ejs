@@ -1,0 +1,221 @@
+<% var p = typeof page !== 'undefined' ? page : ''; %>
+<nav class="flex-1 py-3" aria-label="التنقل الرئيسي">
+  <ul class="px-2.5 space-y-1">
+    <!-- أساسي -->
+    <li>
+      <a href="/dashboard" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'home' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'home' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-home text-[0.95rem]"></i>
+        </span>
+        <span>لوحة التحكم</span>
+      </a>
+    </li>
+    <li>
+      <a href="/sheet" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'sheet' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'sheet' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-file-excel text-[0.95rem]"></i>
+        </span>
+        <span>Sheet</span>
+      </a>
+    </li>
+
+    <li class="sidebar-nav-sep my-3" role="presentation" aria-hidden="true"></li>
+
+    <li>
+      <a href="/main-agency" class="sidebar-nav-file flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-semibold transition-all duration-200 mb-0.5 <%= p === 'main-agency' ? 'sidebar-nav-file--active text-white' : 'text-slate-200 hover:bg-white/[0.08]' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'main-agency' ? 'bg-indigo-500/40 text-white' : 'bg-indigo-500/15 text-indigo-200' %>">
+          <i class="fas fa-building text-[0.95rem]"></i>
+        </span>
+        <span class="min-w-0 leading-snug">ملف الشركة</span>
+      </a>
+    </li>
+    <li>
+      <a href="/sub-agencies" class="sidebar-nav-file flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-semibold transition-all duration-200 mb-0.5 <%= p === 'sub-agencies' ? 'sidebar-nav-file--active text-white' : 'text-slate-200 hover:bg-white/[0.08]' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'sub-agencies' ? 'bg-indigo-500/40 text-white' : 'bg-indigo-500/15 text-indigo-200' %>">
+          <i class="fas fa-code-branch text-[0.95rem]"></i>
+        </span>
+        <span class="min-w-0 leading-snug">ملف الوكالات الفرعية</span>
+      </a>
+    </li>
+    <li>
+      <a href="/approvals" class="sidebar-nav-file flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-semibold transition-all duration-200 mb-0.5 <%= p === 'approvals' ? 'sidebar-nav-file--active text-white' : 'text-slate-200 hover:bg-white/[0.08]' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'approvals' ? 'bg-indigo-500/40 text-white' : 'bg-indigo-500/15 text-indigo-200' %>">
+          <i class="fas fa-clipboard-check text-[0.95rem]"></i>
+        </span>
+        <span class="min-w-0 leading-snug">ملف الاعتمادات</span>
+      </a>
+    </li>
+    <li>
+      <a href="/funds" class="sidebar-nav-file flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-semibold transition-all duration-200 mb-0.5 <%= p === 'funds' ? 'sidebar-nav-file--active text-white' : 'text-slate-200 hover:bg-white/[0.08]' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'funds' ? 'bg-indigo-500/40 text-white' : 'bg-indigo-500/15 text-indigo-200' %>">
+          <i class="fas fa-vault text-[0.95rem]"></i>
+        </span>
+        <span class="min-w-0 leading-snug">قائمة الصناديق</span>
+      </a>
+    </li>
+
+    <li class="sidebar-nav-sep my-3" role="presentation" aria-hidden="true"></li>
+
+    <li>
+      <a href="/payroll" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'payroll-google' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'payroll-google' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-money-check-alt text-[0.95rem]"></i>
+        </span>
+        <span class="flex min-w-0 flex-1 items-center gap-2">
+          <span>تدقيق الرواتب</span>
+          <span id="navPayrollDraftBadge" class="hidden text-[0.65rem] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-amber-500/90 text-amber-950">مسودة</span>
+        </span>
+      </a>
+    </li>
+    <li>
+      <a href="/search" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'search' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'search' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-search text-[0.95rem]"></i>
+        </span>
+        <span>البحث</span>
+      </a>
+    </li>
+    <li>
+      <a href="/clients" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'clients' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'clients' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-users text-[0.95rem]"></i>
+        </span>
+        <span>بيانات العملاء</span>
+      </a>
+    </li>
+    <li>
+      <a href="/member-directory" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'member-directory' || p === 'member-directory-detail' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'member-directory' || p === 'member-directory-detail' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-address-book text-[0.95rem]"></i>
+        </span>
+        <span>بيانات المستخدمين</span>
+      </a>
+    </li>
+    <li>
+      <a href="/member-adjustments" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'member-adjustments' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'member-adjustments' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-balance-scale text-[0.95rem]"></i>
+        </span>
+        <span>إضافات وخصومات</span>
+      </a>
+    </li>
+    <li>
+      <a href="/messages" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'messages' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'messages' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-envelope-open-text text-[0.95rem]"></i>
+        </span>
+        <span>ترتيب الرسائل</span>
+      </a>
+    </li>
+    <li>
+      <a href="/transfer-companies" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'transfer-companies' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'transfer-companies' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-exchange-alt text-[0.95rem]"></i>
+        </span>
+        <span>شركات التحويل</span>
+      </a>
+    </li>
+    <li>
+      <a href="/debts" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'debts' || p === 'debt-company' || p === 'debt-fund' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'debts' || p === 'debt-company' || p === 'debt-fund' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-file-invoice-dollar text-[0.95rem]"></i>
+        </span>
+        <span>الديون</span>
+      </a>
+    </li>
+    <li>
+      <a href="/payables-us" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'payables-overview' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'payables-overview' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-hand-holding-usd text-[0.95rem]"></i>
+        </span>
+        <span>دين علينا</span>
+      </a>
+    </li>
+    <li>
+      <a href="/receivables-to-us" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'receivables-to-us' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'receivables-to-us' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-hand-holding-heart text-[0.95rem]"></i>
+        </span>
+        <span>ديين لنا</span>
+      </a>
+    </li>
+    <li>
+      <a href="/payment-due" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'payment-due' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'payment-due' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-money-bill-wave text-[0.95rem]"></i>
+        </span>
+        <span>مطلوب دفع</span>
+      </a>
+    </li>
+    <li>
+      <a href="/fx-spread" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'fx-spread' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'fx-spread' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-chart-line text-[0.95rem]"></i>
+        </span>
+        <span>فرق التصريف</span>
+      </a>
+    </li>
+    <li>
+      <a href="/shipping" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'shipping' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'shipping' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-truck text-[0.95rem]"></i>
+        </span>
+        <span>الشحن</span>
+      </a>
+    </li>
+    <li>
+      <a href="/expenses-manual" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'expenses-page' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'expenses-page' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-receipt text-[0.95rem]"></i>
+        </span>
+        <span>المصاريف</span>
+      </a>
+    </li>
+    <li>
+      <a href="/profit-sources" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'profit-sources' || p === 'profit-source-detail' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'profit-sources' || p === 'profit-source-detail' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-chart-pie text-[0.95rem]"></i>
+        </span>
+        <span>مصادر الربح</span>
+      </a>
+    </li>
+    <li>
+      <a href="/admin-brokerage" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'admin-brokerage' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'admin-brokerage' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-percent text-[0.95rem]"></i>
+        </span>
+        <span>وساطة إدارية</span>
+      </a>
+    </li>
+
+    <li class="sidebar-nav-sep my-3" role="presentation" aria-hidden="true"></li>
+
+    <li>
+      <a href="/client-portal" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'client-portal' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'client-portal' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-headset text-[0.95rem]"></i>
+        </span>
+        <span>واجهة العملاء</span>
+      </a>
+    </li>
+
+    <li class="sidebar-nav-sep my-3" role="presentation" aria-hidden="true"></li>
+
+    <li>
+      <a href="/settings" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 <%= p === 'settings' ? 'sidebar-nav-link--active text-white' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white' %>">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg <%= p === 'settings' ? 'bg-indigo-500/35 text-indigo-200' : 'bg-white/[0.06] text-slate-400' %>">
+          <i class="fas fa-cog text-[0.95rem]"></i>
+        </span>
+        <span>الإعدادات</span>
+      </a>
+    </li>
+    <li>
+      <a href="/logout" class="sidebar-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl text-[0.9rem] font-medium transition-all duration-200 mb-0.5 text-red-400/95 hover:bg-red-500/10 hover:text-red-300">
+        <span class="sidebar-nav-ico flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400">
+          <i class="fas fa-sign-out-alt text-[0.95rem]"></i>
+        </span>
+        <span>تسجيل الخروج</span>
+      </a>
+    </li>
+  </ul>
+</nav>

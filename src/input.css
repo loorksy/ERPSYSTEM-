@@ -837,6 +837,31 @@
   .funds-page .agency-card .agency-balance { text-align: center; }
 }
 
+/* شريط جانبي: روابط عادية + صفوف «ملف» مميزة */
+#sidebar .sidebar-nav-sep {
+  height: 1px;
+  margin: 0.5rem 0.35rem;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  list-style: none;
+}
+#sidebar .sidebar-nav-link--active {
+  background: rgba(99, 102, 241, 0.22);
+  box-shadow: inset 3px 0 0 rgba(129, 140, 248, 0.95);
+}
+#sidebar .sidebar-nav-file {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+#sidebar .sidebar-nav-file:hover {
+  border-color: rgba(129, 140, 248, 0.35);
+}
+#sidebar .sidebar-nav-file--active {
+  border-color: rgba(129, 140, 248, 0.45);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.35) 0%, rgba(49, 46, 129, 0.25) 100%);
+  box-shadow: inset 3px 0 0 rgba(165, 180, 252, 1);
+}
+
 /*
  * لابتوب (lg+): القائمة الجانبية قابلة للطي — شريط ضيق بالأيقونات فقط؛ الهامش يتبع العرض.
  * الموبايل: بدون هامش (القائمة طبقة منزلقة) — لا يُطبَّق إلا من 1024px فما فوق.
@@ -854,8 +879,9 @@
   body.sidebar-desktop-collapsed #sidebar .sidebar-brand-text,
   body.sidebar-desktop-collapsed #sidebar .sidebar-user-text,
   body.sidebar-desktop-collapsed #sidebar .nav-section-label,
+  body.sidebar-desktop-collapsed #sidebar .sidebar-nav-group-label,
   body.sidebar-desktop-collapsed #sidebar .sidebar-footer-text,
-  body.sidebar-desktop-collapsed #sidebar nav a > span {
+  body.sidebar-desktop-collapsed #sidebar nav a > span:not(.sidebar-nav-ico) {
     display: none !important;
   }
   body.sidebar-desktop-collapsed #sidebar #sidebarLogoRow {
