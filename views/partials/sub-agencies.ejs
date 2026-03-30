@@ -1,42 +1,25 @@
 <div class="sub-agencies-page w-full max-w-6xl mx-auto px-4 sm:px-0 pb-10" dir="rtl">
   <!-- قائمة الوكالات -->
   <div id="subAgenciesList">
-    <div class="erp-module-shell rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden mb-6">
-      <div class="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-br from-fuchsia-50/90 via-white to-slate-50 px-4 py-5 sm:px-7 sm:py-6">
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,rgba(192,38,211,0.08),transparent)] pointer-events-none"></div>
-        <div class="relative flex items-start gap-3 sm:gap-4">
-          <div class="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600 to-purple-700 text-white shadow-md">
-            <i class="fas fa-store text-lg sm:text-xl"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs font-semibold text-fuchsia-800 mb-0.5">الوكالات والمزامنة</p>
-            <h2 class="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">الوكالات الفرعية</h2>
-            <p class="text-sm text-slate-600 mt-1 leading-relaxed">إدارة الوكالات، التسليم، والمزامنة من ملف الإدارة.</p>
-          </div>
-        </div>
+    <!-- مدمج في الصفحة: أزرار ثم مزامنة (بدون رأس الوحدة السابق) -->
+    <div class="mb-6 space-y-4">
+      <div class="flex flex-row flex-nowrap items-stretch gap-1.5 sm:gap-2 sm:flex-wrap sm:items-center sm:justify-end">
+        <button type="button" onclick="subAgenciesOpenDeliveryModal()" class="inline-flex flex-1 min-w-0 basis-0 sm:flex-initial sm:w-auto items-center justify-center gap-1 rounded-xl px-2 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-emerald-600 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition text-center touch-manipulation">
+          تسليم
+        </button>
+        <button type="button" onclick="subAgenciesOpenAddModal()" class="inline-flex flex-1 min-w-0 basis-0 sm:flex-initial sm:w-auto items-center justify-center gap-1 rounded-xl px-2 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-indigo-600 to-indigo-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-indigo-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
+          <i class="fas fa-plus text-[10px] sm:text-sm shrink-0 opacity-95" aria-hidden="true"></i>
+          <span class="text-center">إضافة وكالة</span>
+        </button>
       </div>
-      <div class="border-b border-slate-100 bg-slate-50/95 px-4 py-4 sm:px-6 sm:py-5">
-        <p class="text-xs font-semibold text-slate-500 mb-3 sm:mb-4">الإجراءات والمزامنة</p>
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-2">
-            <button type="button" onclick="subAgenciesOpenDeliveryModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition text-center">
-              تسليم
-            </button>
-            <button type="button" onclick="subAgenciesOpenAddModal()" class="btn-add inline-flex w-full sm:w-auto items-center justify-center">
-              <i class="fas fa-plus ml-2"></i>
-              إضافة وكالة
-            </button>
-          </div>
-          <div class="w-full lg:max-w-md xl:max-w-lg flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3 pt-2 border-t border-slate-200/80 lg:border-t-0 lg:pt-0">
-            <div class="flex-1 min-w-0">
-              <label class="block text-xs font-medium text-slate-600 mb-1.5">مزامنة من ملف الإدارة (كل ورقة بعد ورقة الإدارة = وكالة)</label>
-              <select id="subAgencySyncCycleSelect" class="input-select w-full max-w-full"></select>
-            </div>
-            <button type="button" onclick="subAgenciesRunManagementSync()" class="w-full sm:w-auto shrink-0 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-md hover:bg-indigo-700 active:scale-[0.99] transition whitespace-nowrap">
-              مزامنة من Google
-            </button>
-          </div>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+        <div class="flex-1 min-w-0 w-full max-w-full lg:max-w-md xl:max-w-lg">
+          <label class="block text-xs font-medium text-slate-600 mb-1.5">مزامنة من ملف الإدارة (كل ورقة بعد ورقة الإدارة = وكالة)</label>
+          <select id="subAgencySyncCycleSelect" class="input-select w-full max-w-full"></select>
         </div>
+        <button type="button" onclick="subAgenciesRunManagementSync()" class="w-full sm:w-auto shrink-0 inline-flex items-center justify-center px-4 py-2.5 min-h-[2.75rem] sm:min-h-0 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-md hover:bg-indigo-700 active:scale-[0.99] transition whitespace-nowrap touch-manipulation">
+          مزامنة من Google
+        </button>
       </div>
     </div>
     <div id="subAgenciesCards" class="agencies-grid">
