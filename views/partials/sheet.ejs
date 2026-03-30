@@ -36,35 +36,38 @@
 </div>
 
 <!-- Modal إنشاء/تعديل دورة -->
-<div id="cycleModal" class="fixed inset-0 z-[1200] hidden flex items-end sm:items-center justify-center p-0 sm:p-4 max-lg:pb-[70px] max-lg:pt-[env(safe-area-inset-top,0px)] bg-black/50 backdrop-blur-[2px] overflow-x-hidden overflow-y-auto" onclick="if(event.target===this)closeCycleModal()">
-  <!-- عرض أقصى أضيق على اللابتوب (كان max-w-2xl عريضاً جداً)؛ على الموبايل full width مع max-w-lg للاتساق -->
-  <div class="bg-white w-full max-w-lg sm:mx-auto sm:rounded-2xl rounded-t-3xl max-h-[90vh] sm:max-h-[85vh] max-lg:max-h-[calc(100vh-70px)] max-lg:h-[calc(100vh-70px)] flex flex-col border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 min-h-0 min-w-0" onclick="event.stopPropagation()">
-    <!-- رأس: زر الإغلاق أولاً في DOM ليظهر يميناً في RTL (أوضح على الموبايل) -->
-    <div class="relative z-20 flex items-center gap-3 px-3 sm:px-4 py-3 border-b border-slate-100 bg-gradient-to-l from-slate-50/90 to-white shrink-0 sm:rounded-t-2xl rounded-t-3xl">
-      <button type="button" onclick="closeCycleModal()" class="relative z-30 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] transition-colors" aria-label="إغلاق">
-        <i class="fas fa-times text-lg"></i>
-      </button>
-      <div class="flex min-w-0 flex-1 items-center gap-2.5">
-        <div class="w-10 h-10 shrink-0 rounded-xl bg-indigo-100 flex items-center justify-center">
-          <i class="fas fa-file-excel text-indigo-600 text-lg"></i>
+<!-- overflow-hidden على الطبقة: لا تمرير للخلفية كاملة (كان يُخفي زر ×). التمرير داخل الحاوية البيضاء فقط -->
+<div id="cycleModal" class="fixed inset-0 z-[1200] hidden flex items-end sm:items-center justify-center p-0 sm:p-4 max-lg:pb-[70px] max-lg:pt-[env(safe-area-inset-top,0px)] bg-black/50 backdrop-blur-[2px] overflow-hidden" onclick="if(event.target===this)closeCycleModal()">
+  <!-- حاوية واحدة قابلة للتمرير: رأس+تبويبات sticky يبقى × ظاهراً؛ بدون flex-1 على المحتوى = لا فراغ أبيض كبير تحت الوكيل -->
+  <div class="bg-white w-full max-w-lg sm:mx-auto sm:rounded-2xl rounded-t-3xl flex flex-col max-h-[min(90vh,calc(100dvh-70px))] sm:max-h-[85vh] overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 min-w-0" onclick="event.stopPropagation()">
+    <!-- بدون flex-1 هنا: كان يمدّ منطقة التمرير فيملأ الفراغ الأبيض تحت بطاقة الوكيل -->
+    <div class="flex min-h-0 flex-col overflow-y-auto overscroll-contain max-h-[calc(100dvh-70px-11rem)] sm:max-h-[calc(85vh-9rem)]">
+      <!-- رأس + تبويبات: sticky أعلى حتى يبقى زر الإغلاق مرئياً عند التمرير على الموبايل -->
+      <div class="sticky top-0 z-40 flex flex-col bg-white sm:rounded-t-2xl rounded-t-3xl border-b border-slate-100 shadow-[0_4px_14px_-6px_rgba(15,23,42,0.12)]">
+        <div class="flex items-center gap-3 px-3 sm:px-4 py-3 bg-gradient-to-l from-slate-50/90 to-white">
+          <button type="button" onclick="closeCycleModal()" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] transition-colors" aria-label="إغلاق">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+          <div class="flex min-w-0 flex-1 items-center gap-2.5">
+            <div class="w-10 h-10 shrink-0 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <i class="fas fa-file-excel text-indigo-600 text-lg"></i>
+            </div>
+            <h2 id="cycleModalHeaderTitle" class="min-w-0 flex-1 text-base font-bold text-slate-900 truncate">إنشاء دورة مالية</h2>
+          </div>
         </div>
-        <h2 id="cycleModalHeaderTitle" class="min-w-0 flex-1 text-base font-bold text-slate-900 truncate">إنشاء دورة مالية</h2>
+        <div class="flex gap-1.5 px-2 py-2 bg-slate-50/80">
+          <button type="button" id="tabGoogle" onclick="setCycleTab('google')" class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200/80">
+            <i class="fas fa-cloud text-sm"></i>
+            <span>Google Sheets</span>
+          </button>
+          <button type="button" id="tabUpload" onclick="setCycleTab('upload')" class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all text-slate-600 hover:bg-white/70">
+            <i class="fas fa-upload text-sm"></i>
+            <span>رفع ملفات</span>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Tabs -->
-    <div class="flex gap-1.5 px-2 py-2 bg-slate-50/80 border-b border-slate-100 shrink-0">
-      <button type="button" id="tabGoogle" onclick="setCycleTab('google')" class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200/80">
-        <i class="fas fa-cloud text-sm"></i>
-        <span>Google Sheets</span>
-      </button>
-      <button type="button" id="tabUpload" onclick="setCycleTab('upload')" class="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all text-slate-600 hover:bg-white/70">
-        <i class="fas fa-upload text-sm"></i>
-        <span>رفع ملفات</span>
-      </button>
-    </div>
-
-    <div class="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-2.5 min-h-0">
+    <div class="px-3 py-3 space-y-3 shrink-0">
       <input type="hidden" id="cycleEditId" value="">
 
       <!-- Google -->
@@ -172,9 +175,11 @@
         </div>
       </div>
     </div>
+    </div>
+    <!-- /منطقة التمرير — التذييل ثابت أسفل البطاقة وليس داخل التمرير -->
 
     <!-- Footer: جلب/تحميل أو إلغاء+حفظ -->
-    <div id="cycleModalFooter" class="bg-white/95 border-t border-slate-100 px-3 py-2.5 shrink-0 max-lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <div id="cycleModalFooter" class="shrink-0 bg-white border-t border-slate-100 px-3 py-2.5 max-lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
       <div id="cycleModalFooterPrimary" class="block">
         <button type="button" id="btnSheetModalPrimary" onclick="sheetModalPrimaryAction()" class="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm active:scale-[0.98] transition-all">
           <i class="fas fa-cloud-download-alt"></i>
