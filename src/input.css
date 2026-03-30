@@ -693,8 +693,9 @@
   box-sizing: border-box;
 }
 @media (min-width: 768px) {
+  /* عمود القائمة بعرض محدود قريب من مجموع عرض الأزرار الثلاثة — لا يمتد بعرض الصفحة */
   .sub-agencies-toolbar-row {
-    grid-template-columns: minmax(0, min(100%, 36rem)) auto;
+    grid-template-columns: minmax(0, min(100%, 20rem)) auto;
     align-items: end;
     column-gap: 1rem;
     row-gap: 0.5rem;
@@ -702,6 +703,12 @@
   /* الأزرار بجانب القائمة وليس مُدفعة لطرف الخلية البعيد (كان justify-end يزيد الشعور بفراغ) */
   .sub-agencies-toolbar-row .erp-toolbar-actions {
     justify-content: flex-start;
+  }
+  /* ارتفاع الحقل قريب من أزرار sm (py-2.5 + خط) */
+  .sub-agencies-toolbar-row select#subAgencySyncCycleSelect.input-select {
+    min-height: 2.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 }
 .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
