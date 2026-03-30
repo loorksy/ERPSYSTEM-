@@ -755,6 +755,11 @@
   width: 4rem;
   max-width: 4rem;
 }
+/* صف الإجراءات: حقل النسبة يتمدد داخل الخلية */
+.sub-agency-profile label.sub-agency-percent-field .sub-agency-percent-input.input-percent {
+  width: 100%;
+  max-width: 100%;
+}
 /* لابتوب/تابلت: قائمة الدورة + الأزرار في صف واحد، محاذاة أسفل، تباعد ثابت (بدون فراغ وسط كبير) */
 .sub-agencies-toolbar-row {
   display: grid;

@@ -904,6 +904,9 @@
   .min-h-\[1\.25rem\] {
     min-height: 1.25rem;
   }
+  .min-h-\[2\.35rem\] {
+    min-height: 2.35rem;
+  }
   .min-h-\[2\.75rem\] {
     min-height: 2.75rem;
   }
@@ -1198,6 +1201,9 @@
   }
   .cursor-pointer {
     cursor: pointer;
+  }
+  .cursor-text {
+    cursor: text;
   }
   .touch-pan-y {
     --tw-pan-y: pan-y;
@@ -5900,6 +5906,11 @@
       display: block;
     }
   }
+  .sm\:flex {
+    @media (width >= 40rem) {
+      display: flex;
+    }
+  }
   .sm\:hidden {
     @media (width >= 40rem) {
       display: none;
@@ -6050,6 +6061,11 @@
       max-width: var(--container-5xl);
     }
   }
+  .sm\:max-w-\[7rem\] {
+    @media (width >= 40rem) {
+      max-width: 7rem;
+    }
+  }
   .sm\:max-w-md {
     @media (width >= 40rem) {
       max-width: var(--container-md);
@@ -6068,6 +6084,11 @@
   .sm\:min-w-0 {
     @media (width >= 40rem) {
       min-width: calc(var(--spacing) * 0);
+    }
+  }
+  .sm\:min-w-\[6\.5rem\] {
+    @media (width >= 40rem) {
+      min-width: 6.5rem;
     }
   }
   .sm\:min-w-\[11rem\] {
@@ -7879,6 +7900,10 @@
 .sub-agency-profile .sub-agency-percent-input.input-percent {
   width: 4rem;
   max-width: 4rem;
+}
+.sub-agency-profile label.sub-agency-percent-field .sub-agency-percent-input.input-percent {
+  width: 100%;
+  max-width: 100%;
 }
 .sub-agencies-toolbar-row {
   display: grid;
