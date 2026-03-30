@@ -49,6 +49,12 @@
           '<h5>' + (a.name || '') + '</h5>' +
           '<p class="agency-meta">حصة الشركة من الو: ' + (a.company_percent != null ? a.company_percent : '—') + '% — حصة الوكالة: ' + (a.commission_percent != null ? a.commission_percent : '—') + '%</p>' +
           '<p class="agency-balance" style="color:' + textColor + '">رصيد: ' + (window.formatMoney ? window.formatMoney(bal) : bal.toLocaleString('en-US',{minimumFractionDigits:2}) + ' $') + ' (' + balLabel + ')</p>' +
+          '<div class="agency-card-shortcuts mt-3 flex flex-wrap gap-1.5 border-t border-slate-900/10 pt-2.5" onclick="event.stopPropagation()">' +
+          '<button type="button" class="inline-flex min-h-[2.25rem] flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-emerald-700 sm:text-xs" ' +
+          'onclick="subAgenciesOpenRewardModalFor(' + a.id + ')"><i class="fas fa-gift text-[0.65rem]"></i>مكافأة</button>' +
+          '<button type="button" class="inline-flex min-h-[2.25rem] flex-1 items-center justify-center gap-1 rounded-lg border border-red-300/80 bg-white/90 px-2 py-1.5 text-[11px] font-bold text-red-800 shadow-sm transition hover:bg-red-50 sm:text-xs" ' +
+          'onclick="subAgenciesOpenDeductModalFor(' + a.id + ')"><i class="fas fa-minus-circle text-[0.65rem]"></i>خصم</button>' +
+          '</div>' +
           '</div>';
       }).join('');
     });
@@ -171,6 +177,24 @@
     });
   };
 
+  window.subAgenciesOpenRewardModalFor = function(agencyId) {
+    currentAgencyId = parseInt(agencyId, 10);
+    if (isNaN(currentAgencyId)) return;
+    subAgenciesOpenRewardModal();
+  };
+
+  window.subAgenciesOpenDeductModalFor = function(agencyId) {
+    currentAgencyId = parseInt(agencyId, 10);
+    if (isNaN(currentAgencyId)) return;
+    subAgenciesOpenDeductModal();
+  };
+
+  function clearSubAgencyContextIfListOnly() {
+    if (!document.getElementById('subAgencyDashboardPage')) {
+      currentAgencyId = null;
+    }
+  }
+
   window.subAgenciesOpenRewardModal = function() {
     document.getElementById('subAgencyRewardForm').reset();
     var hint = document.getElementById('subAgencyRewardBalanceHint');
@@ -207,6 +231,7 @@
   window.subAgenciesCloseRewardModal = function() {
     document.getElementById('subAgencyRewardModal').classList.add('hidden');
     document.getElementById('subAgencyRewardModal').classList.remove('flex');
+    clearSubAgencyContextIfListOnly();
   };
 
   window.subAgenciesOpenDeductModal = function() {
@@ -224,6 +249,7 @@
   window.subAgenciesCloseDeductModal = function() {
     document.getElementById('subAgencyDeductModal').classList.add('hidden');
     document.getElementById('subAgencyDeductModal').classList.remove('flex');
+    clearSubAgencyContextIfListOnly();
   };
 
   window.subAgenciesDeductKindChange = function() {
@@ -345,8 +371,12 @@
       showToast(res.message || '', res.success ? 'success' : 'error');
       if (res.success) {
         subAgenciesCloseDeductModal();
-        subAgenciesLoadDashboard();
-        subAgenciesLoadTransactions();
+        if (document.getElementById('subAgenciesCards')) {
+          loadAgencies();
+        } else {
+          subAgenciesLoadDashboard();
+          subAgenciesLoadTransactions();
+        }
       }
     });
   });
@@ -364,7 +394,11 @@
       showToast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
       if (res.success) {
         subAgenciesCloseRewardModal();
-        subAgenciesLoadDashboard();
+        if (document.getElementById('subAgenciesCards')) {
+          loadAgencies();
+        } else {
+          subAgenciesLoadDashboard();
+        }
       }
     });
   });
