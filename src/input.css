@@ -637,6 +637,40 @@
     }
   }
 
+/*
+ * صف أزرار ثلاثة (اعتمادات / وكالات فرعية): على الموبايل Grid + minmax(0,1fr) يوحّد العرض بين
+ * Chrome / Safari / Firefox؛ flex-1 كان يعطي اختلافات في حساب العرض والنصوص العربية.
+ */
+.erp-toolbar-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.erp-toolbar-actions > button {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 640px) {
+  .erp-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .erp-toolbar-actions > button {
+    width: auto;
+    flex: 0 1 auto;
+    max-width: none;
+  }
+}
+
 /* Migrated from views/partials/sub-agencies.ejs */
 .agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
 .btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
@@ -644,6 +678,11 @@
 .btn-back { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
 .btn-back:hover { background: #e2e8f0; color: #475569; }
 .input-select { max-width: 16rem; padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+/* قائمة مزامنة الوكالات: تجاوز حدّ 16rem الافتراضي لعرض كامل الحاوية */
+.sub-agencies-page select#subAgencySyncCycleSelect.input-select {
+  max-width: 100%;
+  width: 100%;
+}
 .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
 .dash-card { padding: 1.25rem; border-radius: 1rem; transition: transform 0.2s; }
 .dash-card-users { cursor: pointer; }
