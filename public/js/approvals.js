@@ -95,6 +95,17 @@
     'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)',
   ];
 
+  var accCardBarColors = [
+    'bg-indigo-500',
+    'bg-emerald-500',
+    'bg-amber-500',
+    'bg-rose-500',
+    'bg-violet-500',
+    'bg-sky-500',
+    'bg-orange-500',
+    'bg-teal-500',
+  ];
+
   function accFmtMoney(n) {
     if (typeof window.formatMoney === 'function') return window.formatMoney(n);
     var v = typeof n === 'number' ? n : parseFloat(n);
@@ -458,28 +469,42 @@
         var textColor = '#64748b';
         if (net > 0.0001) textColor = '#047857';
         else if (net < -0.0001) textColor = '#b91c1c';
+        var bar = accCardBarColors[idx % accCardBarColors.length];
         var pinHtml = a.pinned
-          ? '<span class="absolute top-2 right-2 text-amber-600" title="مثبت"><i class="fas fa-thumbtack"></i></span>'
+          ? '<span class="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-700 shadow-sm" title="مثبت"><i class="fas fa-thumbtack text-xs"></i></span>'
           : '';
-        var bg = agencyCardColors[idx % agencyCardColors.length];
         return (
-          '<div class="agency-card relative" style="background:' +
-          bg +
-          '; color:#1e293b;" onclick="accOpen(' +
+          '<div class="acc-list-card group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" onclick="accOpen(' +
           a.id +
           ')">' +
+          '<div class="' +
+          bar +
+          ' h-1 w-full"></div>' +
+          '<div class="p-4">' +
           pinHtml +
-          '<h5>' +
+          '<div class="flex items-start justify-between gap-2">' +
+          '<h5 class="min-w-0 flex-1 text-base font-bold leading-snug text-slate-900 sm:text-[1.05rem]">' +
           escHtml(a.name || '') +
           '</h5>' +
-          '<p class="agency-meta font-mono">' +
+          '</div>' +
+          '<p class="mt-2 font-mono text-[11px] text-slate-500 sm:text-xs">كود: ' +
           escHtml(a.code || '—') +
           '</p>' +
-          '<p class="agency-balance tabular-nums" style="color:' +
+          '<div class="mt-3 flex flex-wrap items-end justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
+          '<span class="text-xs font-semibold text-slate-500">الصافي</span>' +
+          '<span class="text-lg font-bold tabular-nums" style="color:' +
           textColor +
-          '">رصيد: ' +
+          '">' +
           escHtml(accFmtMoney(net)) +
-          '</p></div>'
+          '</span></div>' +
+          '<div class="acc-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
+          '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] sm:text-xs" onclick="accOpenShortcut(' +
+          a.id +
+          ',\'add\')"><i class="fas fa-plus-circle text-[0.7rem]"></i>إضافة مبلغ</button>' +
+          '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-slate-600 bg-slate-700 px-3 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.99] sm:text-xs" onclick="accOpenShortcut(' +
+          a.id +
+          ',\'transfer\')"><i class="fas fa-right-left text-[0.7rem]"></i>تحويل</button>' +
+          '</div></div></div>'
         );
       }).join('');
     });
@@ -806,6 +831,34 @@
     });
   };
 
+  function accApplyUrlOpenParam() {
+    var params = new URLSearchParams(window.location.search);
+    var open = params.get('open');
+    var addP = document.getElementById('accAddAmountPanel');
+    var tfP = document.getElementById('accTransferPanel');
+    if (!addP || !tfP) return;
+    addP.classList.add('hidden');
+    tfP.classList.add('hidden');
+    if (open === 'add') {
+      addP.classList.remove('hidden');
+      tfP.classList.add('hidden');
+      var ak = document.getElementById('accAmountKind');
+      if (ak) ak.value = 'debt_receivable';
+      accAmountKindChange();
+      accSyncCurrencyUi();
+      try {
+        history.replaceState({}, '', window.location.pathname);
+      } catch (err) {}
+    } else if (open === 'transfer') {
+      tfP.classList.remove('hidden');
+      addP.classList.add('hidden');
+      accTfTypeChange();
+      try {
+        history.replaceState({}, '', window.location.pathname);
+      } catch (err2) {}
+    }
+  }
+
   function accPopulateDetail(id) {
     currentId = id;
     apiCall('/api/accreditations/' + id).then(function(res) {
@@ -827,37 +880,61 @@
         balLines += '<p class="text-xs text-emerald-700 font-medium mt-1">علينا (مطلوب دفع): +' + escHtml(accFmtMoney(pay)) + '</p>';
       }
       document.getElementById('accDetailBal').innerHTML = balLines;
+      var pinBtn = document.getElementById('accPinBtn');
+      if (pinBtn) {
+        pinBtn.textContent = currentPinned ? 'مثبت' : 'تثبيت';
+        pinBtn.className =
+          'inline-flex shrink-0 items-center gap-1 rounded-lg border px-2.5 py-2 text-xs font-bold transition ' +
+          (currentPinned
+            ? 'border-amber-500 bg-amber-500 text-white hover:bg-amber-600'
+            : 'border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200');
+      }
       accSyncCurrencyUi();
       document.getElementById('accLedger').innerHTML = (res.ledger || []).map(function(l) {
-        return '<div class="py-2 border-b border-slate-50 flex justify-between gap-2"><span>' + escHtml(accLedgerTypeLabel(l.entry_type || '')) + '</span><span class="tabular-nums shrink-0">' + escHtml(accFmtMoney(l.amount)) + '</span></div>';
-      }).join('') || '<p class="text-slate-400">فارغ</p>';
+        return (
+          '<div class="flex items-start justify-between gap-3 border-b border-slate-100 bg-white px-1 py-2.5 last:border-b-0 hover:bg-slate-50/80 sm:px-2">' +
+          '<span class="text-sm text-slate-700">' +
+          escHtml(accLedgerTypeLabel(l.entry_type || '')) +
+          '</span>' +
+          '<span class="shrink-0 text-sm font-semibold tabular-nums text-slate-900">' +
+          escHtml(accFmtMoney(l.amount)) +
+          '</span></div>'
+        );
+      }).join('') || '<p class="py-6 text-center text-sm text-slate-400">لا توجد حركات</p>';
       document.getElementById('accAddAmountPanel').classList.add('hidden');
       document.getElementById('accTransferPanel').classList.add('hidden');
-      apiCall('/api/sub-agencies/cycles/list').then(function(c) {
+      Promise.all([
+        apiCall('/api/sub-agencies/cycles/list'),
+        apiCall('/api/funds/list'),
+        apiCall('/api/transfer-companies/list'),
+      ]).then(function(results) {
+        var c = results[0];
+        var f = results[1];
+        var t = results[2];
         var sel = document.getElementById('accCycle');
-        if (!sel) return;
-        sel.innerHTML = '<option value="">— دورة —</option>';
-        (c.cycles || []).forEach(function(x) {
-          sel.innerHTML += '<option value="' + x.id + '">' + (x.name || x.id) + '</option>';
-        });
+        if (sel) {
+          sel.innerHTML = '<option value="">— دورة —</option>';
+          ((c && c.cycles) || []).forEach(function(x) {
+            sel.innerHTML += '<option value="' + x.id + '">' + (x.name || x.id) + '</option>';
+          });
+        }
+        var sf = document.getElementById('accTfFund');
+        if (sf) {
+          sf.innerHTML = '<option value="">— صندوق —</option>';
+          ((f && f.funds) || []).forEach(function(x) {
+            sf.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
+          });
+        }
+        var sc = document.getElementById('accTfCompany');
+        if (sc) {
+          sc.innerHTML = '<option value="">— شركة —</option>';
+          ((t && t.companies) || []).forEach(function(x) {
+            sc.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
+          });
+        }
+        accApplyUrlOpenParam();
+        accCloseSidebarIfOpen();
       });
-      apiCall('/api/funds/list').then(function(f) {
-        var s = document.getElementById('accTfFund');
-        if (!s) return;
-        s.innerHTML = '<option value="">— صندوق —</option>';
-        (f.funds || []).forEach(function(x) {
-          s.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
-        });
-      });
-      apiCall('/api/transfer-companies/list').then(function(t) {
-        var s = document.getElementById('accTfCompany');
-        if (!s) return;
-        s.innerHTML = '<option value="">— شركة —</option>';
-        (t.companies || []).forEach(function(x) {
-          s.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
-        });
-      });
-      accCloseSidebarIfOpen();
     });
   }
 
@@ -867,6 +944,11 @@
 
   window.accOpen = function(id) {
     window.location.href = '/approvals/' + id;
+  };
+
+  window.accOpenShortcut = function(id, kind) {
+    var k = kind === 'transfer' ? 'transfer' : 'add';
+    window.location.href = '/approvals/' + id + '?open=' + k;
   };
   window.accCloseDetail = function() {
     window.location.href = '/approvals';
@@ -995,9 +1077,93 @@
     });
   }
 
+  var accNavIds = [];
+  var accNavIndex = -1;
+
+  function accNavUpdateState() {
+    var prevBtn = document.getElementById('accNavPrev');
+    var nextBtn = document.getElementById('accNavNext');
+    if (!prevBtn || !nextBtn) return;
+    var hasPrev = accNavIndex > 0;
+    var hasNext = accNavIndex >= 0 && accNavIndex < accNavIds.length - 1;
+    prevBtn.disabled = !hasPrev;
+    nextBtn.disabled = !hasNext;
+  }
+
+  function accNavGo(delta) {
+    if (accNavIndex < 0 || !accNavIds.length) return;
+    var n = accNavIndex + delta;
+    if (n < 0 || n >= accNavIds.length) return;
+    window.location.href = '/approvals/' + accNavIds[n];
+  }
+
+  function initAccProfileNav() {
+    var page = document.getElementById('accDetailPage');
+    var zone = document.querySelector('.acc-detail-page');
+    var prevBtn = document.getElementById('accNavPrev');
+    var nextBtn = document.getElementById('accNavNext');
+    if (!page || !page.dataset.accreditationId || !zone || !prevBtn || !nextBtn) return;
+
+    var cur = parseInt(page.dataset.accreditationId, 10);
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+
+    apiCall('/api/accreditations/list').then(function(res) {
+      if (!res.success || !res.list || !res.list.length) return;
+      accNavIds = res.list.map(function(a) {
+        return a.id;
+      });
+      accNavIndex = accNavIds.indexOf(cur);
+      accNavUpdateState();
+    });
+
+    prevBtn.addEventListener('click', function() {
+      accNavGo(-1);
+    });
+    nextBtn.addEventListener('click', function() {
+      accNavGo(1);
+    });
+
+    var touchStartX = 0;
+    var touchStartY = 0;
+    var touchDeny = false;
+
+    zone.addEventListener(
+      'touchstart',
+      function(e) {
+        if (window.innerWidth >= 1024) return;
+        var el = e.target;
+        if (el.closest && el.closest('input, textarea, select, button, a, label, #accLedger')) {
+          touchDeny = true;
+          return;
+        }
+        touchDeny = false;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      },
+      { passive: true }
+    );
+
+    zone.addEventListener(
+      'touchend',
+      function(e) {
+        if (window.innerWidth >= 1024) return;
+        if (touchDeny) return;
+        if (!e.changedTouches || !e.changedTouches.length) return;
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        var dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy)) return;
+        if (dx > 0) accNavGo(-1);
+        else accNavGo(1);
+      },
+      { passive: true }
+    );
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     var accDetailPg = document.getElementById('accDetailPage');
     if (accDetailPg && accDetailPg.dataset.accreditationId) {
+      initAccProfileNav();
       fetch('/settings/currency', { credentials: 'same-origin' })
         .then(function(r) { return r.json(); })
         .then(function(d) {

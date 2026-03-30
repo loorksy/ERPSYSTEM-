@@ -761,8 +761,9 @@
   max-width: 100%;
 }
 
-/* تنقل بين بروفايلات الوكالات: أزرار ثابتة بجانب منطقة المحتوى (مع عرض الشريط الجانبي) */
-.sub-agency-profile-nav-btn {
+/* تنقل بين بروفايلات (وكالات / معتمدين): أزرار ثابتة مع عرض الشريط الجانبي */
+.sub-agency-profile-nav-btn,
+.acc-profile-nav-btn {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
@@ -780,27 +781,33 @@
   transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.sub-agency-profile-nav-btn:hover:not(:disabled) {
+.sub-agency-profile-nav-btn:hover:not(:disabled),
+.acc-profile-nav-btn:hover:not(:disabled) {
   background: #f8fafc;
   color: #312e81;
   box-shadow: 0 6px 18px rgba(79, 70, 229, 0.12);
 }
-.sub-agency-profile-nav-btn:disabled {
+.sub-agency-profile-nav-btn:disabled,
+.acc-profile-nav-btn:disabled {
   opacity: 0.28;
   cursor: not-allowed;
   box-shadow: none;
 }
 @media (min-width: 1024px) {
-  .sub-agency-profile-nav-btn {
+  .sub-agency-profile-nav-btn,
+  .acc-profile-nav-btn {
     display: flex;
   }
-  .sub-agency-profile-nav-btn--prev {
+  .sub-agency-profile-nav-btn--prev,
+  .acc-profile-nav-btn--prev {
     right: calc(260px + 0.75rem);
   }
-  .sub-agency-profile-nav-btn--next {
+  .sub-agency-profile-nav-btn--next,
+  .acc-profile-nav-btn--next {
     left: 0.75rem;
   }
-  body.sidebar-desktop-collapsed .sub-agency-profile-nav-btn--prev {
+  body.sidebar-desktop-collapsed .sub-agency-profile-nav-btn--prev,
+  body.sidebar-desktop-collapsed .acc-profile-nav-btn--prev {
     right: calc(4.5rem + 0.75rem);
   }
 }
