@@ -130,13 +130,8 @@
     modal.setAttribute('data-acc-step', reviewing ? 'review' : 'import');
     var st = document.getElementById('accBulkStaging');
     if (st) {
-      if (reviewing) {
-        st.classList.remove('hidden');
-        st.style.display = 'flex';
-      } else {
-        st.classList.add('hidden');
-        st.style.display = 'none';
-      }
+      if (reviewing) st.classList.remove('hidden');
+      else st.classList.add('hidden');
     }
   }
 

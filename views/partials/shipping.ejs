@@ -1,33 +1,3 @@
-<style>
-  /* مقاييس موحّدة لقسم الشحن */
-  .shipping-actions-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-  }
-  .shipping-actions-row > .shipping-action-cell {
-    min-height: 3rem;
-    border-radius: 0.75rem;
-  }
-  .shipping-actions-row > .shipping-action-cell > button {
-    min-height: 3rem;
-  }
-  @media (min-width: 640px) {
-    .shipping-actions-row {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.75rem;
-    }
-    .shipping-actions-record {
-      grid-column: auto;
-    }
-  }
-  .shipping-actions-record {
-    grid-column: 1 / -1;
-  }
-  .shipping-balance-card {
-    min-height: 5.25rem;
-  }
-</style>
 <div class="w-full max-w-5xl mx-auto" dir="rtl">
   <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-w-0" data-tabs-container="shipping">
     <!-- رأس: يتكيف مع العرض الضيق -->
@@ -87,7 +57,7 @@
       <!-- الشحن -->
       <div id="shipping-main" class="tab-content space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="shipping-balance-card rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center">
+          <div class="min-h-[5.25rem] rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center">
             <div class="flex items-center gap-3 w-full min-w-0">
               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
                 <i class="fas fa-coins text-base"></i>
@@ -98,7 +68,7 @@
               </div>
             </div>
           </div>
-          <div class="shipping-balance-card rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex items-center">
+          <div class="min-h-[5.25rem] rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex items-center">
             <div class="flex items-center gap-3 w-full min-w-0">
               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
                 <i class="fas fa-gem text-base"></i>
@@ -114,28 +84,28 @@
         <!-- العمليات: موبايل بيع|شراء ثم السجل؛ من 640px الثلاثة في صف (CSS .shipping-actions-row) -->
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden touch-manipulation">
           <div class="flex h-1 w-full" aria-hidden="true">
-            <div class="flex-1" style="background-color:#4f46e5;"></div>
-            <div class="flex-1" style="background-color:#0891b2;"></div>
+            <div class="flex-1 bg-indigo-600"></div>
+            <div class="flex-1 bg-cyan-600"></div>
             <div class="flex-1 bg-slate-300"></div>
           </div>
           <div class="px-4 py-3 border-b border-slate-100">
             <p class="text-sm font-bold text-slate-800">العمليات السريعة</p>
             <p class="text-xs text-slate-500 mt-0.5">بيع (نيلي) · شراء (تركواز) · السجل</p>
           </div>
-          <div class="p-4 shipping-actions-row">
-            <div class="shipping-action-cell min-w-0 shadow overflow-hidden flex ring-1 ring-black/10" style="background-color:#4f46e5;">
-              <button type="button" onclick="shippingOpenSellModal()" aria-label="بيع" class="flex flex-1 w-full items-center justify-center gap-2 px-3 text-sm font-bold border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset select-none" style="background:transparent;color:#ffffff;">
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 p-4">
+            <div class="shipping-action-cell flex min-h-12 min-w-0 overflow-hidden rounded-xl shadow ring-1 ring-black/10 bg-indigo-600">
+              <button type="button" onclick="shippingOpenSellModal()" aria-label="بيع" class="flex min-h-12 w-full flex-1 cursor-pointer select-none items-center justify-center gap-2 border-0 bg-transparent px-3 text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/90">
                 <i class="fas fa-hand-holding-usd shrink-0 text-base" aria-hidden="true"></i>
                 <span class="truncate">بيع</span>
               </button>
             </div>
-            <div class="shipping-action-cell min-w-0 shadow overflow-hidden flex ring-1 ring-black/10" style="background-color:#0891b2;">
-              <button type="button" onclick="shippingOpenBuyModal()" aria-label="شراء" class="flex flex-1 w-full items-center justify-center gap-2 px-3 text-sm font-bold border-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset select-none" style="background:transparent;color:#ffffff;">
+            <div class="shipping-action-cell flex min-h-12 min-w-0 overflow-hidden rounded-xl shadow ring-1 ring-black/10 bg-cyan-600">
+              <button type="button" onclick="shippingOpenBuyModal()" aria-label="شراء" class="flex min-h-12 w-full flex-1 cursor-pointer select-none items-center justify-center gap-2 border-0 bg-transparent px-3 text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/90">
                 <i class="fas fa-shopping-cart shrink-0 text-base" aria-hidden="true"></i>
                 <span class="truncate">شراء</span>
               </button>
             </div>
-            <div class="shipping-actions-record shipping-action-cell min-w-0 border-2 border-slate-200 bg-white flex shadow-sm hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors">
+            <div class="shipping-action-cell col-span-2 flex min-h-12 min-w-0 border-2 border-slate-200 bg-white shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50/40 sm:col-span-1">
               <button type="button" onclick="shippingOpenRecordModal()" aria-label="السجل" class="flex flex-1 w-full items-center justify-center gap-2 px-3 text-sm font-bold text-slate-800 border-0 cursor-pointer bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-inset select-none">
                 <i class="fas fa-history shrink-0 text-slate-600 text-base" aria-hidden="true"></i>
                 <span class="truncate">السجل</span>

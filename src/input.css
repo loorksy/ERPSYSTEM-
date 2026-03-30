@@ -29,37 +29,635 @@
   from { width: 100%; }
   to { width: 0%; }
 }
+@keyframes quick-action-fab-press {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.86); }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
 
-@layer components {
-  /* لوحة التحكم — بطاقات احترافية، أرقام أصغر على الموبايل */
-  .home-dash-card {
-    @apply relative flex flex-col h-full min-h-[7.75rem] sm:min-h-[9rem] min-w-0 overflow-hidden rounded-2xl sm:rounded-3xl;
-    @apply border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50/95;
-    @apply p-3 sm:p-5;
-    @apply shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_12px_-2px_rgba(15,23,42,0.04)];
-    @apply transition-all duration-300 ease-out;
-    @apply hover:border-slate-300/90 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.1)] hover:-translate-y-0.5;
+
+/* Migrated from views/partials/approvals.ejs */
+/* ثيم LorkERP: slate + indigo + emerald — يبقى CSS للحالات التي لا تغطيها Tailwind (جدول موبايل، sticky) */
+  #accBulkModal {
+    overscroll-behavior: contain;
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    isolation: isolate;
   }
-  .home-dash-card::before {
-    content: '';
-    @apply pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-slate-200/60 to-transparent;
+  .acc-bulk-dropzone.acc-bulk-dropzone-drag {
+    border-color: rgb(99 102 241);
+    background-color: rgb(238 242 255);
+    transform: scale(1.02);
   }
-  a.home-dash-card:focus-visible {
-    @apply outline-none ring-2 ring-indigo-400/50 ring-offset-2 ring-offset-slate-50;
+  #accBulkModal[data-acc-step="review"] #accBulkSourceWrap {
+    display: none !important;
   }
-  .home-dash-card-icon {
-    @apply mb-2.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.65rem] sm:mb-3 sm:h-11 sm:w-11 sm:rounded-xl;
-    @apply shadow-inner shadow-black/[0.03] transition-all duration-300;
+  #accBulkModal[data-acc-step="review"] #accBulkSettingsWrap {
+    display: none !important;
   }
-  a.home-dash-card:hover .home-dash-card-icon,
-  .home-dash-card.cursor-pointer:hover .home-dash-card-icon {
-    @apply scale-[1.03];
+  #accBulkModal[data-acc-step="review"] .acc-bulk-step-dot-1 {
+    background-color: rgb(16 185 129);
+    color: white;
+    border-color: rgb(16 185 129);
   }
-  .home-dash-card-label {
-    @apply mb-1 line-clamp-2 text-[0.625rem] font-semibold leading-snug text-slate-500 sm:text-[0.7rem] sm:leading-snug;
+  #accBulkModal[data-acc-step="review"] .acc-bulk-step-label-1 {
+    color: rgb(71 85 105);
   }
-  .home-dash-metric {
-    @apply mt-auto font-mono font-bold tabular-nums tracking-tight transition-colors duration-200;
-    @apply text-sm leading-tight sm:text-base sm:leading-none md:text-lg xl:text-xl;
+  #accBulkModal[data-acc-step="review"] .acc-bulk-step-dot-2 {
+    background-color: rgb(79 70 229);
+    color: white;
+    border-color: rgb(79 70 229);
+    box-shadow: 0 0 0 4px rgb(99 102 241 / 0.2);
   }
+  #accBulkModal[data-acc-step="review"] .acc-bulk-step-label-2 {
+    color: rgb(30 41 59);
+  }
+  #accBulkModal[data-acc-step="import"] .acc-bulk-step-dot-1 {
+    background-color: rgb(79 70 229);
+    color: white;
+    border-color: rgb(79 70 229);
+    box-shadow: 0 0 0 4px rgb(99 102 241 / 0.2);
+  }
+  #accBulkModal[data-acc-step="import"] .acc-bulk-step-label-1 {
+    color: rgb(30 41 59);
+  }
+  #accBulkModal[data-acc-step="import"] .acc-bulk-step-dot-2 {
+    background-color: white;
+    color: rgb(148 163 184);
+    border-color: rgb(226 232 240);
+    box-shadow: none;
+  }
+  #accBulkModal[data-acc-step="import"] .acc-bulk-step-label-2 {
+    color: rgb(148 163 184);
+  }
+  /* معاينة الجدول (موبايل) + عمود نموذج مريح على الشاشات العريضة */
+  .acc-bulk-form-narrow {
+    max-width: min(100%, 26rem);
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+  @media (min-width: 640px) {
+    .acc-bulk-form-narrow {
+      max-width: min(100%, 36rem);
+    }
+  }
+  #accBulkModal select,
+  #accBulkModal input[type="number"]:not(.acc-bulk-bp),
+  #accBulkModal input[type="url"],
+  #accBulkModal input[type="text"] {
+    min-height: 2.75rem;
+  }
+  /* ارتفاع النافذة: vh للمتصفحات القديمة، dvh عند التوفر (Safari iOS 15.4+، Chrome) */
+  .acc-bulk-modal-shell {
+    max-height: min(92vh, calc(100vh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @supports (height: 100dvh) {
+    .acc-bulk-modal-shell {
+      max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    }
+  }
+  /* استيراد: نمط لوحة الإجراء السريع (ضيق) — مراجعة: نمط بطاقة العملاء (عرض max-w-5xl) — 100% وليس 100vw لتفادي شريط التمرير والفراغ الجانبي */
+  #accBulkModal[data-acc-step="import"] .acc-bulk-modal-shell {
+    max-width: min(100%, 42rem);
+  }
+  #accBulkModal[data-acc-step="review"] .acc-bulk-modal-shell {
+    max-width: min(100%, 64rem);
+  }
+  .acc-bulk-src-btn {
+    transition: all 0.2s ease;
+  }
+  .acc-bulk-src-btn--active {
+    background-color: white !important;
+    color: rgb(79 70 229) !important;
+    font-weight: 700 !important;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+  }
+  /* تمرير واحد: الجسم فقط — يمنع التداخل الذي يعطل اللمس فوق الجدول */
+  #accBulkModalBody {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+  .acc-bulk-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+  }
+  @media (max-width: 767px) {
+    /* بطاقات عمودية: لا تمرير أفقي هنا — يمرّر الجسم فقط */
+    .acc-bulk-scroll {
+      touch-action: pan-y;
+    }
+  }
+  /* iOS Safari: تجنّب تكبير الصفحة عند التركيز على حقول أصغر من 16px */
+  @media (max-width: 639px) {
+    #accBulkModal input:not(.sr-only),
+    #accBulkModal select,
+    #accBulkModal textarea {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #accBulkModal .acc-bulk-src-btn {
+      transition: none;
+    }
+  }
+  /* رأس الجدول ثابت أثناء تمرير نافذة المعاينة */
+  #accBulkModalBody .acc-bulk-thead th {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: rgb(248 250 252);
+    box-shadow: 0 1px 0 0 rgb(241 245 249);
+  }
+  .acc-bulk-review {
+    table-layout: fixed;
+  }
+  /* سطح المكتب: بطاقة المعتمد في المعاينة — مضغوط وواضح */
+  .acc-bulk-review .acc-bulk-card-title {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    max-width: 100%;
+  }
+  .acc-bulk-review .acc-bulk-card-name {
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: rgb(15 23 42);
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  .acc-bulk-review .acc-bulk-card-code {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-family: ui-monospace, monospace;
+    color: rgb(100 116 139);
+    letter-spacing: 0.02em;
+  }
+  .acc-bulk-review .acc-bulk-amt-value {
+    font-weight: 700;
+    color: rgb(67 56 202);
+  }
+  /* زر الحذف: أحمر ثابت — يمنع الوميض الأبيض على الموبايل */
+  .acc-bulk-review .acc-bulk-del-btn {
+    -webkit-tap-highlight-color: transparent;
+    background-color: rgb(220 38 38) !important;
+    color: rgb(255 255 255) !important;
+    border: 1px solid rgb(185 28 28) !important;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  }
+  .acc-bulk-review .acc-bulk-del-btn:hover,
+  .acc-bulk-review .acc-bulk-del-btn:focus-visible,
+  .acc-bulk-review .acc-bulk-del-btn:active {
+    background-color: rgb(185 28 28) !important;
+    color: rgb(255 255 255) !important;
+    border-color: rgb(153 27 27) !important;
+  }
+  .acc-bulk-review tbody tr.acc-bulk-tr {
+    transition: filter 0.15s ease, box-shadow 0.15s ease;
+  }
+  @media (min-width: 768px) {
+    .acc-bulk-review tbody tr.acc-bulk-tr {
+      border-bottom: 1px solid rgb(226 232 240 / 0.85);
+    }
+    .acc-bulk-review tbody tr.acc-bulk-tr:hover {
+      filter: brightness(0.97);
+    }
+  }
+  @media (max-width: 767px) {
+    .acc-bulk-scroll {
+      overflow-x: hidden !important;
+      width: 100%;
+      max-width: 100%;
+    }
+    .acc-bulk-review {
+      min-width: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      table-layout: auto !important;
+      display: block;
+    }
+    .acc-bulk-review thead.acc-bulk-thead { display: none !important; }
+    .acc-bulk-review tbody {
+      display: block;
+      width: 100%;
+    }
+    .acc-bulk-review tbody tr.acc-bulk-tr {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "num"
+        "name"
+        "amount"
+        "disc"
+        "action";
+      gap: 0.5rem;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid rgb(255 255 255 / 0.55);
+      border-radius: 0.75rem;
+      margin-bottom: 0.5rem;
+      /* الخلفية من inline (agencyCardColors) */
+      box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.45);
+      position: relative;
+    }
+    .acc-bulk-review tbody tr.acc-bulk-tr:active {
+      filter: brightness(0.96);
+    }
+    .acc-bulk-review.acc-bulk-debt-mode tbody tr.acc-bulk-tr {
+      grid-template-areas:
+        "num"
+        "name"
+        "amount"
+        "disc"
+        "action";
+    }
+    .acc-bulk-review.acc-bulk-debt-mode.acc-bulk-no-disc tbody tr.acc-bulk-tr {
+      grid-template-areas:
+        "num"
+        "name"
+        "amount"
+        "action";
+    }
+    .acc-bulk-review.acc-bulk-no-disc .acc-bulk-cell-disc,
+    .acc-bulk-review.acc-bulk-no-disc thead th:nth-child(4) {
+      display: none !important;
+    }
+    .acc-bulk-review tbody td.acc-bulk-td {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      padding: 0 !important;
+      border: none !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+    .acc-bulk-review tbody td.acc-bulk-td:last-child { border-bottom: none; }
+    .acc-bulk-review tbody td.acc-bulk-td::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: rgb(148 163 184);
+      margin-bottom: 0.25rem;
+      text-align: right;
+    }
+    .acc-bulk-review tbody td.acc-bulk-td > *:last-child {
+      flex: 0 0 auto;
+      width: 100%;
+      min-width: 0;
+      text-align: start;
+    }
+    .acc-bulk-review tbody td.acc-bulk-td .acc-bulk-val {
+      text-align: right;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-num {
+      grid-area: num;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-num::before { display: none !important; }
+    .acc-bulk-review tbody td.acc-bulk-cell-num .acc-bulk-val {
+      background: rgb(255 255 255 / 0.55);
+      border: 1px solid rgb(255 255 255 / 0.65);
+      color: rgb(71 85 105);
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.375rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-name {
+      grid-area: name;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-name::before { display: none !important; }
+    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-card-main {
+      width: 100%;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-card-title {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem 0.5rem;
+      text-align: center;
+      padding: 0.5rem 0.6rem;
+      border-radius: 0.5rem;
+      background: rgb(255 255 255 / 0.72);
+      border: 1px solid rgb(255 255 255 / 0.85);
+      box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-card-name {
+      font-size: 0.9375rem;
+      font-weight: 800;
+      color: rgb(15 23 42);
+      max-width: 100%;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-name .acc-bulk-card-code {
+      padding: 0.1rem 0.4rem;
+      border-radius: 0.25rem;
+      background: rgb(255 255 255 / 0.65);
+      border: 1px solid rgb(255 255 255 / 0.7);
+      font-size: 0.625rem;
+      color: rgb(71 85 105);
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-amt {
+      grid-area: amount;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 0.35rem;
+      padding: 0.5rem 0.65rem !important;
+      border-radius: 0.5rem;
+      background: rgb(255 255 255 / 0.65);
+      border: 1px solid rgb(255 255 255 / 0.85);
+      backdrop-filter: blur(4px);
+      margin: 0;
+      min-width: 0;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-amt::before {
+      margin-bottom: 0;
+      align-self: flex-end;
+      color: rgb(67 56 202);
+      font-weight: 800;
+      font-size: 0.7rem;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-amt .acc-bulk-amt-value {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      font-size: 1.0625rem;
+      font-weight: 800;
+      color: rgb(49 46 129);
+      text-align: center;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      padding: 0.15rem 0;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-disc {
+      grid-area: disc;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-disc::before,
+    .acc-bulk-review tbody td.acc-bulk-cell-act::before {
+      color: rgb(30 41 59);
+      font-size: 0.6875rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+    .acc-bulk-review tbody td.acc-bulk-cell-act {
+      grid-area: action;
+      justify-content: stretch;
+      margin-top: 0.125rem;
+    }
+    .acc-bulk-review tbody td.acc-bulk-td select,
+    .acc-bulk-review tbody td.acc-bulk-td input.acc-bulk-disc {
+      min-height: 2.25rem !important;
+      width: 100% !important;
+      max-width: none !important;
+      background-color: rgb(255 255 255 / 0.75) !important;
+      border-color: rgb(255 255 255 / 0.85) !important;
+      border-radius: 0.5rem !important;
+      text-align: center;
+      font-size: 0.8125rem !important;
+    }
+    .acc-bulk-review tbody td.acc-bulk-td button.acc-bulk-del-btn {
+      min-height: 2.5rem !important;
+      width: 100% !important;
+      border-radius: 0.5rem !important;
+      font-size: 0.8125rem !important;
+    }
+  }
+  /* موبايل: مسافة سفلية داخل الجسم فقط (النافذة لم تعد تغطي الشريط السفلي) */
+  @media (max-width: 1023px) {
+    #accBulkModalBody {
+      padding-bottom: 1rem;
+    }
+  }
+  /* حالة فارغة / تحميل داخل البطاقة — يعمل دون الاعتماد على فئات Tailwind في JS */
+  .acc-approvals-empty {
+    min-height: min(58vh, 24rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    text-align: center;
+  }
+  @supports (height: 100dvh) {
+    .acc-approvals-empty {
+      min-height: min(58dvh, 24rem);
+    }
+  }
+  @media (min-width: 640px) {
+    .acc-approvals-empty {
+      min-height: min(64vh, 28rem);
+    }
+    @supports (height: 100dvh) {
+      .acc-approvals-empty {
+        min-height: min(64dvh, 28rem);
+      }
+    }
+  }
+  /* نافذة التسليم — نفس منطق الارتفاع واللمس كـ رفع الأرصدة */
+  #accDeliveryModal {
+    overscroll-behavior: contain;
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    isolation: isolate;
+  }
+  .acc-delivery-modal-shell {
+    max-height: min(92vh, calc(100vh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    max-width: min(100%, 28rem);
+  }
+  @supports (height: 100dvh) {
+    .acc-delivery-modal-shell {
+      max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    }
+  }
+  #accDeliveryModalBody {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+  @media (max-width: 639px) {
+    #accDeliveryModal select {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+  }
+  /* بطاقات المعتمدين: نفس شبكة الوكالات الفرعية */
+  .agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+  .btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
+  .btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+  .agency-card { padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s; border: none; }
+  .agency-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15); }
+  .agency-card h5 { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+  .agency-card .agency-meta { font-size: 0.8125rem; opacity: 0.9; margin-bottom: 0.25rem; }
+  .agency-card .agency-balance { font-size: 0.875rem; font-weight: 600; }
+  @media (max-width: 639px) {
+    .acc-approvals-page .agency-card { text-align: center; }
+    .acc-approvals-page .agency-card h5 { text-align: center; }
+    .acc-approvals-page .agency-card .agency-meta,
+    .acc-approvals-page .agency-card .agency-balance { text-align: center; }
+    .acc-approvals-page .flex.items-center.justify-between.mb-8 { flex-direction: column; text-align: center; }
+    .acc-approvals-page .flex.items-center.justify-between.mb-8 > h2 { width: 100%; }
+    .acc-approvals-page .agencies-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+  /*
+   * موبايل/تابلت: النوافذ لا تغطي شريط الهيدر (60px) ولا شريط التنقل السفلي (65px) — يبقيا ظاهرين.
+   * سطح المكتب: بدون هامش يمين — كان lg:mr-[260px] يُظهر الشريط الجانبي بجانب النافذة.
+   */
+  @media (max-width: 1023px) {
+    #accBulkModal,
+    #accDeliveryModal,
+    #accAddModal,
+    #accDetailModal,
+    #accConfirmModal {
+      top: calc(60px + env(safe-area-inset-top, 0px));
+      right: 0;
+      bottom: calc(65px + env(safe-area-inset-bottom, 0px));
+      left: 0;
+      width: 100%;
+      height: auto;
+      max-height: none;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 0.5rem;
+      padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+      padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+      box-sizing: border-box;
+    }
+    #accBulkModal .acc-bulk-modal-shell,
+    #accDeliveryModal .acc-delivery-modal-shell {
+      width: 100%;
+      max-width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      min-height: 0 !important;
+      max-height: 100% !important;
+      flex: 1 1 auto;
+      border-radius: 1rem;
+    }
+    #accAddModal > div.bg-white,
+    #accDetailModal > div.bg-white {
+      max-height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #accConfirmModal {
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    #accConfirmModal > div {
+      max-height: 100%;
+      overflow-y: auto;
+    }
+  }
+  /* قائمة تسليم المعتمدين: عمود متراصّ ومحاذاة وسط على الموبايل */
+  @media (max-width: 639px) {
+    #accDelList .acc-del-row {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      position: relative;
+      padding-top: 2.25rem;
+    }
+    #accDelList .acc-del-row .acc-del-cb {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+    }
+    #accDelList .acc-del-row > span.flex-1 {
+      width: 100%;
+    }
+  }
+
+/* Migrated from views/partials/sub-agencies.ejs */
+.agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+.btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
+.btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+.btn-back { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.btn-back:hover { background: #e2e8f0; color: #475569; }
+.input-select { max-width: 16rem; padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+.dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.dash-card { padding: 1.25rem; border-radius: 1rem; transition: transform 0.2s; }
+.dash-card-users { cursor: pointer; }
+.dash-card-users:hover { transform: scale(1.02); }
+.dash-card-profit { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; }
+.dash-card-users { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #3730a3; }
+.dash-card-percent { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #b45309; }
+.dash-card-label { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; opacity: 0.9; }
+.dash-card-value { font-size: 1.5rem; font-weight: 700; }
+.input-percent { width: 5rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem; border: 1px solid #fcd34d; font-weight: 700; color: #b45309; }
+.btn-reward { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); }
+.btn-reward:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35); }
+.btn-deduct { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #ea580c, #f97316); color: white; transition: all 0.2s; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25); }
+.btn-deduct:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(234, 88, 12, 0.35); }
+.tx-section { padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
+.tx-section-title { font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 1rem; }
+.tx-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.input-filter { padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; font-size: 0.875rem; }
+.btn-filter { padding: 0.5rem 1rem; border-radius: 0.5rem; background: #4f46e5; color: white; font-size: 0.875rem; font-weight: 500; }
+.tx-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.modal-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal-overlay.hidden { display: none; }
+.modal-overlay:not(.hidden) { display: flex; }
+.modal-box { background: white; border-radius: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); max-width: 28rem; width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-box-tall { max-height: 80vh; display: flex; flex-direction: column; }
+.modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.modal-header h4 { font-size: 1.125rem; font-weight: 700; color: #1e293b; }
+.modal-close { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; color: #94a3b8; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.modal-close:hover { background: #f1f5f9; color: #64748b; }
+.modal-form { padding: 1.5rem; }
+.modal-body { padding: 1rem; overflow-y: auto; flex: 1; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
+.form-group input, .form-group textarea { width: 100%; padding: 0.625rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+.form-actions { display: flex; gap: 0.75rem; padding-top: 0.5rem; }
+.btn-submit { flex: 1; padding: 0.75rem; border-radius: 0.75rem; font-weight: 600; background: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); }
+.btn-submit:hover { background: #4338ca; }
+.btn-cancel { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569; }
+.agency-card { padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s; border: none; }
+.agency-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15); }
+.agency-card h5 { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+.agency-card .agency-meta { font-size: 0.8125rem; opacity: 0.9; margin-bottom: 0.25rem; }
+.agency-card .agency-balance { font-size: 0.875rem; font-weight: 600; }
+.tx-item { padding: 1rem; border-radius: 0.75rem; background: #f8fafc; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; }
+
+/* Migrated from views/partials/funds.ejs */
+/* نفس شبكة وبطاقات الوكالات الفرعية — محاذاة وسط على الموبايل */
+.agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+.btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
+.btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+.agency-card { padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s; border: none; }
+.agency-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15); }
+.agency-card h5 { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+.agency-card .agency-meta { font-size: 0.8125rem; opacity: 0.9; margin-bottom: 0.25rem; }
+.agency-card .agency-balance { font-size: 0.875rem; font-weight: 600; }
+@media (max-width: 639px) {
+  .funds-page .agency-card { text-align: center; }
+  .funds-page .agency-card h5 { text-align: center; }
+  .funds-page .agency-card .agency-meta,
+  .funds-page .agency-card .agency-balance { text-align: center; }
 }

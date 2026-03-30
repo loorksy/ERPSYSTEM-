@@ -1,71 +1,3 @@
-<style>
-  /* نافذة حذف البيانات — نفس منطق نافذة تسليم الاعتمادات */
-  #resetDataModal {
-    overscroll-behavior: contain;
-    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-    isolation: isolate;
-  }
-  .reset-data-modal-shell {
-    max-height: min(92vh, calc(100vh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
-    max-width: min(100%, 28rem);
-  }
-  @supports (height: 100dvh) {
-    .reset-data-modal-shell {
-      max-height: min(92dvh, calc(100dvh - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
-    }
-  }
-  #resetDataModalBody {
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior: contain;
-  }
-  @media (max-width: 1023px) {
-    #resetDataModal {
-      top: calc(60px + env(safe-area-inset-top, 0px));
-      right: 0;
-      bottom: calc(65px + env(safe-area-inset-bottom, 0px));
-      left: 0;
-      width: 100%;
-      height: auto;
-      max-height: none;
-      align-items: stretch;
-      justify-content: flex-start;
-      padding: 0.5rem;
-      padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
-      padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
-      box-sizing: border-box;
-    }
-    #resetDataModal .reset-data-modal-shell {
-      width: 100%;
-      max-width: 100% !important;
-      margin-left: 0 !important;
-      margin-right: 0 !important;
-      min-height: 0 !important;
-      max-height: 100% !important;
-      flex: 1 1 auto;
-      border-radius: 1rem;
-    }
-  }
-  @media (max-width: 639px) {
-    #resetDataCategories .reset-cat-row {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 0.75rem;
-      position: relative;
-      padding-top: 2.25rem;
-    }
-    #resetDataCategories .reset-cat-row .reset-cat-cb {
-      position: absolute;
-      top: 0.75rem;
-      right: 0.75rem;
-    }
-    #resetDataCategories .reset-cat-row > span.flex-1 {
-      width: 100%;
-    }
-  }
-</style>
 <div class="max-w-5xl">
   <div id="settingsCard" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col min-w-0" data-tabs-container="settings">
     <header class="shrink-0 flex items-center gap-3 py-5 px-4 sm:px-6 border-b border-slate-100 bg-white">
@@ -324,8 +256,8 @@
   </div>
 
   <!-- Modal: حذف البيانات — نفس نمط نافذة «تسليم» في الاعتمادات -->
-  <div id="resetDataModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 sm:p-6 md:p-8 max-lg:p-2 max-lg:items-stretch max-lg:justify-start bg-slate-900/60 backdrop-blur-sm transition-opacity" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="resetDataModalTitle">
-    <div class="reset-data-modal-shell bg-white rounded-2xl sm:rounded-[2rem] max-lg:rounded-xl shadow-2xl w-full flex flex-col min-h-0 overflow-hidden mx-auto">
+  <div id="resetDataModal" class="fixed inset-0 z-[10050] hidden items-center justify-center overscroll-contain isolate bg-slate-900/60 backdrop-blur-sm transition-opacity pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] p-4 sm:p-6 md:p-8 max-lg:inset-x-0 max-lg:top-[calc(60px+env(safe-area-inset-top,0px))] max-lg:bottom-[calc(65px+env(safe-area-inset-bottom,0px))] max-lg:h-auto max-lg:max-h-none max-lg:w-full max-lg:items-stretch max-lg:justify-start max-lg:p-2 max-lg:ps-[max(0.5rem,env(safe-area-inset-left,0px))] max-lg:pe-[max(0.5rem,env(safe-area-inset-right,0px))]" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="resetDataModalTitle">
+    <div class="mx-auto flex min-h-0 w-full max-w-[min(100%,28rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[min(92dvh,calc(100dvh-1.25rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] sm:rounded-[2rem] max-lg:max-h-full max-lg:w-full max-lg:max-w-full max-lg:flex-1 max-lg:rounded-2xl">
       <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-start sm:items-center bg-white/80 backdrop-blur-md z-10 shrink-0">
         <div class="flex items-center gap-3 min-w-0">
           <div class="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 text-red-600 shrink-0 border border-red-100">
@@ -339,7 +271,7 @@
         <button type="button" onclick="closeResetDataModal()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors shrink-0" aria-label="إغلاق"><i class="fas fa-times text-lg"></i></button>
       </div>
 
-      <div id="resetDataModalBody" class="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 overscroll-contain bg-slate-50/30">
+      <div id="resetDataModalBody" class="touch-pan-y flex-1 min-h-0 overflow-y-auto overscroll-contain bg-slate-50/30 p-4 sm:p-6">
         <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm mb-4">
           <label class="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" id="resetWipeAll" class="mt-1 rounded border-slate-300 text-red-600 focus:ring-red-500" onchange="onResetWipeAllChange()">
@@ -622,16 +554,16 @@ function renderResetCategories() {
     var id = 'resetCat_' + cat.id;
     var wrap = document.createElement('label');
     wrap.className =
-      'reset-cat-row flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3 p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm text-center sm:text-right';
+      'relative flex flex-col items-center gap-3 pt-9 text-center sm:flex-row sm:items-start sm:justify-between sm:gap-2 sm:gap-3 sm:pt-3 sm:text-right p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm';
     var cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.id = id;
     cb.setAttribute('data-reset-cat', cat.id);
-    cb.className = 'reset-cat-cb h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500';
+    cb.className = 'absolute top-3 right-3 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 sm:static sm:top-auto sm:right-auto';
     cb.disabled = wipeOn;
     cb.checked = true;
     var span = document.createElement('span');
-    span.className = 'flex-1 min-w-0 text-sm text-slate-800';
+    span.className = 'w-full min-w-0 flex-1 text-sm text-slate-800 sm:w-auto';
     var title = document.createElement('span');
     title.className = 'font-bold block';
     title.textContent = cat.label || '';

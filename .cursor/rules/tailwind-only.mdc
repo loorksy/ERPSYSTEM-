@@ -1,0 +1,18 @@
+---
+description: UI styling — Tailwind utilities only in templates (Arabic/RTL project)
+globs: views/**/*.ejs, public/js/**/*.js, src/input.css
+alwaysApply: false
+---
+
+# Tailwind-only styling
+
+- **Do not** add new `.css` files for page or component styles. The only stylesheet entry for Tailwind is [src/input.css](src/input.css) (build contract: `@import "tailwindcss"` + `@source`).
+- **Do not** use `<style>...</style>` blocks in EJS templates for layout or visual design.
+- **Do not** use `style="..."` attributes; toggle Tailwind classes from JS when behavior needs to change.
+- Put all layout and appearance in **Tailwind utility classes** on elements (`class="..."`), using `flex`, `grid`, responsive prefixes (`sm:`, `lg:`, `max-lg:`), and logical spacing/borders where RTL matters (`ms-`, `me-`, `border-s`, etc.).
+- Keep **Arabic** copy and **`dir="rtl"`** / `lang="ar"`** on document shells where applicable.
+- Third-party stylesheets (e.g. Font Awesome, Google Fonts CDN) are allowed as external dependencies; do not duplicate them as hand-written project CSS.
+
+When adding animations referenced by arbitrary classes (e.g. `animate-[toastIn_0.3s_ease]`), define `@keyframes` only in [src/input.css](src/input.css) if they must be shared with JS; prefer Tailwind built-in `animate-*` when sufficient.
+
+Legacy complex rules (bulk approvals table/modals, sub-agencies modals, shared `agencies-grid` / `btn-add`) were consolidated into [src/input.css](src/input.css) so EJS templates stay free of `<style>` blocks; prefer new UI as Tailwind utilities in templates and only extend `input.css` when utilities cannot express the behavior.

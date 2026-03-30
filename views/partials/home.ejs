@@ -1,3 +1,13 @@
+<% 
+var homeDashCardBase = 'relative flex flex-col h-full min-h-[7.75rem] sm:min-h-[9rem] min-w-0 overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50/95 p-3 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_12px_-2px_rgba(15,23,42,0.04)] transition-all duration-300 ease-out hover:border-slate-300/90 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.1)] hover:-translate-y-0.5';
+var homeDashCardA = homeDashCardBase + ' group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50';
+var homeDashCardGroup = homeDashCardBase + ' group';
+var homeDashCardPlain = homeDashCardBase;
+var homeDashLine = 'pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-slate-200/60 to-transparent';
+var homeDashIcon = 'mb-2.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.65rem] sm:mb-3 sm:h-11 sm:w-11 sm:rounded-xl shadow-inner shadow-black/[0.03] transition-all duration-300 group-hover:scale-[1.03]';
+var homeDashLabel = 'mb-1 line-clamp-2 text-[0.625rem] font-semibold leading-snug text-slate-500 sm:text-[0.7rem] sm:leading-snug';
+var homeDashMetric = 'mt-auto font-mono font-bold tabular-nums tracking-tight transition-colors duration-200 text-sm leading-tight sm:text-base sm:leading-none md:text-lg xl:text-xl';
+%>
 <div class="max-w-6xl mx-auto px-3 sm:px-4 lg:px-0 pb-10 relative min-w-0" dir="rtl" id="homeDashboardRoot">
   <!-- شريط أدوات: موبايل — عمودان | لابتوب -->
   <div class="mb-5 md:mb-6 flex flex-col items-center md:items-end gap-2 w-full">
@@ -52,36 +62,40 @@
         مؤشرات مالية
       </h3>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <a href="/profit-sources" class="home-dash-card group" title="مصادر الربح">
-          <div class="home-dash-card-icon bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white">
+        <a href="/profit-sources" class="<%= homeDashCardA %>" title="مصادر الربح">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="<%= homeDashIcon %> bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white">
             <i class="fas fa-coins text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">الربح الصافي</p>
-          <p class="home-dash-metric text-slate-900" id="netProfit">0.00</p>
+          <p class="<%= homeDashLabel %>">الربح الصافي</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="netProfit">0.00</p>
         </a>
 
-        <a href="/expenses-manual" class="home-dash-card group" title="المصاريف — تسجيل وسجل موحّد">
-          <div class="home-dash-card-icon bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white">
+        <a href="/expenses-manual" class="<%= homeDashCardA %>" title="المصاريف — تسجيل وسجل موحّد">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="<%= homeDashIcon %> bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white">
             <i class="fas fa-receipt text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">المصاريف (مجمّع)</p>
-          <p class="home-dash-metric text-slate-900" id="totalExpenses">0.00</p>
+          <p class="<%= homeDashLabel %>">المصاريف (مجمّع)</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="totalExpenses">0.00</p>
         </a>
 
-        <a href="/debts" class="home-dash-card group" id="homeCardDebt" title="صفحة الديون والملفات">
-          <div class="home-dash-card-icon bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white">
+        <a href="/debts" class="<%= homeDashCardA %>" id="homeCardDebt" title="صفحة الديون والملفات">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="<%= homeDashIcon %> bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white">
             <i class="fas fa-file-invoice-dollar text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">إجمالي الديون</p>
-          <p class="home-dash-metric text-slate-900" id="totalDebts">0.00</p>
+          <p class="<%= homeDashLabel %>">إجمالي الديون</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="totalDebts">0.00</p>
         </a>
 
-        <a href="/receivables-to-us" class="home-dash-card group" title="ديين لنا">
-          <div class="home-dash-card-icon bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white">
+        <a href="/receivables-to-us" class="<%= homeDashCardA %>" title="ديين لنا">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="<%= homeDashIcon %> bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white">
             <i class="fas fa-hand-holding-heart text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">ديين لنا</p>
-          <p class="home-dash-metric text-slate-900" id="receivablesToUsHome">—</p>
+          <p class="<%= homeDashLabel %>">ديين لنا</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="receivablesToUsHome">—</p>
         </a>
       </div>
     </div>
@@ -93,37 +107,41 @@
         سيولة ومستحقات
       </h3>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <a href="/payment-due" class="home-dash-card group" title="مطلوب دفع">
-          <div class="home-dash-card-icon bg-amber-50 text-amber-700 group-hover:bg-amber-500 group-hover:text-white">
+        <a href="/payment-due" class="<%= homeDashCardA %>" title="مطلوب دفع">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="<%= homeDashIcon %> bg-amber-50 text-amber-700 group-hover:bg-amber-500 group-hover:text-white">
             <i class="fas fa-money-bill-wave text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">مطلوب دفع</p>
-          <p class="home-dash-metric text-slate-900" id="paymentDueHome">—</p>
+          <p class="<%= homeDashLabel %>">مطلوب دفع</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="paymentDueHome">—</p>
         </a>
 
-        <div class="home-dash-card cursor-pointer" id="homeCardCash" onclick="homeOpenFundModal()" title="مصادر الأموال والصناديق">
-          <div class="home-dash-card-icon bg-amber-50 text-amber-600">
+        <div class="<%= homeDashCardGroup %> cursor-pointer" id="homeCardCash" onclick="homeOpenFundModal()" title="مصادر الأموال والصناديق">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="<%= homeDashIcon %> bg-amber-50 text-amber-600">
             <i class="fas fa-vault text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">رصيد الصندوق الرئيسي</p>
+          <p class="<%= homeDashLabel %>">رصيد الصندوق الرئيسي</p>
           <p class="text-[0.6rem] sm:text-[0.65rem] text-slate-400 mb-0.5">(محاسبي)</p>
-          <p class="home-dash-metric text-slate-900" id="cashBalance">0.00</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="cashBalance">0.00</p>
         </div>
 
-        <a href="/deferred-balance" id="deferredBalanceLink" class="home-dash-card group">
-          <div class="home-dash-card-icon bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white">
+        <a href="/deferred-balance" id="deferredBalanceLink" class="<%= homeDashCardA %>">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="<%= homeDashIcon %> bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white">
             <i class="fas fa-clock-rotate-left text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">رصيد المؤجل</p>
-          <p class="home-dash-metric text-slate-900" id="deferredBalance">0.00</p>
+          <p class="<%= homeDashLabel %>">رصيد المؤجل</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="deferredBalance">0.00</p>
         </a>
 
-        <div class="home-dash-card">
-          <div class="home-dash-card-icon bg-violet-50 text-violet-600">
+        <div class="<%= homeDashCardPlain %>">
+          <span class="<%= homeDashLine %>" aria-hidden="true"></span>
+          <div class="mb-2.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.65rem] sm:mb-3 sm:h-11 sm:w-11 sm:rounded-xl shadow-inner shadow-black/[0.03] transition-all duration-300 bg-violet-50 text-violet-600">
             <i class="fas fa-truck-fast text-base sm:text-lg"></i>
           </div>
-          <p class="home-dash-card-label">رصيد الشحن (كمية)</p>
-          <p class="home-dash-metric text-slate-900" id="shippingBalance">0.00</p>
+          <p class="<%= homeDashLabel %>">رصيد الشحن (كمية)</p>
+          <p class="<%= homeDashMetric %> text-slate-900" id="shippingBalance">0.00</p>
         </div>
       </div>
     </div>

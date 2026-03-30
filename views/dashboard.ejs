@@ -10,224 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="/css/tailwind.css">
-  <style>
-    /* Tailwind المُجمَّع لا يضمّ كل مرافقات lg — نُثبّت FAB وشريط الموبايل هنا */
-    @media (max-width: 63.99rem) {
-      #mobileBottomNav {
-        display: grid !important;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        align-items: end;
-        justify-items: stretch;
-        column-gap: 0;
-        overflow: visible;
-      }
-      #mobileBottomNav > a,
-      #mobileBottomNav > .mobile-bottom-nav-fab-wrap {
-        min-width: 0;
-        justify-self: stretch;
-      }
-      #mobileBottomNav > .mobile-bottom-nav-fab-wrap {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-        padding-bottom: 0.25rem;
-      }
-    }
-    @media (min-width: 64rem) {
-      #quickActionRadialDesktop {
-        display: block !important;
-        position: fixed;
-        bottom: 2rem;
-        left: 2.35rem;
-        right: auto;
-        z-index: 1004;
-      }
-    }
-    :root {
-      --mv-refund: #b91c1c;
-      --mv-debt: #c2410c;
-      --mv-payout: #9a3412;
-      --mv-balance: #047857;
-    }
-    .mv-border-refund { border-left: 3px solid var(--mv-refund); }
-    .mv-border-debt { border-left: 3px solid var(--mv-debt); }
-    .mv-border-payout { border-left: 3px solid var(--mv-payout); }
-    .mv-border-balance { border-left: 3px solid var(--mv-balance); }
-    /* زر إجراءات شعاعي (مستوحى من Uiverse — ألوان LorkERP) */
-    .quick-action-radial {
-      position: relative;
-      width: 3.5rem;
-      height: 3.5rem;
-      flex-shrink: 0;
-    }
-    .quick-action-radial--desktop {
-      width: 3.75rem;
-      height: 3.75rem;
-    }
-    .quick-action-radial-circle {
-      position: relative;
-      z-index: 6;
-      width: 3rem;
-      height: 3rem;
-      margin: 0 auto;
-      border-radius: 50%;
-      border: 4px solid #fff;
-      background: linear-gradient(155deg, #6366f1 0%, #4f46e5 48%, #4338ca 100%);
-      box-shadow: 0 6px 18px rgba(79, 70, 229, 0.38);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-    }
-    .quick-action-radial--desktop .quick-action-radial-circle {
-      width: 3.5rem;
-      height: 3.5rem;
-    }
-    .quick-action-radial-circle:hover {
-      filter: brightness(1.06);
-      box-shadow: 0 8px 22px rgba(79, 70, 229, 0.45);
-    }
-    .quick-action-radial--open .quick-action-radial-circle {
-      transform: scale(0.93);
-      box-shadow: 0 4px 16px rgba(26, 26, 46, 0.2);
-      background: linear-gradient(155deg, #4f46e5 0%, #3730a3 100%);
-    }
-    .quick-action-radial-icon {
-      transition: transform 0.38s cubic-bezier(0.34, 1.35, 0.64, 1);
-      display: block;
-      line-height: 1;
-    }
-    .quick-action-radial--open .quick-action-radial-icon {
-      transform: rotate(45deg);
-    }
-    .quick-action-radial-subs {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 0;
-      height: 0;
-      z-index: 5;
-      pointer-events: none;
-    }
-    .quick-action-radial--open .quick-action-radial-subs {
-      pointer-events: auto;
-    }
-    .quick-action-radial-sub {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 2.5rem;
-      height: 2.5rem;
-      margin-left: -1.25rem;
-      margin-top: -1.25rem;
-      border-radius: 50%;
-      border: 3px solid #fff;
-      transform: scale(0.35);
-      opacity: 0;
-      transition: transform 0.28s cubic-bezier(0.34, 1.35, 0.64, 1), opacity 0.22s ease, box-shadow 0.2s ease;
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0;
-    }
-    .quick-action-radial--desktop .quick-action-radial-sub {
-      width: 2.75rem;
-      height: 2.75rem;
-      margin-left: -1.375rem;
-      margin-top: -1.375rem;
-      font-size: 0.75rem;
-    }
-    .quick-action-radial-sub[data-quick-type="qa-out"],
-    .quick-action-radial-sub[data-quick-type="صادر"] {
-      background: linear-gradient(145deg, #fb7185, #e11d48);
-    }
-    .quick-action-radial-sub[data-quick-type="qa-in"],
-    .quick-action-radial-sub[data-quick-type="وارد"] {
-      background: linear-gradient(145deg, #34d399, #059669);
-    }
-    .quick-action-radial-sub[data-quick-type="مرتجع"] {
-      background: linear-gradient(145deg, #fbbf24, #d97706);
-    }
-    .quick-action-radial-sub--wide {
-      width: auto !important;
-      min-width: 3.25rem;
-      padding: 0 0.35rem !important;
-      font-size: 0.62rem !important;
-      line-height: 1.1;
-    }
-    .quick-action-radial-sub:hover {
-      filter: brightness(1.08);
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
-    }
-    /* زرّان فقط: صادر / وارد */
-    .quick-action-radial--open .quick-action-radial-sub:nth-child(1) {
-      transform: translate(-3.5rem, -4.6rem) scale(1);
-      opacity: 1;
-      transition-delay: 0.04s;
-    }
-    .quick-action-radial--open .quick-action-radial-sub:nth-child(2) {
-      transform: translate(3.5rem, -4.6rem) scale(1);
-      opacity: 1;
-      transition-delay: 0.09s;
-    }
-    @media (min-width: 64rem) {
-      .quick-action-radial--desktop.quick-action-radial--open .quick-action-radial-sub:nth-child(1) {
-        transform: translate(-3.85rem, -4.4rem) scale(1);
-      }
-      .quick-action-radial--desktop.quick-action-radial--open .quick-action-radial-sub:nth-child(2) {
-        transform: translate(3.85rem, -4.4rem) scale(1);
-      }
-    }
-    #mobileBottomNav:has(.quick-action-radial--open) {
-      z-index: 1005;
-    }
-    .mobile-bottom-nav-fab-wrap {
-      overflow: visible;
-    }
-    /* حركة الضغط على زر + */
-    @keyframes quick-action-fab-press {
-      0% { transform: scale(1); }
-      40% { transform: scale(0.86); }
-      70% { transform: scale(1.06); }
-      100% { transform: scale(1); }
-    }
-    button.quick-action-fab {
-      transition: box-shadow 0.2s ease, filter 0.2s ease;
-    }
-    button.quick-action-fab.quick-action-fab-pulse {
-      animation: quick-action-fab-press 0.45s cubic-bezier(0.34, 1.45, 0.64, 1);
-    }
-    /* خلفية عند فتح الإجراءات الشعاعية */
-    #quickActionBackdrop {
-      opacity: 0;
-      transition: opacity 0.22s ease;
-    }
-    #quickActionBackdrop.quick-action-panel-open {
-      opacity: 1;
-    }
-    @media (max-width: 63.99rem) {
-      #quickActionRadialDesktop {
-        display: none !important;
-      }
-    }
-    /* موبايل: إخفاء الشريط الجانبي بالكامل (تفادي ظهور شريط بسبب subpixel أو translate-x-full) */
-    @media (max-width: 63.99rem) {
-      #sidebar {
-        transform: translateX(calc(100% + 4px));
-      }
-      #sidebar.translate-x-0 {
-        transform: translateX(0);
-      }
-    }
-  </style>
 </head>
 <body class="min-h-screen bg-slate-100 font-[Tajawal] text-slate-800 max-lg:overflow-x-hidden">
 
@@ -251,7 +33,7 @@
   <div class="hidden fixed inset-0 bg-black/50 z-[1000] backdrop-blur-sm" id="sidebarOverlay"></div>
 
   <!-- Sidebar -->
-  <aside class="fixed top-0 right-0 w-[260px] h-screen bg-[#1a1a2e] z-[1001] flex flex-col transition-all duration-300 overflow-y-auto overflow-x-hidden" id="sidebar">
+  <aside class="fixed top-0 right-0 w-[260px] h-screen bg-[#1a1a2e] z-[1001] flex flex-col transition-all duration-300 overflow-y-auto overflow-x-hidden max-lg:translate-x-[calc(100%+4px)]" id="sidebar">
     <!-- Logo -->
     <div class="p-5 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -521,48 +303,48 @@
   <div class="fixed top-5 left-5 z-[9999] flex flex-col gap-2 max-md:left-3 max-md:right-3 max-md:top-[72px]" id="toastContainer"></div>
 
   <!-- Mobile Bottom Nav: شبكة 5 أعمدة متساوية + زر + في المنتصف -->
-  <nav id="mobileBottomNav" class="hidden max-lg:flex fixed bottom-0 left-0 right-0 min-h-[65px] bg-white border-t border-slate-200 items-end z-[999] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom,0)] px-0.5 pt-1">
-    <a href="/dashboard" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'home' ? 'text-indigo-600' : 'text-slate-400' %>">
+  <nav id="mobileBottomNav" class="hidden max-lg:grid max-lg:grid-cols-5 max-lg:items-end max-lg:gap-0 max-lg:overflow-visible fixed bottom-0 left-0 right-0 min-h-[65px] bg-white border-t border-slate-200 z-[999] max-lg:has-[#quickActionRadialMobile[data-radial-open=true]]:z-[1005] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom,0)] px-0.5 pt-1">
+    <a href="/dashboard" class="flex min-w-0 justify-self-stretch flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'home' ? 'text-indigo-600' : 'text-slate-400' %>">
       <i class="fas fa-home text-lg"></i>
       <span class="truncate max-w-full">الرئيسية</span>
     </a>
-    <a href="/sheet" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'sheet' ? 'text-indigo-600' : 'text-slate-400' %>">
+    <a href="/sheet" class="flex min-w-0 justify-self-stretch flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'sheet' ? 'text-indigo-600' : 'text-slate-400' %>">
       <i class="fas fa-file-excel text-lg"></i>
       <span class="truncate max-w-full">Sheet</span>
     </a>
-    <div class="mobile-bottom-nav-fab-wrap relative z-[1]">
-      <div class="quick-action-radial -mt-5 mx-auto" id="quickActionRadialMobile">
-        <button type="button" id="quickActionFabMobile" class="quick-action-radial-circle quick-action-fab focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" aria-haspopup="true" aria-expanded="false" aria-label="إجراء سريع">
-          <i class="fas fa-plus text-xl quick-action-radial-icon"></i>
+    <div class="relative z-[1] flex min-w-0 justify-self-stretch flex-col items-center justify-end overflow-visible pb-1">
+      <div class="group relative -mt-5 mx-auto h-14 w-14 shrink-0" id="quickActionRadialMobile" data-radial-open="false">
+        <button type="button" id="quickActionFabMobile" class="quick-action-fab relative z-[6] mx-auto flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-[#6366f1] from-[48%] to-[#4338ca] text-white shadow-[0_6px_18px_rgba(79,70,229,0.38)] transition-all duration-200 ease-out hover:brightness-110 hover:shadow-[0_8px_22px_rgba(79,70,229,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 group-data-[radial-open=true]:scale-[0.93] group-data-[radial-open=true]:bg-gradient-to-br group-data-[radial-open=true]:from-[#4f46e5] group-data-[radial-open=true]:to-[#3730a3] group-data-[radial-open=true]:shadow-[0_4px_16px_rgba(26,26,46,0.2)]" aria-haspopup="true" aria-expanded="false" aria-label="إجراء سريع">
+          <i class="fas fa-plus text-xl block leading-none transition-transform duration-[380ms] [transition-timing-function:cubic-bezier(0.34,1.35,0.64,1)] group-data-[radial-open=true]:rotate-45"></i>
         </button>
-        <div class="quick-action-radial-subs" aria-hidden="true">
-          <button type="button" class="quick-action-radial-sub quick-action-radial-sub--wide" data-quick-type="qa-out" title="صادر" aria-label="صادر">صادر</button>
-          <button type="button" class="quick-action-radial-sub quick-action-radial-sub--wide" data-quick-type="qa-in" title="وارد" aria-label="وارد">وارد</button>
+        <div class="quick-action-radial-subs pointer-events-none absolute left-1/2 top-1/2 z-[5] h-0 w-0 group-data-[radial-open=true]:pointer-events-auto" aria-hidden="true">
+          <button type="button" class="quick-action-radial-sub absolute left-0 top-0 -ml-[1.25rem] -mt-[1.25rem] flex h-10 w-auto min-w-[3.25rem] scale-[0.35] cursor-pointer items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-br from-rose-400 to-rose-600 px-[0.35rem] text-[0.62rem] font-bold leading-tight text-white opacity-0 shadow-[0_6px_14px_rgba(15,23,42,0.18)] transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.35,0.64,1)] duration-200 ease-out hover:brightness-110 hover:shadow-[0_8px_18px_rgba(15,23,42,0.22)] group-data-[radial-open=true]:-translate-x-[3.5rem] group-data-[radial-open=true]:-translate-y-[4.6rem] group-data-[radial-open=true]:scale-100 group-data-[radial-open=true]:opacity-100 group-data-[radial-open=true]:delay-[40ms] lg:group-data-[radial-open=true]:-translate-x-[3.85rem] lg:group-data-[radial-open=true]:-translate-y-[4.4rem]" data-quick-type="qa-out" title="صادر" aria-label="صادر">صادر</button>
+          <button type="button" class="quick-action-radial-sub absolute left-0 top-0 -ml-[1.25rem] -mt-[1.25rem] flex h-10 w-auto min-w-[3.25rem] scale-[0.35] cursor-pointer items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-br from-emerald-400 to-emerald-700 px-[0.35rem] text-[0.62rem] font-bold leading-tight text-white opacity-0 shadow-[0_6px_14px_rgba(15,23,42,0.18)] transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.35,0.64,1)] duration-200 ease-out hover:brightness-110 hover:shadow-[0_8px_18px_rgba(15,23,42,0.22)] group-data-[radial-open=true]:translate-x-[3.5rem] group-data-[radial-open=true]:-translate-y-[4.6rem] group-data-[radial-open=true]:scale-100 group-data-[radial-open=true]:opacity-100 group-data-[radial-open=true]:delay-[90ms] lg:group-data-[radial-open=true]:translate-x-[3.85rem] lg:group-data-[radial-open=true]:-translate-y-[4.4rem]" data-quick-type="qa-in" title="وارد" aria-label="وارد">وارد</button>
         </div>
       </div>
     </div>
-    <a href="/clients" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'clients' ? 'text-indigo-600' : 'text-slate-400' %>">
+    <a href="/clients" class="flex min-w-0 justify-self-stretch flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'clients' ? 'text-indigo-600' : 'text-slate-400' %>">
       <i class="fas fa-users text-lg"></i>
       <span class="truncate max-w-full">العملاء</span>
     </a>
-    <a href="/search" class="flex flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'search' ? 'text-indigo-600' : 'text-slate-400' %>">
+    <a href="/search" class="flex min-w-0 justify-self-stretch flex-col items-center justify-end gap-0.5 text-[0.65rem] font-medium py-1 px-0.5 rounded-lg transition-all duration-300 pb-2 <%= page === 'search' ? 'text-indigo-600' : 'text-slate-400' %>">
       <i class="fas fa-search text-lg"></i>
       <span class="truncate max-w-full">البحث</span>
     </a>
   </nav>
 
   <!-- زر + شعاعي يسار الشاشة (لابتوب) -->
-  <div class="quick-action-radial quick-action-radial--desktop hidden" id="quickActionRadialDesktop">
-    <button type="button" id="quickActionFabDesktop" class="quick-action-radial-circle quick-action-fab focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" aria-haspopup="true" aria-expanded="false" aria-label="إجراء سريع">
-      <i class="fas fa-plus text-2xl quick-action-radial-icon"></i>
+  <div class="group relative hidden h-[3.75rem] w-[3.75rem] shrink-0 max-lg:!hidden lg:fixed lg:bottom-8 lg:left-[2.35rem] lg:right-auto lg:z-[1004] lg:block" id="quickActionRadialDesktop" data-radial-open="false">
+    <button type="button" id="quickActionFabDesktop" class="quick-action-fab relative z-[6] mx-auto flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-[#6366f1] from-[48%] to-[#4338ca] text-white shadow-[0_6px_18px_rgba(79,70,229,0.38)] transition-all duration-200 ease-out hover:brightness-110 hover:shadow-[0_8px_22px_rgba(79,70,229,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 group-data-[radial-open=true]:scale-[0.93] group-data-[radial-open=true]:bg-gradient-to-br group-data-[radial-open=true]:from-[#4f46e5] group-data-[radial-open=true]:to-[#3730a3] group-data-[radial-open=true]:shadow-[0_4px_16px_rgba(26,26,46,0.2)]" aria-haspopup="true" aria-expanded="false" aria-label="إجراء سريع">
+      <i class="fas fa-plus text-2xl block leading-none transition-transform duration-[380ms] [transition-timing-function:cubic-bezier(0.34,1.35,0.64,1)] group-data-[radial-open=true]:rotate-45"></i>
     </button>
-    <div class="quick-action-radial-subs" aria-hidden="true">
-      <button type="button" class="quick-action-radial-sub quick-action-radial-sub--wide" data-quick-type="qa-out" title="صادر" aria-label="صادر">صادر</button>
-      <button type="button" class="quick-action-radial-sub quick-action-radial-sub--wide" data-quick-type="qa-in" title="وارد" aria-label="وارد">وارد</button>
+    <div class="quick-action-radial-subs pointer-events-none absolute left-1/2 top-1/2 z-[5] h-0 w-0 group-data-[radial-open=true]:pointer-events-auto" aria-hidden="true">
+      <button type="button" class="quick-action-radial-sub absolute left-0 top-0 -ml-[1.375rem] -mt-[1.375rem] flex h-11 w-auto min-w-[3.25rem] scale-[0.35] cursor-pointer items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-br from-rose-400 to-rose-600 px-[0.35rem] text-[0.75rem] font-bold leading-tight text-white opacity-0 shadow-[0_6px_14px_rgba(15,23,42,0.18)] transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.35,0.64,1)] duration-200 ease-out hover:brightness-110 hover:shadow-[0_8px_18px_rgba(15,23,42,0.22)] group-data-[radial-open=true]:-translate-x-[3.85rem] group-data-[radial-open=true]:-translate-y-[4.4rem] group-data-[radial-open=true]:scale-100 group-data-[radial-open=true]:opacity-100 group-data-[radial-open=true]:delay-[40ms]" data-quick-type="qa-out" title="صادر" aria-label="صادر">صادر</button>
+      <button type="button" class="quick-action-radial-sub absolute left-0 top-0 -ml-[1.375rem] -mt-[1.375rem] flex h-11 w-auto min-w-[3.25rem] scale-[0.35] cursor-pointer items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-br from-emerald-400 to-emerald-700 px-[0.35rem] text-[0.75rem] font-bold leading-tight text-white opacity-0 shadow-[0_6px_14px_rgba(15,23,42,0.18)] transition-all duration-300 [transition-timing-function:cubic-bezier(0.34,1.35,0.64,1)] duration-200 ease-out hover:brightness-110 hover:shadow-[0_8px_18px_rgba(15,23,42,0.22)] group-data-[radial-open=true]:translate-x-[3.85rem] group-data-[radial-open=true]:-translate-y-[4.4rem] group-data-[radial-open=true]:scale-100 group-data-[radial-open=true]:opacity-100 group-data-[radial-open=true]:delay-[90ms]" data-quick-type="qa-in" title="وارد" aria-label="وارد">وارد</button>
     </div>
   </div>
 
-  <div id="quickActionBackdrop" class="hidden fixed inset-0 bg-slate-900/35 z-[1002] backdrop-blur-[2px]" aria-hidden="true"></div>
+  <div id="quickActionBackdrop" class="pointer-events-none fixed inset-0 z-[1002] hidden bg-slate-900/35 opacity-0 backdrop-blur-[2px] transition-opacity duration-[220ms] ease-in-out" aria-hidden="true"></div>
 
   <div id="qaCascadeOverlay" class="hidden fixed inset-0 z-[1003] items-center justify-center p-4 bg-black/45" aria-hidden="true">
     <div id="qaCascadePanel" class="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 text-right" dir="rtl"></div>

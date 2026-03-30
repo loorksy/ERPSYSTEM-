@@ -85,8 +85,7 @@ LorkERP/
 │       └── ...            # صفحات أخرى
 ├── public/
 │   ├── css/
-│   │   ├── tailwind.css   # أنماط Tailwind المبنية
-│   │   └── style.css      # الأنماط الإضافية
+│   │   └── tailwind.css   # مخرجات البناء من src/input.css (Tailwind + أي قواعد موروثة ضرورية)
 │   └── js/
 │       ├── app.js         # السكريبت الرئيسي
 │       └── sheets.js      # سكريبت Google Sheets

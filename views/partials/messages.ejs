@@ -109,7 +109,7 @@
       </div>
 
       <!-- Export to Google Sheets Modal -->
-      <div id="exportSheetsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" style="display: none;">
+      <div id="exportSheetsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
           <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-file-excel text-[#0f9d58]"></i> تصدير إلى Google Sheets</h4>
           <div class="mb-4">
@@ -446,7 +446,7 @@ function openExportSheetsModal() {
   var modal = document.getElementById('exportSheetsModal');
   if (!modal) return;
   modal.classList.remove('hidden');
-  modal.style.display = 'flex';
+  modal.classList.add('flex');
   document.getElementById('exportSheetName').value = '';
   document.querySelector('input[name="exportMode"][value="newSheet"]').checked = true;
   document.getElementById('exportSheetSelectWrap').classList.add('hidden');
@@ -455,7 +455,7 @@ function openExportSheetsModal() {
 }
 function closeExportSheetsModal() {
   var modal = document.getElementById('exportSheetsModal');
-  if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+  if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
 }
 async function loadSheetsListForExport() {
   var wrap = document.getElementById('exportSheetSelectWrap');

@@ -126,8 +126,8 @@
       document.getElementById('tcDetailBal').textContent = (c.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (c.balance_currency || 'USD');
       document.getElementById('tcDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
         var cat = l.colorCategory || 'balance';
-        var border = 'mv-border-balance';
-        if (cat === 'payout') border = 'mv-border-payout';
+        var border = 'border-s-[3px] border-s-[#047857]';
+        if (cat === 'payout') border = 'border-s-[3px] border-s-[#9a3412]';
         var after = l.balanceAfterUsd != null && !isNaN(l.balanceAfterUsd)
           ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
           : '—';

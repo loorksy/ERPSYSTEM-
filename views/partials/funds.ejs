@@ -52,24 +52,6 @@
   </div>
 </div>
 
-<style>
-/* نفس شبكة وبطاقات الوكالات الفرعية — محاذاة وسط على الموبايل */
-.agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
-.btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
-.btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
-.agency-card { padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s; border: none; }
-.agency-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15); }
-.agency-card h5 { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
-.agency-card .agency-meta { font-size: 0.8125rem; opacity: 0.9; margin-bottom: 0.25rem; }
-.agency-card .agency-balance { font-size: 0.875rem; font-weight: 600; }
-@media (max-width: 639px) {
-  .funds-page .agency-card { text-align: center; }
-  .funds-page .agency-card h5 { text-align: center; }
-  .funds-page .agency-card .agency-meta,
-  .funds-page .agency-card .agency-balance { text-align: center; }
-}
-</style>
-
 <div id="fundAddModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
   <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
     <h4 class="text-lg font-bold mb-4">إضافة صندوق</h4>

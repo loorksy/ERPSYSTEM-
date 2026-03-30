@@ -68,8 +68,8 @@ window.homeDownloadReportPdf = function() {
   window.open(path + (q.length ? '?' + q.join('&') : ''), '_blank');
 };
 
-/** تنسيق أرقام لوحة التحكم — أحجام الخط في src/input.css (.home-dash-metric) */
-var HOME_METRIC_CLASS = 'home-dash-metric transition-colors duration-200';
+/** تنسيق أرقام لوحة التحكم — فئات Tailwind فقط */
+var HOME_METRIC_CLASS = 'mt-auto font-mono font-bold tabular-nums tracking-tight transition-colors duration-200 text-sm leading-tight sm:text-base sm:leading-none md:text-lg xl:text-xl';
 
 function homeApplyMetric(el, rawVal, kind) {
   if (!el) return;
@@ -280,19 +280,21 @@ function initQuickActionFab() {
   var closeTimer = null;
   var PANEL_MS = 260;
 
+  var PULSE_ANIM = 'animate-[quick-action-fab-press_0.45s_cubic-bezier(0.34,1.45,0.64,1)]';
+
   function isOpen() {
-    return (radialM && radialM.classList.contains('quick-action-radial--open')) ||
-      (radialD && radialD.classList.contains('quick-action-radial--open'));
+    return (radialM && radialM.getAttribute('data-radial-open') === 'true') ||
+      (radialD && radialD.getAttribute('data-radial-open') === 'true');
   }
 
   function triggerFabPress(btn) {
     if (!btn || !btn.classList.contains('quick-action-fab')) return;
-    btn.classList.remove('quick-action-fab-pulse');
+    btn.classList.remove(PULSE_ANIM);
     void btn.offsetWidth;
-    btn.classList.add('quick-action-fab-pulse');
+    btn.classList.add(PULSE_ANIM);
     function done() {
       btn.removeEventListener('animationend', done);
-      btn.classList.remove('quick-action-fab-pulse');
+      btn.classList.remove(PULSE_ANIM);
     }
     btn.addEventListener('animationend', done, { once: true });
   }
@@ -304,23 +306,25 @@ function initQuickActionFab() {
     }
     [radialM, radialD].forEach(function (el) {
       if (!el) return;
-      if (open) el.classList.add('quick-action-radial--open');
-      else el.classList.remove('quick-action-radial--open');
+      el.setAttribute('data-radial-open', open ? 'true' : 'false');
     });
     document.querySelectorAll('.quick-action-radial-subs').forEach(function (el) {
       el.setAttribute('aria-hidden', open ? 'false' : 'true');
     });
     if (open) {
       backdrop.classList.remove('hidden');
-      backdrop.classList.remove('quick-action-panel-open');
+      backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
       document.body.style.overflow = 'hidden';
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
-          backdrop.classList.add('quick-action-panel-open');
+          backdrop.classList.remove('opacity-0', 'pointer-events-none');
+          backdrop.classList.add('opacity-100', 'pointer-events-auto');
         });
       });
     } else {
-      backdrop.classList.remove('quick-action-panel-open');
+      backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
       closeTimer = setTimeout(function () {
         backdrop.classList.add('hidden');
         closeTimer = null;
@@ -369,11 +373,9 @@ function switchTab(btn, tabId) {
   var targetTab = document.getElementById(tabId);
   tabs.forEach(function(t) {
     t.classList.add('hidden');
-    t.style.display = 'none';
   });
   if (targetTab) {
     targetTab.classList.remove('hidden');
-    targetTab.style.display = '';
     targetTab.setAttribute('aria-hidden', 'false');
   }
   tabs.forEach(function(t) {
@@ -397,7 +399,11 @@ function showToast(message, type = 'success') {
     <button class="mr-auto text-slate-400 p-1 cursor-pointer hover:text-slate-600" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
   `;
   container.appendChild(toast);
-  setTimeout(() => { toast.style.animation = 'toastOut 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 4000);
+  setTimeout(() => {
+    toast.classList.remove('animate-[toastIn_0.3s_ease]');
+    toast.classList.add('animate-[toastOut_0.3s_ease]');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
 }
 
 async function apiCall(url, options = {}) {

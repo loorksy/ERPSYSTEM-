@@ -183,10 +183,10 @@
       }).join(' ');
       document.getElementById('fundDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
         var cat = l.colorCategory || 'balance';
-        var border = 'mv-border-balance';
-        if (cat === 'refund') border = 'mv-border-refund';
-        else if (cat === 'debt') border = 'mv-border-debt';
-        else if (cat === 'payout') border = 'mv-border-payout';
+        var border = 'border-s-[3px] border-s-[#047857]';
+        if (cat === 'refund') border = 'border-s-[3px] border-s-[#b91c1c]';
+        else if (cat === 'debt') border = 'border-s-[3px] border-s-[#c2410c]';
+        else if (cat === 'payout') border = 'border-s-[3px] border-s-[#9a3412]';
         var after = l.balanceAfterUsd != null && !isNaN(l.balanceAfterUsd)
           ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
           : '—';

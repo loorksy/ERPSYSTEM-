@@ -99,11 +99,9 @@
     var targetTab = document.getElementById(tabId);
     tabs.forEach(function(t) {
       t.classList.add('hidden');
-      t.style.display = 'none';
     });
     if (targetTab) {
       targetTab.classList.remove('hidden');
-      targetTab.style.display = '';
     }
     card.querySelectorAll('.shipping-tab-link').forEach(function(b) {
       b.className = SHIP_TAB_INACTIVE;
