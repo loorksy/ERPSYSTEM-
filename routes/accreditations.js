@@ -19,6 +19,7 @@ const {
   syncNetBalance,
   applySalaryToThem,
   applyTransferOut,
+  computeLedgerWithBalanceAfter,
 } = require('../services/accreditationBalance');
 const { splitDebtPayableWithDiscount } = require('../services/accreditationDebtAmounts');
 
@@ -604,10 +605,11 @@ router.get('/:id', requireAuth, async (req, res) => {
       [id, req.session.userId]
     )).rows[0];
     if (!row) return res.json({ success: false, message: 'غير موجود' });
-    const ledger = (await db.query(
+    const ledgerRaw = (await db.query(
       'SELECT * FROM accreditation_ledger WHERE accreditation_id = $1 ORDER BY created_at DESC LIMIT 300',
       [id]
     )).rows;
+    const ledger = computeLedgerWithBalanceAfter(row, ledgerRaw);
     res.json({ success: true, entity: row, ledger });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });

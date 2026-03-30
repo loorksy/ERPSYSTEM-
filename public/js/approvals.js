@@ -130,8 +130,92 @@
       debt_to_them_no_fund: 'لهم — مطلوب دفع (بدون صندوق)',
       salary: 'راتب',
       payable_discount_profit: 'ربح خصم (علينا/لهم)',
+      transfer: 'تحويل / تسليم',
+      delivery: 'تسليم — تصفير علينا',
+      deferred_reserve_sync: 'مزامنة احتياطي مؤجل',
     };
     return m[t] || t || '';
+  }
+
+  function accLedgerSignedHtml(l) {
+    var t = l.entry_type || '';
+    var dir = l.direction || '';
+    var amt = Number(l.amount) || 0;
+    var absFmt = escHtml(accFmtMoney(Math.abs(amt)));
+    var pos = 'text-emerald-600';
+    var neg = 'text-red-600';
+    if (t === 'debt_to_us') {
+      return '<span class="font-bold tabular-nums ' + neg + '">−' + absFmt + '</span>';
+    }
+    if (t === 'debt_to_them' || t === 'debt_to_them_no_fund') {
+      return '<span class="font-bold tabular-nums ' + pos + '">+' + absFmt + '</span>';
+    }
+    if (t === 'payable_discount_profit') {
+      return '<span class="font-bold tabular-nums ' + pos + '">+' + absFmt + '</span>';
+    }
+    if (t === 'salary') {
+      if (dir === 'to_us') {
+        return '<span class="font-bold tabular-nums ' + pos + '">+' + absFmt + '</span>';
+      }
+      return '<span class="font-bold tabular-nums ' + neg + '">−' + absFmt + '</span>';
+    }
+    if (t === 'transfer') {
+      return '<span class="font-bold tabular-nums ' + neg + '">−' + absFmt + '</span>';
+    }
+    if (t === 'delivery') {
+      return '<span class="font-bold tabular-nums ' + neg + '">−' + absFmt + '</span>';
+    }
+    if (t === 'deferred_reserve_sync') {
+      if (dir === 'from_us') {
+        return '<span class="font-bold tabular-nums ' + neg + '">−' + absFmt + '</span>';
+      }
+      if (dir === 'to_us') {
+        return '<span class="font-bold tabular-nums ' + pos + '">+' + absFmt + '</span>';
+      }
+      return '<span class="font-semibold tabular-nums text-slate-700">' + absFmt + '</span>';
+    }
+    return '<span class="font-semibold tabular-nums text-slate-800">' + escHtml(accFmtMoney(amt)) + '</span>';
+  }
+
+  function accNetBalanceClass(net) {
+    var n = Number(net) || 0;
+    if (n > 0.0001) return 'text-emerald-700';
+    if (n < -0.0001) return 'text-red-600';
+    return 'text-slate-600';
+  }
+
+  function accLedgerRowHtml(l) {
+    var label = escHtml(accLedgerTypeLabel(l.entry_type || ''));
+    var signed = accLedgerSignedHtml(l);
+    var balAfter =
+      l.balance_after != null && !isNaN(Number(l.balance_after))
+        ? '<span class="font-bold tabular-nums ' +
+          accNetBalanceClass(l.balance_after) +
+          '">' +
+          escHtml(accFmtMoney(l.balance_after)) +
+          '</span>'
+        : '<span class="text-slate-400">—</span>';
+    var note = l.notes ? '<p class="mt-0.5 line-clamp-2 text-[11px] text-slate-500">' + escHtml(l.notes) + '</p>' : '';
+    var dt = l.created_at
+      ? '<span class="mt-1 block text-[10px] text-slate-400">' + escHtml(String(l.created_at).replace('T', ' ').slice(0, 19)) + '</span>'
+      : '';
+    return (
+      '<div class="border-b border-slate-100 bg-white px-1 py-3 last:border-b-0 hover:bg-slate-50/80 sm:px-2">' +
+      '<div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">' +
+      '<div class="min-w-0 flex-1">' +
+      '<span class="text-sm font-medium text-slate-800">' +
+      label +
+      '</span>' +
+      note +
+      dt +
+      '</div>' +
+      '<div class="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end sm:text-left">' +
+      '<div class="text-xs text-slate-500">المبلغ</div>' +
+      signed +
+      '<div class="mt-1 text-[11px] text-slate-500">الصافي بعد الحركة</div>' +
+      balAfter +
+      '</div></div></div>'
+    );
   }
 
   function accSyncBulkStep() {
@@ -867,19 +951,6 @@
       currentPinned = !!e.pinned;
       var titleEl = document.getElementById('accDetailTitle');
       if (titleEl) titleEl.textContent = e.name || '';
-      var net = Number(e.balance_amount) || 0;
-      var pay = Number(e.balance_payable) || 0;
-      var rec = Number(e.balance_receivable) || 0;
-      var netCls = net < -0.0001 ? 'text-red-600' : 'text-indigo-600';
-      var balLines =
-        '<p class="' + netCls + ' font-semibold">الصافي: ' + escHtml(accFmtMoney(net)) + '</p>';
-      if (rec > 0.0001) {
-        balLines += '<p class="text-xs text-red-600 font-medium mt-1">لنا (على المعتمد): −' + escHtml(accFmtMoney(rec)) + '</p>';
-      }
-      if (pay > 0.0001) {
-        balLines += '<p class="text-xs text-emerald-700 font-medium mt-1">علينا (مطلوب دفع): +' + escHtml(accFmtMoney(pay)) + '</p>';
-      }
-      document.getElementById('accDetailBal').innerHTML = balLines;
       var pinBtn = document.getElementById('accPinBtn');
       if (pinBtn) {
         pinBtn.textContent = currentPinned ? 'مثبت' : 'تثبيت';
@@ -890,17 +961,8 @@
             : 'border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200');
       }
       accSyncCurrencyUi();
-      document.getElementById('accLedger').innerHTML = (res.ledger || []).map(function(l) {
-        return (
-          '<div class="flex items-start justify-between gap-3 border-b border-slate-100 bg-white px-1 py-2.5 last:border-b-0 hover:bg-slate-50/80 sm:px-2">' +
-          '<span class="text-sm text-slate-700">' +
-          escHtml(accLedgerTypeLabel(l.entry_type || '')) +
-          '</span>' +
-          '<span class="shrink-0 text-sm font-semibold tabular-nums text-slate-900">' +
-          escHtml(accFmtMoney(l.amount)) +
-          '</span></div>'
-        );
-      }).join('') || '<p class="py-6 text-center text-sm text-slate-400">لا توجد حركات</p>';
+      document.getElementById('accLedger').innerHTML = (res.ledger || []).map(accLedgerRowHtml).join('') ||
+        '<p class="py-6 text-center text-sm text-slate-400">لا توجد حركات</p>';
       document.getElementById('accAddAmountPanel').classList.add('hidden');
       document.getElementById('accTransferPanel').classList.add('hidden');
       Promise.all([
