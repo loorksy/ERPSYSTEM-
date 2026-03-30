@@ -6066,11 +6066,6 @@
       max-width: 7rem;
     }
   }
-  .sm\:max-w-md {
-    @media (width >= 40rem) {
-      max-width: var(--container-md);
-    }
-  }
   .sm\:max-w-none {
     @media (width >= 40rem) {
       max-width: none;
@@ -6810,9 +6805,19 @@
       max-width: var(--container-5xl);
     }
   }
+  .lg\:max-w-\[16rem\] {
+    @media (width >= 64rem) {
+      max-width: 16rem;
+    }
+  }
   .lg\:max-w-none {
     @media (width >= 64rem) {
       max-width: none;
+    }
+  }
+  .lg\:min-w-\[11rem\] {
+    @media (width >= 64rem) {
+      min-width: 11rem;
     }
   }
   .lg\:min-w-\[12rem\] {
@@ -6823,6 +6828,11 @@
   .lg\:flex-none {
     @media (width >= 64rem) {
       flex: none;
+    }
+  }
+  .lg\:shrink-0 {
+    @media (width >= 64rem) {
+      flex-shrink: 0;
     }
   }
   .lg\:translate-x-0 {
@@ -6881,6 +6891,11 @@
       flex-direction: row;
     }
   }
+  .lg\:flex-wrap {
+    @media (width >= 64rem) {
+      flex-wrap: wrap;
+    }
+  }
   .lg\:items-center {
     @media (width >= 64rem) {
       align-items: center;
@@ -6899,6 +6914,21 @@
   .lg\:justify-between {
     @media (width >= 64rem) {
       justify-content: space-between;
+    }
+  }
+  .lg\:justify-end {
+    @media (width >= 64rem) {
+      justify-content: flex-end;
+    }
+  }
+  .lg\:gap-2 {
+    @media (width >= 64rem) {
+      gap: calc(var(--spacing) * 2);
+    }
+  }
+  .lg\:gap-3 {
+    @media (width >= 64rem) {
+      gap: calc(var(--spacing) * 3);
     }
   }
   .lg\:gap-6 {
@@ -7904,6 +7934,48 @@
 .sub-agency-profile label.sub-agency-percent-field .sub-agency-percent-input.input-percent {
   width: 100%;
   max-width: 100%;
+}
+.sub-agency-profile-nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.sub-agency-profile-nav-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #312e81;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.12);
+}
+.sub-agency-profile-nav-btn:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+@media (min-width: 1024px) {
+  .sub-agency-profile-nav-btn {
+    display: flex;
+  }
+  .sub-agency-profile-nav-btn--prev {
+    right: calc(260px + 0.75rem);
+  }
+  .sub-agency-profile-nav-btn--next {
+    left: 0.75rem;
+  }
+  body.sidebar-desktop-collapsed .sub-agency-profile-nav-btn--prev {
+    right: calc(4.5rem + 0.75rem);
+  }
 }
 .sub-agencies-toolbar-row {
   display: grid;

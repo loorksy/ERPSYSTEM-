@@ -439,6 +439,76 @@
     });
   };
 
+  var subAgencyNavIds = [];
+  var subAgencyNavIndex = -1;
+
+  function subAgencyNavUpdateState() {
+    var prevBtn = document.getElementById('subAgencyNavPrev');
+    var nextBtn = document.getElementById('subAgencyNavNext');
+    if (!prevBtn || !nextBtn) return;
+    var hasPrev = subAgencyNavIndex > 0;
+    var hasNext = subAgencyNavIndex >= 0 && subAgencyNavIndex < subAgencyNavIds.length - 1;
+    prevBtn.disabled = !hasPrev;
+    nextBtn.disabled = !hasNext;
+  }
+
+  function subAgencyNavGo(delta) {
+    if (subAgencyNavIndex < 0 || !subAgencyNavIds.length) return;
+    var n = subAgencyNavIndex + delta;
+    if (n < 0 || n >= subAgencyNavIds.length) return;
+    window.location.href = '/sub-agencies/' + subAgencyNavIds[n];
+  }
+
+  function initSubAgencyProfileNav() {
+    var dash = document.getElementById('subAgencyDashboardPage');
+    if (!dash || !dash.dataset.agencyId) return;
+    var zone = document.querySelector('.sub-agency-detail-page');
+    var prevBtn = document.getElementById('subAgencyNavPrev');
+    var nextBtn = document.getElementById('subAgencyNavNext');
+    if (!zone || !prevBtn || !nextBtn) return;
+
+    var cur = parseInt(dash.dataset.agencyId, 10);
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+
+    apiCall('/api/sub-agencies/list').then(function(res) {
+      if (!res.success || !res.agencies || !res.agencies.length) return;
+      subAgencyNavIds = res.agencies.map(function(a) { return a.id; });
+      subAgencyNavIndex = subAgencyNavIds.indexOf(cur);
+      subAgencyNavUpdateState();
+    });
+
+    prevBtn.addEventListener('click', function() { subAgencyNavGo(-1); });
+    nextBtn.addEventListener('click', function() { subAgencyNavGo(1); });
+
+    var touchStartX = 0;
+    var touchStartY = 0;
+    var touchDeny = false;
+
+    zone.addEventListener('touchstart', function(e) {
+      if (window.innerWidth >= 1024) return;
+      var el = e.target;
+      if (el.closest && el.closest('input, textarea, select, button, a, label, .sub-agency-tx-list')) {
+        touchDeny = true;
+        return;
+      }
+      touchDeny = false;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    zone.addEventListener('touchend', function(e) {
+      if (window.innerWidth >= 1024) return;
+      if (touchDeny) return;
+      if (!e.changedTouches || !e.changedTouches.length) return;
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      var dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy)) return;
+      if (dx > 0) subAgencyNavGo(-1);
+      else subAgencyNavGo(1);
+    }, { passive: true });
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     var dash = document.getElementById('subAgencyDashboardPage');
     if (dash && dash.dataset.agencyId) {
@@ -447,6 +517,7 @@
       var cs = document.getElementById('subAgencyCycleSelect');
       if (cs) cs.addEventListener('change', subAgenciesLoadDashboard);
       subAgenciesLoadDashboard();
+      initSubAgencyProfileNav();
       return;
     }
     fillSubAgencySyncCycleSelect();
