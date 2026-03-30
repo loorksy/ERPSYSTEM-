@@ -32,6 +32,14 @@ router.get('/fx-spread', requireAuth, (req, res) => {
   res.render('dashboard', { title: 'فرق التصريف', page: 'fx-spread', user: req.session.user });
 });
 
+/** توافق: مسار بشرطة سفلية (روابط/إشارات مرجعية قديمة) */
+router.get('/sub_agencies', requireAuth, (req, res) => {
+  res.redirect(301, '/sub-agencies');
+});
+router.get('/sub_agencies/:id', requireAuth, (req, res) => {
+  res.redirect(301, '/sub-agencies/' + encodeURIComponent(req.params.id));
+});
+
 /** توافق مع الروابط القديمة */
 router.get('/payroll-google', requireAuth, (req, res) => {
   res.redirect(301, '/payroll');
