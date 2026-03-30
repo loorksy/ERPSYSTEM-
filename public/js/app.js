@@ -228,7 +228,8 @@ function initSidebar() {
 
   if (menuToggle) {
     menuToggle.addEventListener('click', () => {
-      sidebar.classList.add('translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
+      /* max-lg:translate-x-[calc(100%+4px)] على الشريط يغلب translate-x-0 في Tailwind — نستخدم ! للفتح */
+      sidebar.classList.add('max-lg:!translate-x-0', 'translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
       sidebarOverlay.classList.remove('hidden');
       sidebarOverlay.classList.add('block');
       document.body.style.overflow = 'hidden';
@@ -236,7 +237,7 @@ function initSidebar() {
   }
 
   function closeSidebar() {
-    sidebar.classList.remove('translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
+    sidebar.classList.remove('max-lg:!translate-x-0', 'translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
     sidebarOverlay.classList.add('hidden');
     sidebarOverlay.classList.remove('block');
     document.body.style.overflow = '';

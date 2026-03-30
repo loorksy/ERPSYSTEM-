@@ -4900,6 +4900,12 @@
       flex: 1;
     }
   }
+  .max-lg\:\!translate-x-0 {
+    @media (width < 64rem) {
+      --tw-translate-x: calc(var(--spacing) * 0) !important;
+      translate: var(--tw-translate-x) var(--tw-translate-y) !important;
+    }
+  }
   .max-lg\:translate-x-\[calc\(100\%\+4px\)\] {
     @media (width < 64rem) {
       --tw-translate-x: calc(100% + 4px);
