@@ -37,9 +37,9 @@
 
 <!-- Modal إنشاء/تعديل دورة -->
 <!-- overflow-hidden على الطبقة: لا تمرير للخلفية كاملة (كان يُخفي زر ×). التمرير داخل الحاوية البيضاء فقط -->
-<div id="cycleModal" class="fixed inset-0 z-[1200] hidden flex items-end sm:items-center justify-center p-0 sm:p-4 max-lg:pb-[70px] max-lg:pt-[env(safe-area-inset-top,0px)] bg-black/50 backdrop-blur-[2px] overflow-hidden" onclick="if(event.target===this)closeCycleModal()">
-  <!-- حاوية واحدة قابلة للتمرير: رأس+تبويبات sticky يبقى × ظاهراً؛ بدون flex-1 على المحتوى = لا فراغ أبيض كبير تحت الوكيل -->
-  <div class="bg-white w-full max-w-lg sm:mx-auto sm:rounded-2xl rounded-t-3xl flex flex-col max-h-[min(90vh,calc(100dvh-70px))] sm:max-h-[85vh] overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 min-w-0" onclick="event.stopPropagation()">
+<div id="cycleModal" class="fixed inset-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-[2px] overflow-hidden max-lg:pb-0 max-lg:pt-0" onclick="if(event.target===this)closeCycleModal()">
+  <!-- cycle-modal-shell + قواعد input.css للموبايل: inset بين الهيدر والشريط، z-index 2000، تمرير بدون تمدد flex يملأ فراغاً -->
+  <div class="cycle-modal-shell bg-white w-full max-w-lg sm:mx-auto sm:rounded-2xl rounded-t-3xl flex flex-col max-h-[min(90vh,calc(100dvh-70px))] sm:max-h-[85vh] overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 min-w-0" onclick="event.stopPropagation()">
     <!-- بدون flex-1 هنا: كان يمدّ منطقة التمرير فيملأ الفراغ الأبيض تحت بطاقة الوكيل -->
     <div id="cycleModalScroll" class="flex h-auto min-h-0 w-full flex-none flex-col overflow-y-auto overscroll-contain max-h-[calc(100dvh-70px-11rem)] sm:max-h-[calc(85vh-9rem)] [overflow-anchor:none]">
       <!-- رأس + تبويبات: sticky أعلى حتى يبقى زر الإغلاق مرئياً عند التمرير على الموبايل -->
@@ -429,22 +429,6 @@ function showSavePanel(managementRows, agentRows) {
   document.getElementById('previewAgentRows').textContent = currentAgentRows.length;
   document.getElementById('panelSave').classList.remove('hidden');
   if (typeof sheetFooterShowSave === 'function') sheetFooterShowSave();
-  /* تمرير يدوي داخل الحاوية فقط — scrollIntoView(block:start) + scroll-margin كان يخلق فراغاً أبيض كبيراً تحت المعاينة */
-  var wrap = document.getElementById('cycleModalScroll');
-  var panel = document.getElementById('panelSave');
-  if (!wrap || !panel) return;
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
-      try {
-        var sticky = wrap.querySelector('[data-cycle-modal-sticky]');
-        var headH = sticky ? sticky.offsetHeight : 0;
-        var wRect = wrap.getBoundingClientRect();
-        var pRect = panel.getBoundingClientRect();
-        var delta = pRect.top - wRect.top + wrap.scrollTop;
-        wrap.scrollTop = Math.max(0, delta - headH - 6);
-      } catch (e) {}
-    });
-  });
 }
 
 async function fetchFromGoogle() {

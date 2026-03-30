@@ -572,6 +572,50 @@
       max-height: 100%;
       overflow-y: auto;
     }
+    /*
+     * نافذة الدورات المالية (Sheet): نفس منطق الـ inset بين الهيدر والشريط السفلي.
+     * z-index صريح حتى يعمل حتى بدون إعادة build لـ Tailwind (كان z-[1200] مفقوداً في CSS قديم).
+     * justify-content: flex-end = بطاقة من الأسفل؛ منطقة التمرير لا تتمدد (flex-grow:0) لتفادي الفراغ الأبيض تحت المعاينة.
+     */
+    #cycleModal {
+      top: calc(60px + env(safe-area-inset-top, 0px));
+      right: 0;
+      bottom: calc(65px + env(safe-area-inset-bottom, 0px));
+      left: 0;
+      width: 100%;
+      height: auto;
+      max-height: none;
+      align-items: stretch;
+      justify-content: flex-end;
+      padding: 0.5rem;
+      padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+      padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+      box-sizing: border-box;
+    }
+    #cycleModal .cycle-modal-shell {
+      width: 100%;
+      max-width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      min-height: 0 !important;
+      max-height: 100% !important;
+      flex: 0 1 auto;
+      border-radius: 1rem;
+    }
+    #cycleModal #cycleModalScroll {
+      flex-grow: 0 !important;
+      flex-shrink: 1;
+      flex-basis: auto;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+  }
+  /* نافذة الدورات: فوق الهيدر (1000) والشريط السفلي (999) — دائماً */
+  #cycleModal {
+    z-index: 2000;
+    isolation: isolate;
   }
   /* قائمة تسليم المعتمدين: عمود متراصّ ومحاذاة وسط على الموبايل */
   @media (max-width: 639px) {
