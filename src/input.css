@@ -747,6 +747,14 @@
   max-width: 100%;
   width: 100%;
 }
+/* ملف وكالة فرعية: قائمة الدورة بعرض الحقل المحدد في القالب */
+.sub-agency-profile select#subAgencyCycleSelect.input-select {
+  max-width: 100%;
+}
+.sub-agency-profile .sub-agency-percent-input.input-percent {
+  width: 4rem;
+  max-width: 4rem;
+}
 /* لابتوب/تابلت: قائمة الدورة + الأزرار في صف واحد، محاذاة أسفل، تباعد ثابت (بدون فراغ وسط كبير) */
 .sub-agencies-toolbar-row {
   display: grid;

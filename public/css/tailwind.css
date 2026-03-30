@@ -89,7 +89,6 @@
     --color-violet-50: oklch(96.9% 0.016 293.756);
     --color-violet-100: oklch(94.3% 0.029 294.588);
     --color-violet-200: oklch(89.4% 0.057 293.283);
-    --color-violet-300: oklch(81.1% 0.111 293.571);
     --color-violet-400: oklch(70.2% 0.183 293.541);
     --color-violet-500: oklch(60.6% 0.25 292.717);
     --color-violet-600: oklch(54.1% 0.281 293.009);
@@ -1228,6 +1227,9 @@
   .grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  .grid-cols-\[auto_minmax\(0\,1fr\)_auto\] {
+    grid-template-columns: auto minmax(0,1fr) auto;
+  }
   .flex-col {
     flex-direction: column;
   }
@@ -1373,9 +1375,16 @@
       margin-block-end: calc(calc(var(--spacing) * 8) * calc(1 - var(--tw-space-y-reverse)));
     }
   }
+  .gap-x-2 {
+    -moz-column-gap: calc(var(--spacing) * 2);
+         column-gap: calc(var(--spacing) * 2);
+  }
   .gap-x-3 {
     -moz-column-gap: calc(var(--spacing) * 3);
          column-gap: calc(var(--spacing) * 3);
+  }
+  .gap-y-0\.5 {
+    row-gap: calc(var(--spacing) * 0.5);
   }
   .gap-y-1 {
     row-gap: calc(var(--spacing) * 1);
@@ -2819,9 +2828,6 @@
   .px-\[0\.35rem\] {
     padding-inline: 0.35rem;
   }
-  .py-0 {
-    padding-block: calc(var(--spacing) * 0);
-  }
   .py-0\.5 {
     padding-block: calc(var(--spacing) * 0.5);
   }
@@ -2866,12 +2872,6 @@
   }
   .py-16 {
     padding-block: calc(var(--spacing) * 16);
-  }
-  .ps-2 {
-    padding-inline-start: calc(var(--spacing) * 2);
-  }
-  .pe-8 {
-    padding-inline-end: calc(var(--spacing) * 8);
   }
   .pt-0\.5 {
     padding-top: calc(var(--spacing) * 0.5);
@@ -3259,12 +3259,6 @@
   }
   .text-indigo-600 {
     color: var(--color-indigo-600);
-  }
-  .text-indigo-600\/90 {
-    color: color-mix(in srgb, oklch(51.1% 0.262 276.966) 90%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-indigo-600) 90%, transparent);
-    }
   }
   .text-indigo-700 {
     color: var(--color-indigo-700);
@@ -5801,6 +5795,11 @@
       flex-shrink: 0;
     }
   }
+  .sm\:invisible {
+    @media (width >= 40rem) {
+      visibility: hidden;
+    }
+  }
   .sm\:static {
     @media (width >= 40rem) {
       position: static;
@@ -5866,11 +5865,6 @@
       margin-inline: auto;
     }
   }
-  .sm\:ms-0 {
-    @media (width >= 40rem) {
-      margin-inline-start: calc(var(--spacing) * 0);
-    }
-  }
   .sm\:mt-3 {
     @media (width >= 40rem) {
       margin-top: calc(var(--spacing) * 3);
@@ -5904,11 +5898,6 @@
   .sm\:block {
     @media (width >= 40rem) {
       display: block;
-    }
-  }
-  .sm\:contents {
-    @media (width >= 40rem) {
-      display: contents;
     }
   }
   .sm\:hidden {
@@ -6061,9 +6050,9 @@
       max-width: var(--container-5xl);
     }
   }
-  .sm\:max-w-\[14rem\] {
+  .sm\:max-w-md {
     @media (width >= 40rem) {
-      max-width: 14rem;
+      max-width: var(--container-md);
     }
   }
   .sm\:max-w-none {
@@ -6099,11 +6088,6 @@
   .sm\:flex-1 {
     @media (width >= 40rem) {
       flex: 1;
-    }
-  }
-  .sm\:flex-none {
-    @media (width >= 40rem) {
-      flex: none;
     }
   }
   .sm\:basis-0 {
@@ -6205,15 +6189,15 @@
       }
     }
   }
-  .sm\:gap-x-2 {
+  .sm\:gap-x-3 {
     @media (width >= 40rem) {
-      -moz-column-gap: calc(var(--spacing) * 2);
-           column-gap: calc(var(--spacing) * 2);
+      -moz-column-gap: calc(var(--spacing) * 3);
+           column-gap: calc(var(--spacing) * 3);
     }
   }
-  .sm\:gap-y-1\.5 {
+  .sm\:gap-y-2 {
     @media (width >= 40rem) {
-      row-gap: calc(var(--spacing) * 1.5);
+      row-gap: calc(var(--spacing) * 2);
     }
   }
   .sm\:self-auto {
@@ -6730,14 +6714,14 @@
       grid-column: span 3 / span 3;
     }
   }
+  .lg\:col-span-4 {
+    @media (width >= 64rem) {
+      grid-column: span 4 / span 4;
+    }
+  }
   .lg\:col-span-5 {
     @media (width >= 64rem) {
       grid-column: span 5 / span 5;
-    }
-  }
-  .lg\:col-span-6 {
-    @media (width >= 64rem) {
-      grid-column: span 6 / span 6;
     }
   }
   .lg\:col-span-7 {
@@ -7888,6 +7872,13 @@
 .sub-agencies-page select#subAgencySyncCycleSelect.input-select {
   max-width: 100%;
   width: 100%;
+}
+.sub-agency-profile select#subAgencyCycleSelect.input-select {
+  max-width: 100%;
+}
+.sub-agency-profile .sub-agency-percent-input.input-percent {
+  width: 4rem;
+  max-width: 4rem;
 }
 .sub-agencies-toolbar-row {
   display: grid;
