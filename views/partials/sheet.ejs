@@ -41,7 +41,7 @@
   <!-- حاوية واحدة قابلة للتمرير: رأس+تبويبات sticky يبقى × ظاهراً؛ بدون flex-1 على المحتوى = لا فراغ أبيض كبير تحت الوكيل -->
   <div class="bg-white w-full max-w-lg sm:mx-auto sm:rounded-2xl rounded-t-3xl flex flex-col max-h-[min(90vh,calc(100dvh-70px))] sm:max-h-[85vh] overflow-hidden border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 min-w-0" onclick="event.stopPropagation()">
     <!-- بدون flex-1 هنا: كان يمدّ منطقة التمرير فيملأ الفراغ الأبيض تحت بطاقة الوكيل -->
-    <div class="flex min-h-0 flex-col overflow-y-auto overscroll-contain max-h-[calc(100dvh-70px-11rem)] sm:max-h-[calc(85vh-9rem)]">
+    <div id="cycleModalScroll" class="flex min-h-0 flex-col overflow-y-auto overscroll-contain max-h-[calc(100dvh-70px-11rem)] sm:max-h-[calc(85vh-9rem)] [overflow-anchor:none]">
       <!-- رأس + تبويبات: sticky أعلى حتى يبقى زر الإغلاق مرئياً عند التمرير على الموبايل -->
       <div class="sticky top-0 z-40 flex flex-col bg-white sm:rounded-t-2xl rounded-t-3xl border-b border-slate-100 shadow-[0_4px_14px_-6px_rgba(15,23,42,0.12)]">
         <div class="flex items-center gap-3 px-3 sm:px-4 py-3 bg-gradient-to-l from-slate-50/90 to-white">
@@ -149,7 +149,7 @@
       </div>
 
       <!-- معاينة + حفظ -->
-      <div id="panelSave" class="hidden rounded-xl border border-slate-200/90 bg-gradient-to-br from-slate-50/90 to-white p-4 shadow-sm">
+      <div id="panelSave" class="hidden scroll-mt-28 rounded-xl border border-slate-200/90 bg-gradient-to-br from-slate-50/90 to-white p-4 shadow-sm">
         <div class="flex gap-3 mb-4">
           <div class="flex-1 text-center py-3 bg-white rounded-xl border border-slate-200/90 shadow-sm">
             <p class="text-xs text-slate-500 mb-1 font-medium">الإدارة</p>
@@ -429,6 +429,16 @@ function showSavePanel(managementRows, agentRows) {
   document.getElementById('previewAgentRows').textContent = currentAgentRows.length;
   document.getElementById('panelSave').classList.remove('hidden');
   if (typeof sheetFooterShowSave === 'function') sheetFooterShowSave();
+  /* بعد ظهور بطاقات الصفوف: [overflow-anchor:none] على الحاوية يقلّل قفزة المتصفح؛ تمرير نحو المعاينة مع scroll-mt للرأس اللاصق */
+  var panel = document.getElementById('panelSave');
+  if (!panel) return;
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      try {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      } catch (e) {}
+    });
+  });
 }
 
 async function fetchFromGoogle() {
