@@ -35,20 +35,21 @@
   </div>
 </div>
 
-<!-- Modal إنشاء/تعديل دورة — نفس تخطيط مرجع Sheet.js -->
-<div id="cycleModal" class="fixed inset-0 z-[1100] hidden flex items-end sm:items-center justify-center p-0 sm:p-4 max-lg:pb-[70px] bg-black/50 backdrop-blur-[2px] overflow-hidden" onclick="if(event.target===this)closeCycleModal()">
-  <div class="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-t-3xl max-h-[90vh] sm:max-h-[85vh] max-lg:max-h-[calc(100vh-70px)] max-lg:h-[calc(100vh-70px)] flex flex-col border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100" onclick="event.stopPropagation()">
-    <!-- رأس النافذة — بطاقات أقسام النظام -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-gradient-to-l from-slate-50/90 to-white shrink-0 sm:rounded-t-2xl rounded-t-3xl">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
-          <i class="fas fa-file-excel text-indigo-600 text-lg"></i>
-        </div>
-        <h2 id="cycleModalHeaderTitle" class="text-base font-bold text-slate-900 truncate">إنشاء دورة مالية</h2>
-      </div>
-      <button type="button" onclick="closeCycleModal()" class="w-10 h-10 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center transition-colors shrink-0" aria-label="إغلاق">
+<!-- Modal إنشاء/تعديل دورة -->
+<div id="cycleModal" class="fixed inset-0 z-[1200] hidden flex items-end sm:items-center justify-center p-0 sm:p-4 max-lg:pb-[70px] max-lg:pt-[env(safe-area-inset-top,0px)] bg-black/50 backdrop-blur-[2px] overflow-x-hidden overflow-y-auto" onclick="if(event.target===this)closeCycleModal()">
+  <!-- عرض أقصى أضيق على اللابتوب (كان max-w-2xl عريضاً جداً)؛ على الموبايل full width مع max-w-lg للاتساق -->
+  <div class="bg-white w-full max-w-lg sm:mx-auto sm:rounded-2xl rounded-t-3xl max-h-[90vh] sm:max-h-[85vh] max-lg:max-h-[calc(100vh-70px)] max-lg:h-[calc(100vh-70px)] flex flex-col border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 min-h-0 min-w-0" onclick="event.stopPropagation()">
+    <!-- رأس: زر الإغلاق أولاً في DOM ليظهر يميناً في RTL (أوضح على الموبايل) -->
+    <div class="relative z-20 flex items-center gap-3 px-3 sm:px-4 py-3 border-b border-slate-100 bg-gradient-to-l from-slate-50/90 to-white shrink-0 sm:rounded-t-2xl rounded-t-3xl">
+      <button type="button" onclick="closeCycleModal()" class="relative z-30 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] transition-colors" aria-label="إغلاق">
         <i class="fas fa-times text-lg"></i>
       </button>
+      <div class="flex min-w-0 flex-1 items-center gap-2.5">
+        <div class="w-10 h-10 shrink-0 rounded-xl bg-indigo-100 flex items-center justify-center">
+          <i class="fas fa-file-excel text-indigo-600 text-lg"></i>
+        </div>
+        <h2 id="cycleModalHeaderTitle" class="min-w-0 flex-1 text-base font-bold text-slate-900 truncate">إنشاء دورة مالية</h2>
+      </div>
     </div>
 
     <!-- Tabs -->
@@ -192,7 +193,7 @@
 </div>
 
 <!-- Modal تأكيد الحذف -->
-<div id="deleteConfirmModal" class="fixed inset-0 z-[1100] hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]" onclick="if(event.target===this)closeDeleteConfirm()">
+<div id="deleteConfirmModal" class="fixed inset-0 z-[1200] hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]" onclick="if(event.target===this)closeDeleteConfirm()">
   <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-200/50 ring-1 ring-slate-100 max-w-md w-full p-6" onclick="event.stopPropagation()">
     <div class="text-center mb-6">
       <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
