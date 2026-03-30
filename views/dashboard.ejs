@@ -33,30 +33,35 @@
   <div class="hidden fixed inset-0 bg-black/50 z-[1000] backdrop-blur-sm" id="sidebarOverlay"></div>
 
   <!-- Sidebar -->
-  <aside class="fixed top-0 right-0 w-[260px] h-screen bg-[#1a1a2e] z-[1001] flex flex-col transition-all duration-300 overflow-y-auto overflow-x-hidden max-lg:translate-x-[calc(100%+4px)]" id="sidebar">
-    <!-- Logo -->
-    <div class="p-5 flex items-center justify-between">
-      <div class="flex items-center gap-3">
+  <aside class="sidebar-shell fixed top-0 right-0 w-[260px] h-screen bg-[#1a1a2e] z-[1001] flex flex-col transition-[width,transform] duration-300 overflow-y-auto overflow-x-hidden max-lg:translate-x-[calc(100%+4px)]" id="sidebar">
+    <!-- Logo + طي (لابتوب فقط) -->
+    <div class="p-5 flex items-center justify-between gap-2 min-h-[4.25rem]" id="sidebarLogoRow">
+      <div class="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
         <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-indigo-400 rounded-xl flex items-center justify-center shrink-0">
           <i class="fas fa-chart-line text-white text-lg"></i>
         </div>
-        <div>
-          <h2 class="text-white text-xl font-bold leading-tight">LorkERP</h2>
+        <div class="sidebar-brand-text min-w-0">
+          <h2 class="text-white text-xl font-bold leading-tight truncate">LorkERP</h2>
           <span class="text-slate-400 text-xs">نظام المحاسبة</span>
         </div>
       </div>
-      <button class="hidden max-lg:flex w-9 h-9 rounded-xl text-slate-400 items-center justify-center text-lg hover:bg-white/[0.08]" id="sidebarClose">
-        <i class="fas fa-times"></i>
-      </button>
+      <div class="flex items-center gap-1 shrink-0">
+        <button type="button" class="hidden lg:inline-flex w-9 h-9 rounded-xl text-slate-400 items-center justify-center text-lg hover:bg-white/[0.08] hover:text-white transition-colors" id="sidebarCollapseToggle" aria-expanded="true" aria-controls="sidebar" aria-label="طي القائمة" title="طي القائمة">
+          <i class="fas fa-angles-right text-sm" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="lg:hidden w-9 h-9 rounded-xl text-slate-400 items-center justify-center text-lg hover:bg-white/[0.08]" id="sidebarClose" aria-label="إغلاق القائمة">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
     </div>
 
     <!-- User -->
-    <div class="py-4 px-5 mx-3 bg-white/[0.08] rounded-xl flex items-center gap-3">
+    <div class="py-4 px-5 mx-3 bg-white/[0.08] rounded-xl flex items-center gap-3 sidebar-user-row">
       <div class="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-600 to-cyan-500 text-white flex items-center justify-center font-bold text-lg shrink-0">
         <%= user.displayName.charAt(0) %>
       </div>
-      <div>
-        <h4 class="text-white text-[0.95rem] font-semibold"><%= user.displayName %></h4>
+      <div class="sidebar-user-text min-w-0">
+        <h4 class="text-white text-[0.95rem] font-semibold truncate"><%= user.displayName %></h4>
         <span class="text-slate-400 text-xs"><%= user.role === 'admin' ? 'مدير النظام' : 'مستخدم' %></span>
       </div>
     </div>
@@ -64,7 +69,7 @@
     <!-- Navigation -->
     <nav class="flex-1 py-4">
       <ul class="px-3">
-        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">الرئيسية</li>
+        <li class="nav-section-label pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">الرئيسية</li>
         <li>
           <a href="/dashboard" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'home' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-home w-5 text-center <%= page === 'home' ? 'text-indigo-400' : '' %>"></i>
@@ -78,7 +83,7 @@
           </a>
         </li>
 
-        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">العمليات</li>
+        <li class="nav-section-label pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">العمليات</li>
         <li>
           <a href="/payroll" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'payroll-google' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-money-check-alt w-5 text-center <%= page === 'payroll-google' ? 'text-indigo-400' : '' %>"></i>
@@ -125,7 +130,7 @@
           </a>
         </li>
 
-        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">الوكالات والتحويل</li>
+        <li class="nav-section-label pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">الوكالات والتحويل</li>
         <li>
           <a href="/sub-agencies" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'sub-agencies' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-code-branch w-5 text-center <%= page === 'sub-agencies' ? 'text-indigo-400' : '' %>"></i>
@@ -205,7 +210,7 @@
           </a>
         </li>
 
-        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">التواصل والعملاء</li>
+        <li class="nav-section-label pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">التواصل والعملاء</li>
         <li>
           <a href="/client-portal" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'client-portal' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-headset w-5 text-center <%= page === 'client-portal' ? 'text-indigo-400' : '' %>"></i>
@@ -213,7 +218,7 @@
           </a>
         </li>
 
-        <li class="pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">النظام</li>
+        <li class="nav-section-label pt-4 pb-2 px-4 text-[0.7rem] font-bold uppercase text-white/35 tracking-wider">النظام</li>
         <li>
           <a href="/settings" class="flex items-center gap-3 py-3 px-4 rounded-xl text-[0.9rem] font-medium transition-all duration-300 mb-0.5 <%= page === 'settings' ? 'bg-indigo-600/30 text-white' : 'text-slate-300 hover:bg-white/[0.08] hover:text-white' %>">
             <i class="fas fa-cog w-5 text-center <%= page === 'settings' ? 'text-indigo-400' : '' %>"></i>
@@ -230,12 +235,12 @@
     </nav>
 
     <div class="py-4 px-5 border-t border-white/[0.08] text-center">
-      <p class="text-white/30 text-xs">LorkERP v1.0</p>
+      <p class="sidebar-footer-text text-white/30 text-xs">LorkERP v1.0</p>
     </div>
   </aside>
 
   <!-- Main Content -->
-  <main class="lg:mr-[260px] min-h-screen transition-all duration-300 max-lg:pt-[60px] max-lg:pb-[65px]" id="mainContent">
+  <main class="main-with-sidebar min-h-screen transition-[margin] duration-300 max-lg:pt-[60px] max-lg:pb-[65px]" id="mainContent">
     <div class="p-4 lg:p-8 2xl:px-12">
       <% if (page === 'home') { %>
         <%- include('partials/home') %>

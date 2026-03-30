@@ -49,7 +49,6 @@
     --color-teal-100: oklch(95.3% 0.051 180.801);
     --color-teal-200: oklch(91% 0.096 180.426);
     --color-teal-500: oklch(70.4% 0.14 182.503);
-    --color-teal-600: oklch(60% 0.118 184.704);
     --color-teal-700: oklch(51.1% 0.096 186.391);
     --color-teal-800: oklch(43.7% 0.078 188.216);
     --color-teal-900: oklch(38.6% 0.063 188.416);
@@ -904,6 +903,9 @@
   }
   .min-h-\[3rem\] {
     min-height: 3rem;
+  }
+  .min-h-\[4\.25rem\] {
+    min-height: 4.25rem;
   }
   .min-h-\[4rem\] {
     min-height: 4rem;
@@ -3744,6 +3746,16 @@
   }
   .transition {
     transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter, display, content-visibility, overlay, pointer-events;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .transition-\[margin\] {
+    transition-property: margin;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .transition-\[width\,transform\] {
+    transition-property: width,transform;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
     transition-duration: var(--tw-duration, var(--default-transition-duration));
   }
@@ -6589,11 +6601,6 @@
       margin-right: calc(var(--spacing) * 72);
     }
   }
-  .lg\:mr-\[260px\] {
-    @media (width >= 64rem) {
-      margin-right: 260px;
-    }
-  }
   .lg\:mb-6 {
     @media (width >= 64rem) {
       margin-bottom: calc(var(--spacing) * 6);
@@ -6612,6 +6619,11 @@
   .lg\:hidden {
     @media (width >= 64rem) {
       display: none;
+    }
+  }
+  .lg\:inline-flex {
+    @media (width >= 64rem) {
+      display: inline-flex;
     }
   }
   .lg\:min-h-\[5\.5rem\] {
@@ -8042,6 +8054,54 @@
   .funds-page .agency-card .agency-meta,
   .funds-page .agency-card .agency-balance {
     text-align: center;
+  }
+}
+@media (min-width: 1024px) {
+  .main-with-sidebar {
+    margin-right: 260px;
+  }
+  body.sidebar-desktop-collapsed .main-with-sidebar {
+    margin-right: 4.5rem;
+  }
+  body.sidebar-desktop-collapsed #sidebar.sidebar-shell {
+    width: 4.5rem !important;
+  }
+  body.sidebar-desktop-collapsed #sidebar .sidebar-brand-text,
+  body.sidebar-desktop-collapsed #sidebar .sidebar-user-text,
+  body.sidebar-desktop-collapsed #sidebar .nav-section-label,
+  body.sidebar-desktop-collapsed #sidebar .sidebar-footer-text,
+  body.sidebar-desktop-collapsed #sidebar nav a > span {
+    display: none !important;
+  }
+  body.sidebar-desktop-collapsed #sidebar #sidebarLogoRow {
+    flex-direction: column;
+    padding: 0.75rem 0.5rem;
+    gap: 0.5rem;
+    min-height: auto;
+  }
+  body.sidebar-desktop-collapsed #sidebar #sidebarLogoRow > div:first-child {
+    justify-content: center;
+    flex: none;
+  }
+  body.sidebar-desktop-collapsed #sidebar #sidebarLogoRow > div:last-child {
+    justify-content: center;
+    width: 100%;
+  }
+  body.sidebar-desktop-collapsed #sidebar .sidebar-user-row {
+    justify-content: center;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  body.sidebar-desktop-collapsed #sidebar nav a {
+    justify-content: center;
+    gap: 0;
+    min-height: 2.75rem;
+  }
+  body.sidebar-desktop-collapsed #sidebar > nav {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
   }
 }
 @property --tw-translate-x {

@@ -220,11 +220,66 @@ function initHomeSheetsStatus() {
 }
 
 
+var LORKERP_SIDEBAR_DESKTOP_COLLAPSED_KEY = 'lorkerp_sidebar_desktop_collapsed';
+
+function applyDesktopSidebarCollapsed(collapsed) {
+  var mq = window.matchMedia('(min-width: 1024px)');
+  if (!mq.matches) return;
+  document.body.classList.toggle('sidebar-desktop-collapsed', collapsed);
+  var btn = document.getElementById('sidebarCollapseToggle');
+  if (btn) {
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    var expand = collapsed ? 'توسيع القائمة' : 'طي القائمة';
+    btn.setAttribute('aria-label', expand);
+    btn.setAttribute('title', expand);
+    var icon = btn.querySelector('i');
+    if (icon) {
+      icon.className = collapsed ? 'fas fa-angles-left text-sm' : 'fas fa-angles-right text-sm';
+    }
+  }
+  try {
+    localStorage.setItem(LORKERP_SIDEBAR_DESKTOP_COLLAPSED_KEY, collapsed ? '1' : '0');
+  } catch (_) {}
+}
+
+function syncDesktopSidebarFromStorage() {
+  var mq = window.matchMedia('(min-width: 1024px)');
+  if (mq.matches) {
+    applyDesktopSidebarCollapsed(readDesktopSidebarCollapsedFromStorage());
+  } else {
+    document.body.classList.remove('sidebar-desktop-collapsed');
+  }
+}
+
+function readDesktopSidebarCollapsedFromStorage() {
+  try {
+    return localStorage.getItem(LORKERP_SIDEBAR_DESKTOP_COLLAPSED_KEY) === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
 function initSidebar() {
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
   const sidebarClose = document.getElementById('sidebarClose');
+  const sidebarCollapseToggle = document.getElementById('sidebarCollapseToggle');
+
+  if (sidebarCollapseToggle) {
+    sidebarCollapseToggle.addEventListener('click', function () {
+      var next = !document.body.classList.contains('sidebar-desktop-collapsed');
+      applyDesktopSidebarCollapsed(next);
+    });
+  }
+
+  var mqDesktop = window.matchMedia('(min-width: 1024px)');
+  syncDesktopSidebarFromStorage();
+  if (typeof mqDesktop.addEventListener === 'function') {
+    mqDesktop.addEventListener('change', syncDesktopSidebarFromStorage);
+  } else if (mqDesktop.addListener) {
+    mqDesktop.addListener(syncDesktopSidebarFromStorage);
+  }
 
   if (menuToggle) {
     menuToggle.addEventListener('click', () => {
