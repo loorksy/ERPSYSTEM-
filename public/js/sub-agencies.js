@@ -13,16 +13,25 @@
     return fetch(url, { credentials: 'same-origin', ...opts }).then(r => r.json());
   }
 
-  var agencyCardColors = [
-    'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)',
-    'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)',
-    'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)',
-    'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%)',
-    'linear-gradient(135deg, #cffafe 0%, #a5f3fc 50%, #67e8f9 100%)',
-    'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c4b5fd 100%)',
-    'linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%)',
-    'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)'
+  var agencyCardBarColors = [
+    'bg-indigo-500',
+    'bg-emerald-500',
+    'bg-amber-500',
+    'bg-rose-500',
+    'bg-violet-500',
+    'bg-sky-500',
+    'bg-orange-500',
+    'bg-teal-500'
   ];
+
+  function escapeHtml(s) {
+    if (s == null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
   function loadAgencies() {
     const container = document.getElementById('subAgenciesCards');
@@ -41,19 +50,32 @@
       container.innerHTML = list.map(function(a, i) {
         const bal = a.balance || 0;
         const balLabel = bal >= 0 ? 'دائن' : 'مديون';
-        const color = agencyCardColors[i % agencyCardColors.length];
+        const bar = agencyCardBarColors[i % agencyCardBarColors.length];
         const textColor = bal >= 0 ? '#047857' : '#b91c1c';
-        return '<div class="agency-card relative cursor-pointer" style="background:' + color + '; color:#1e293b;" onclick="window.location.href=\'/sub-agencies/' + a.id + '\'">' +
-          '<button type="button" class="absolute top-2 right-2 z-10 px-2 py-1 rounded-lg bg-white/90 text-slate-700 text-xs font-bold shadow border border-slate-200 hover:bg-white" ' +
-          'onclick="event.stopPropagation(); subAgenciesDownloadPdf(' + a.id + ')" title="تنزيل PDF"><i class="fas fa-file-pdf text-red-600"></i></button>' +
-          '<h5>' + (a.name || '') + '</h5>' +
-          '<p class="agency-meta">حصة الشركة من الو: ' + (a.company_percent != null ? a.company_percent : '—') + '% — حصة الوكالة: ' + (a.commission_percent != null ? a.commission_percent : '—') + '%</p>' +
-          '<p class="agency-balance" style="color:' + textColor + '">رصيد: ' + (window.formatMoney ? window.formatMoney(bal) : bal.toLocaleString('en-US',{minimumFractionDigits:2}) + ' $') + ' (' + balLabel + ')</p>' +
-          '<div class="agency-card-shortcuts mt-3 flex flex-wrap gap-1.5 border-t border-slate-900/10 pt-2.5" onclick="event.stopPropagation()">' +
-          '<button type="button" class="inline-flex min-h-[2.25rem] flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-emerald-700 sm:text-xs" ' +
-          'onclick="subAgenciesOpenRewardModalFor(' + a.id + ')"><i class="fas fa-gift text-[0.65rem]"></i>مكافأة</button>' +
-          '<button type="button" class="inline-flex min-h-[2.25rem] flex-1 items-center justify-center gap-1 rounded-lg border border-red-300/80 bg-white/90 px-2 py-1.5 text-[11px] font-bold text-red-800 shadow-sm transition hover:bg-red-50 sm:text-xs" ' +
-          'onclick="subAgenciesOpenDeductModalFor(' + a.id + ')"><i class="fas fa-minus-circle text-[0.65rem]"></i>خصم</button>' +
+        const balStr = window.formatMoney ? window.formatMoney(bal) : bal.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+        const name = escapeHtml(a.name || '');
+        return '<div class="sub-agency-list-card group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" onclick="window.location.href=\'/sub-agencies/' + a.id + '\'">' +
+          '<div class="' + bar + ' h-1 w-full"></div>' +
+          '<div class="p-4">' +
+          '<div class="flex items-start justify-between gap-3">' +
+          '<h5 class="min-w-0 flex-1 text-base font-bold leading-snug text-slate-900 sm:text-[1.05rem]">' + name + '</h5>' +
+          '<button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]" ' +
+          'onclick="event.stopPropagation(); subAgenciesDownloadPdf(' + a.id + ')" title="تنزيل PDF"><i class="fas fa-file-pdf text-red-500"></i></button>' +
+          '</div>' +
+          '<dl class="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:text-xs">' +
+          '<div class="rounded-lg border border-slate-100 bg-slate-50/90 px-2.5 py-2"><dt class="text-slate-500">حصة الشركة من الو</dt><dd class="mt-0.5 font-bold tabular-nums text-slate-800">' + (a.company_percent != null ? a.company_percent : '—') + '%</dd></div>' +
+          '<div class="rounded-lg border border-slate-100 bg-slate-50/90 px-2.5 py-2"><dt class="text-slate-500">حصة الوكالة</dt><dd class="mt-0.5 font-bold tabular-nums text-slate-800">' + (a.commission_percent != null ? a.commission_percent : '—') + '%</dd></div>' +
+          '</dl>' +
+          '<div class="mt-3 flex flex-wrap items-end justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
+          '<span class="text-xs font-semibold text-slate-500">الرصيد</span>' +
+          '<span class="text-lg font-bold tabular-nums" style="color:' + textColor + '">' + balStr + ' <span class="text-[11px] font-semibold opacity-85">(' + balLabel + ')</span></span>' +
+          '</div>' +
+          '<div class="agency-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
+          '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] sm:text-xs" ' +
+          'onclick="subAgenciesOpenRewardModalFor(' + a.id + ')"><i class="fas fa-gift text-[0.7rem]"></i>مكافأة</button>' +
+          '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-900 shadow-sm transition hover:bg-rose-100 active:scale-[0.99] sm:text-xs" ' +
+          'onclick="subAgenciesOpenDeductModalFor(' + a.id + ')"><i class="fas fa-minus-circle text-[0.7rem]"></i>خصم</button>' +
+          '</div>' +
           '</div>' +
           '</div>';
       }).join('');
@@ -215,10 +237,10 @@
         if (hint) {
           hint.classList.remove('hidden');
           if (owesUs) {
-            hint.className = 'text-sm rounded-lg p-3 mb-3 bg-indigo-50 text-indigo-900 border border-indigo-100';
+            hint.className = 'rounded-xl border border-indigo-100 bg-indigo-50/90 p-3 text-sm leading-relaxed text-indigo-950';
             hint.innerHTML = 'رصيد الوكالة <strong>مديون</strong> لنا (رصيد سالب). يُفضَّل عدم خصم من الصندوق: تُسجَّل المكافأة كائتمان محاسبي فقط. يمكنك تفعيل الخصم من الصندوق يدوياً إذا دفعت نقداً.';
           } else {
-            hint.className = 'text-sm rounded-lg p-3 mb-3 bg-slate-50 text-slate-600 border border-slate-100';
+            hint.className = 'rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700';
             hint.innerHTML = 'رصيد الوكالة <strong>دائن</strong> أو متعادل. يُخصم من الصندوق افتراضياً إذا بقي الخيار مفعّلاً.';
           }
         }
