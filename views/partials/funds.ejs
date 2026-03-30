@@ -96,52 +96,6 @@
   </div>
 </div>
 
-<div id="fundDetailModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
-  <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-    <div class="px-6 py-4 border-b flex justify-between items-center flex-wrap gap-2">
-      <h4 id="fundDetailTitle" class="text-lg font-bold">الصندوق</h4>
-      <div class="flex items-center gap-2">
-        <button type="button" onclick="fundsDownloadLedgerPdf()" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
-          <i class="fas fa-file-pdf ml-1"></i> تنزيل PDF
-        </button>
-        <button type="button" onclick="fundsCloseDetail()" class="text-slate-400 hover:bg-slate-100 w-10 h-10 rounded-xl"><i class="fas fa-times"></i></button>
-      </div>
-    </div>
-    <div class="p-4 overflow-y-auto flex-1">
-      <div id="fundDetailMeta" class="text-sm text-slate-600 mb-4"></div>
-      <div id="fundDetailPayables" class="hidden mb-3 text-sm font-semibold text-red-600"></div>
-      <div id="fundDetailBalances" class="flex flex-wrap gap-2 mb-4"></div>
-      <div class="flex flex-wrap gap-2 mb-4">
-        <button type="button" onclick="fundsSetMain()" class="px-3 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm font-semibold">تعيين كصندوق رئيسي</button>
-      </div>
-      <h5 class="font-bold text-slate-800 mb-2">ترحيل إلى صندوق آخر</h5>
-      <div class="flex flex-wrap gap-2 items-end mb-6">
-        <select id="fundTransferTo" class="px-3 py-2 rounded-lg border border-slate-200 text-sm"></select>
-        <input type="number" id="fundTransferAmt" step="0.01" placeholder="المبلغ" class="px-3 py-2 rounded-lg border border-slate-200 w-32">
-        <button type="button" onclick="fundsDoTransfer()" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">ترحيل</button>
-      </div>
-      <h5 class="font-bold text-slate-800 mb-2">تسجيل مرتجع</h5>
-      <div class="flex flex-wrap gap-2 items-end mb-2">
-        <input type="number" id="fundReturnAmt" step="0.01" min="0" placeholder="المبلغ" class="px-3 py-2 rounded-lg border border-slate-200 w-32 text-sm">
-        <select id="fundReturnCur" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
-          <option value="USD">USD</option>
-          <option value="TRY">TRY</option>
-          <option value="SYP">SYP</option>
-        </select>
-        <select id="fundReturnDisposition" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
-          <option value="remain_at_entity">يبقى بالصندوق</option>
-          <option value="transfer_to_fund">ترحيل لصندوق آخر</option>
-        </select>
-        <select id="fundReturnTarget" class="px-3 py-2 rounded-lg border border-slate-200 text-sm hidden"></select>
-        <button type="button" onclick="fundsSubmitReturn()" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">تسجيل</button>
-      </div>
-      <input type="text" id="fundReturnNotes" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm mb-6" placeholder="ملاحظات (اختياري)">
-      <h5 class="font-bold text-slate-800 mb-2">السجل</h5>
-      <div id="fundDetailLedger" class="space-y-2 text-sm"></div>
-    </div>
-  </div>
-</div>
-
 <script>
   window.FUNDS_COUNTRIES = [
     'سوريا','تركيا','مصر','العراق','الجزائر','الأردن','المغرب','فلسطين','لبنان','السعودية','الإمارات','الكويت','قطر','البحرين','عُمان','اليمن','السودان','تونس','ليبيا','موريتانيا','الصومال','جيبوتي'

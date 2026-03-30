@@ -1,0 +1,74 @@
+<div class="sub-agencies-page w-full max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10" dir="rtl">
+  <div id="subAgencyDashboardPage" data-agency-id="<%= subAgencyId %>" class="sub-agency-profile">
+    <div class="mb-8 flex items-center gap-4 flex-wrap">
+      <a href="/sub-agencies" class="btn-back inline-flex" title="العودة لقائمة الوكالات" aria-label="العودة لقائمة الوكالات">
+        <i class="fas fa-arrow-right"></i>
+      </a>
+      <h1 id="subAgencyDashboardTitle" class="text-2xl font-bold text-slate-800">ملف الوكالة</h1>
+      <button type="button" onclick="subAgenciesDownloadPdfCurrent()" class="px-3 py-2 rounded-xl bg-slate-700 text-white text-sm font-semibold hover:bg-slate-800 inline-flex items-center gap-2" title="تنزيل تقرير PDF لهذه الوكالة">
+        <i class="fas fa-file-pdf"></i>
+        تنزيل PDF
+      </button>
+    </div>
+
+    <div class="mb-8">
+      <label class="block text-sm font-medium text-slate-600 mb-2">الدورة المالية</label>
+      <select id="subAgencyCycleSelect" class="input-select" onchange="subAgenciesLoadDashboard()">
+        <option value="">-- اختر الدورة --</option>
+      </select>
+    </div>
+
+    <div class="dashboard-cards">
+      <div class="dash-card dash-card-profit">
+        <p class="dash-card-label">ربح الوكالة</p>
+        <p id="subAgencyProfit" class="dash-card-value">0</p>
+      </div>
+      <div class="dash-card dash-card-users" onclick="subAgenciesShowUsers()">
+        <p class="dash-card-label">المستخدمين</p>
+        <p id="subAgencyUsersCount" class="dash-card-value">0</p>
+      </div>
+      <div class="dash-card dash-card-percent">
+        <p class="dash-card-label">حصة ربح الشركة من عمود و (٪)</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="number" id="subAgencyPercentInput" step="0.1" min="0" max="100" class="input-percent" placeholder="0" title="مثال: 10 تعني 10 للشركة و90 للوكالة من كل 100 في عمود W">
+          <span class="text-amber-700 font-bold">%</span>
+          <button type="button" onclick="subAgenciesSaveCyclePercent()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+            حفظ للدورة
+          </button>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">القيمة = نسبة الشركة من عمود W؛ الباقي لربح الوكالة ويُحفظ للدورة فقط ويُعاد احتساب أرباح المزامنة.</p>
+      </div>
+    </div>
+
+    <div class="mb-8 flex flex-wrap gap-3">
+      <button type="button" onclick="subAgenciesOpenRewardModal()" class="btn-reward">
+        <i class="fas fa-gift ml-2"></i>
+        إضافة مكافأة
+      </button>
+      <button type="button" onclick="subAgenciesOpenDeductModal()" class="btn-deduct">
+        <i class="fas fa-minus-circle ml-2"></i>
+        خصم (شحن / راتب)
+      </button>
+    </div>
+
+    <section class="tx-section">
+      <h5 class="tx-section-title">سجل المعاملات</h5>
+      <div class="tx-filters">
+        <select id="subAgencyTxTypeFilter" class="input-filter" onchange="subAgenciesLoadTransactions()">
+          <option value="">كل الأنواع</option>
+          <option value="profit">ربح</option>
+          <option value="reward">مكافأة</option>
+          <option value="deduction">خصم</option>
+          <option value="due">مستحقات</option>
+        </select>
+        <input type="date" id="subAgencyTxFrom" class="input-filter">
+        <input type="date" id="subAgencyTxTo" class="input-filter">
+        <button type="button" onclick="subAgenciesLoadTransactions()" class="btn-filter">تطبيق</button>
+      </div>
+      <div id="subAgencyTxList" class="tx-list">
+        <p class="text-slate-400 text-center py-8">جاري التحميل...</p>
+      </div>
+    </section>
+  </div>
+</div>
+<%- include('partials/sub-agency-modals') %>

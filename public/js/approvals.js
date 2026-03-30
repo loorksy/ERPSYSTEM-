@@ -806,13 +806,14 @@
     });
   };
 
-  window.accOpen = function(id) {
+  function accPopulateDetail(id) {
     currentId = id;
     apiCall('/api/accreditations/' + id).then(function(res) {
       if (!res.success) return;
       var e = res.entity;
       currentPinned = !!e.pinned;
-      document.getElementById('accDetailTitle').textContent = e.name || '';
+      var titleEl = document.getElementById('accDetailTitle');
+      if (titleEl) titleEl.textContent = e.name || '';
       var net = Number(e.balance_amount) || 0;
       var pay = Number(e.balance_payable) || 0;
       var rec = Number(e.balance_receivable) || 0;
@@ -834,6 +835,7 @@
       document.getElementById('accTransferPanel').classList.add('hidden');
       apiCall('/api/sub-agencies/cycles/list').then(function(c) {
         var sel = document.getElementById('accCycle');
+        if (!sel) return;
         sel.innerHTML = '<option value="">— دورة —</option>';
         (c.cycles || []).forEach(function(x) {
           sel.innerHTML += '<option value="' + x.id + '">' + (x.name || x.id) + '</option>';
@@ -841,6 +843,7 @@
       });
       apiCall('/api/funds/list').then(function(f) {
         var s = document.getElementById('accTfFund');
+        if (!s) return;
         s.innerHTML = '<option value="">— صندوق —</option>';
         (f.funds || []).forEach(function(x) {
           s.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
@@ -848,20 +851,25 @@
       });
       apiCall('/api/transfer-companies/list').then(function(t) {
         var s = document.getElementById('accTfCompany');
+        if (!s) return;
         s.innerHTML = '<option value="">— شركة —</option>';
         (t.companies || []).forEach(function(x) {
           s.innerHTML += '<option value="' + x.id + '">' + (x.name || '') + '</option>';
         });
       });
       accCloseSidebarIfOpen();
-      document.getElementById('accDetailModal').classList.remove('hidden');
-      document.getElementById('accDetailModal').classList.add('flex', 'flex-col');
     });
+  }
+
+  window.accReloadDetail = function() {
+    if (currentId) accPopulateDetail(currentId);
+  };
+
+  window.accOpen = function(id) {
+    window.location.href = '/approvals/' + id;
   };
   window.accCloseDetail = function() {
-    document.getElementById('accDetailModal').classList.add('hidden');
-    document.getElementById('accDetailModal').classList.remove('flex', 'flex-col');
-    currentId = null;
+    window.location.href = '/approvals';
   };
 
   window.accAmountKindChange = function() {
@@ -918,7 +926,7 @@
       body: JSON.stringify(body)
     }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
-      if (res.success) accOpen(currentId);
+      if (res.success) accReloadDetail();
     });
   };
 
@@ -933,7 +941,7 @@
     };
     apiCall('/api/accreditations/' + currentId + '/transfer', { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
-      if (res.success) accOpen(currentId);
+      if (res.success) accReloadDetail();
     });
   };
 
@@ -945,7 +953,8 @@
     }).then(function(res) {
       if (res.success) {
         currentPinned = !currentPinned;
-        accLoad();
+        if (document.getElementById('accCards')) accLoad();
+        else accReloadDetail();
       }
     });
   };
@@ -987,6 +996,23 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
+    var accDetailPg = document.getElementById('accDetailPage');
+    if (accDetailPg && accDetailPg.dataset.accreditationId) {
+      fetch('/settings/currency', { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.success && d.symbol !== undefined) window.currencySymbol = d.symbol;
+          accSyncCurrencyUi();
+        })
+        .catch(function() {
+          accSyncCurrencyUi();
+        })
+        .finally(function() {
+          accPopulateDetail(parseInt(accDetailPg.dataset.accreditationId, 10));
+        });
+      accAmountKindChange();
+      return;
+    }
     wireAccBulkStagingDelegation();
     wireAccBulkSourceMethod();
     wireAccBulkDropzone();

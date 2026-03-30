@@ -92,14 +92,20 @@
         <%- include('partials/messages') %>
       <% } else if (page === 'approvals') { %>
         <%- include('partials/approvals') %>
+      <% } else if (page === 'approval-detail') { %>
+        <%- include('partials/approval-detail') %>
       <% } else if (page === 'sub-agencies') { %>
         <%- include('partials/sub-agencies') %>
+      <% } else if (page === 'sub-agency-detail') { %>
+        <%- include('partials/sub-agency-detail') %>
       <% } else if (page === 'main-agency') { %>
         <%- include('partials/main-agency') %>
       <% } else if (page === 'transfer-companies') { %>
         <%- include('partials/transfer-companies') %>
       <% } else if (page === 'funds') { %>
         <%- include('partials/funds') %>
+      <% } else if (page === 'fund-detail') { %>
+        <%- include('partials/fund-detail') %>
       <% } else if (page === 'shipping') { %>
         <%- include('partials/shipping') %>
       <% } else if (page === 'client-portal') { %>
@@ -201,16 +207,16 @@
   <% if (page === 'shipping') { %>
     <script src="/js/shipping.js"></script>
   <% } %>
-  <% if (page === 'sub-agencies') { %>
+  <% if (page === 'sub-agencies' || page === 'sub-agency-detail') { %>
     <script src="/js/sub-agencies.js"></script>
   <% } %>
-  <% if (page === 'funds') { %>
+  <% if (page === 'funds' || page === 'fund-detail') { %>
     <script src="/js/funds.js"></script>
   <% } %>
   <% if (page === 'transfer-companies') { %>
     <script src="/js/transfer-companies.js"></script>
   <% } %>
-  <% if (page === 'approvals') { %>
+  <% if (page === 'approvals' || page === 'approval-detail') { %>
     <script src="/js/approvals.js"></script>
   <% } %>
   <% if (page === 'debts' || page === 'debt-company' || page === 'debt-fund') { %>

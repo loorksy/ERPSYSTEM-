@@ -82,6 +82,40 @@ router.get('/profit-sources/:sourceType/detail', requireAuth, (req, res) => {
   });
 });
 
+/** صفحات ملف كيان (بروفايل) بدل نافذة منبثقة */
+router.get('/sub-agencies/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.redirect('/sub-agencies');
+  res.render('dashboard', {
+    title: 'ملف وكالة فرعية',
+    page: 'sub-agency-detail',
+    subAgencyId: id,
+    user: req.session.user,
+  });
+});
+
+router.get('/funds/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.redirect('/funds');
+  res.render('dashboard', {
+    title: 'ملف صندوق',
+    page: 'fund-detail',
+    fundId: id,
+    user: req.session.user,
+  });
+});
+
+router.get('/approvals/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.redirect('/approvals');
+  res.render('dashboard', {
+    title: 'ملف معتمد',
+    page: 'approval-detail',
+    accreditationId: id,
+    user: req.session.user,
+  });
+});
+
 pages.forEach(({ path, page, title }) => {
   router.get(path, requireAuth, (req, res) => {
     res.render('dashboard', { title, page, user: req.session.user });

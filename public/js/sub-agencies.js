@@ -43,7 +43,7 @@
         const balLabel = bal >= 0 ? 'دائن' : 'مديون';
         const color = agencyCardColors[i % agencyCardColors.length];
         const textColor = bal >= 0 ? '#047857' : '#b91c1c';
-        return '<div class="agency-card relative" style="background:' + color + '; color:#1e293b;" onclick="subAgenciesOpenDashboard(' + a.id + ')">' +
+        return '<div class="agency-card relative cursor-pointer" style="background:' + color + '; color:#1e293b;" onclick="window.location.href=\'/sub-agencies/' + a.id + '\'">' +
           '<button type="button" class="absolute top-2 right-2 z-10 px-2 py-1 rounded-lg bg-white/90 text-slate-700 text-xs font-bold shadow border border-slate-200 hover:bg-white" ' +
           'onclick="event.stopPropagation(); subAgenciesDownloadPdf(' + a.id + ')" title="تنزيل PDF"><i class="fas fa-file-pdf text-red-600"></i></button>' +
           '<h5>' + (a.name || '') + '</h5>' +
@@ -78,18 +78,11 @@
   };
 
   window.subAgenciesOpenDashboard = function(id) {
-    currentAgencyId = id;
-    document.getElementById('subAgenciesList').classList.add('hidden');
-    document.getElementById('subAgencyDashboard').classList.remove('hidden');
-    subAgenciesLoadCycles();
-    subAgenciesLoadDashboard();
+    window.location.href = '/sub-agencies/' + id;
   };
 
   window.subAgenciesBackToList = function() {
-    currentAgencyId = null;
-    document.getElementById('subAgencyDashboard').classList.add('hidden');
-    document.getElementById('subAgenciesList').classList.remove('hidden');
-    loadAgencies();
+    window.location.href = '/sub-agencies';
   };
 
   window.subAgenciesLoadCycles = function() {
@@ -434,6 +427,15 @@
   };
 
   document.addEventListener('DOMContentLoaded', function() {
+    var dash = document.getElementById('subAgencyDashboardPage');
+    if (dash && dash.dataset.agencyId) {
+      currentAgencyId = parseInt(dash.dataset.agencyId, 10);
+      subAgenciesLoadCycles();
+      var cs = document.getElementById('subAgencyCycleSelect');
+      if (cs) cs.addEventListener('change', subAgenciesLoadDashboard);
+      subAgenciesLoadDashboard();
+      return;
+    }
     fillSubAgencySyncCycleSelect();
     loadAgencies();
   });
