@@ -178,6 +178,8 @@
   }
   function showMobileHeader() {
     document.body.classList.remove('cycle-modal-open');
+    /* لا تُزل hidden عن الشريط السفلي على الشاشات الكبيرة: الـ nav يعتمد على hidden + max-lg:grid؛ إزالة hidden تُفسد التخطيط على اللابتوب */
+    if (!window.matchMedia('(max-width: 1023px)').matches) return;
     var h = document.getElementById('mobileHeader');
     var n = document.getElementById('mobileBottomNav');
     if (h) h.classList.remove('hidden');
