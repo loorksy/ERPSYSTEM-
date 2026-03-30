@@ -1,37 +1,22 @@
-<div class="payment-due-page max-w-6xl mx-auto px-4 sm:px-0 pb-10 space-y-6 lg:space-y-8 min-w-0" dir="rtl">
-  <header class="relative overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 via-white to-slate-50 shadow-sm">
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_100%_0%,rgba(245,158,11,0.12),transparent)] pointer-events-none"></div>
-    <div class="relative p-5 sm:p-7 lg:p-8">
-      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
-        <div class="min-w-0 flex-1">
-          <p class="text-xs font-semibold uppercase tracking-wider text-amber-800 mb-1">التزامات نقدية</p>
-          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">مطلوب دفع</h2>
-          <p class="text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">
-            التزامات نقدية تجاه المعتمدين (رصيد موجب) والوكالات الفرعية عندما يكون الرصيد لصالحها. لا يُخلط مع «ديين لنا».
-            <span class="block mt-2 text-xs text-slate-500">للمستحقات <strong class="text-slate-700">لصالحنا</strong> راجع <a href="/receivables-to-us" class="text-emerald-700 font-semibold hover:underline">ديين لنا</a>.</span>
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-2 shrink-0">
-          <a href="/receivables-to-us" class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900 shadow-sm transition hover:bg-emerald-100">
-            <i class="fas fa-hand-holding-heart text-emerald-600 text-xs"></i>
-            ديين لنا
-          </a>
-          <a href="/payables-us" class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-900 shadow-sm transition hover:bg-rose-100">
-            <i class="fas fa-hand-holding-usd text-rose-600 text-xs"></i>
-            دين علينا
-          </a>
-          <a href="/debts" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50/80">
-            <i class="fas fa-file-invoice-dollar text-amber-700 text-xs"></i>
-            الديون والملفات
-          </a>
-          <a href="/dashboard" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50">
-            <i class="fas fa-arrow-right text-xs opacity-70"></i>
-            لوحة التحكم
-          </a>
-        </div>
-      </div>
-    </div>
-  </header>
+<div class="payment-due-page max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10 space-y-6 lg:space-y-8" dir="rtl">
+  <nav class="erp-toolbar-nav mb-2" aria-label="تنقل سريع">
+    <a href="/receivables-to-us" class="border border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm hover:bg-emerald-100 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-heart text-emerald-600 text-[10px] sm:text-xs shrink-0"></i>
+      دين لنا
+    </a>
+    <a href="/payables-us" class="border border-rose-200 bg-rose-50 text-rose-900 shadow-sm hover:bg-rose-100 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-usd text-rose-600 text-[10px] sm:text-xs shrink-0"></i>
+      دين علينا
+    </a>
+    <a href="/debts" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-amber-200 hover:bg-amber-50/80 text-[11px] sm:text-sm">
+      <i class="fas fa-file-invoice-dollar text-amber-700 text-[10px] sm:text-xs shrink-0"></i>
+      الديون
+    </a>
+    <a href="/dashboard" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50 text-[11px] sm:text-sm">
+      <i class="fas fa-arrow-right text-[10px] sm:text-xs opacity-70 shrink-0"></i>
+      الرئيسية
+    </a>
+  </nav>
 
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
     <div class="lg:col-span-5 rounded-2xl border border-amber-200/90 bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 p-6 sm:p-8 text-white shadow-lg shadow-amber-900/25">

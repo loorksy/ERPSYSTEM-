@@ -1,27 +1,22 @@
-<div class="max-w-6xl mx-auto px-4 sm:px-0 pb-10 space-y-8 lg:space-y-10 min-w-0" dir="rtl" id="debtsPageRoot">
-  <!-- رأس الصفحة -->
-  <header class="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_100%_0%,rgba(99,102,241,0.1),transparent)] pointer-events-none"></div>
-    <div class="relative flex flex-col gap-5 p-6 sm:p-8">
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div class="min-w-0">
-          <p class="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1">المحاسبة</p>
-          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">الديون والملفات</h1>
-          <p class="text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">متابعة <span class="font-semibold text-emerald-700">دين لنا</span> و<span class="font-semibold text-rose-700">دين علينا</span>، مع تفاصيل الشركات والصناديق والتسجيل اليدوي.</p>
-        </div>
-        <div class="flex flex-wrap gap-2 shrink-0">
-          <a href="/payment-due" class="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 shadow-sm transition hover:bg-amber-100">
-            <i class="fas fa-money-bill-wave text-amber-600 text-xs"></i>
-            مطلوب دفع
-          </a>
-          <a href="/dashboard" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50">
-            <i class="fas fa-arrow-right text-xs opacity-70"></i>
-            لوحة التحكم
-          </a>
-        </div>
-      </div>
-    </div>
-  </header>
+<div class="max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10 space-y-8 lg:space-y-10" dir="rtl" id="debtsPageRoot">
+  <nav class="erp-toolbar-nav mb-2" aria-label="تنقل سريع">
+    <a href="/receivables-to-us" class="border border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm hover:bg-emerald-100 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-heart text-emerald-600 text-[10px] sm:text-xs shrink-0"></i>
+      دين لنا
+    </a>
+    <a href="/payables-us" class="border border-rose-200 bg-rose-50 text-rose-900 shadow-sm hover:bg-rose-100 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-usd text-rose-600 text-[10px] sm:text-xs shrink-0"></i>
+      دين علينا
+    </a>
+    <a href="/payment-due" class="border border-amber-200 bg-amber-50 text-amber-900 shadow-sm hover:bg-amber-100 text-[11px] sm:text-sm">
+      <i class="fas fa-money-bill-wave text-amber-600 text-[10px] sm:text-xs shrink-0"></i>
+      مطلوب دفع
+    </a>
+    <a href="/dashboard" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50 text-[11px] sm:text-sm">
+      <i class="fas fa-arrow-right text-[10px] sm:text-xs opacity-70 shrink-0"></i>
+      الرئيسية
+    </a>
+  </nav>
 
   <!-- دين لنا × دين علينا -->
   <section class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6" aria-label="ملخص لنا وعلينا">
