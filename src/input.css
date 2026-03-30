@@ -683,6 +683,27 @@
   max-width: 100%;
   width: 100%;
 }
+/* لابتوب/تابلت: قائمة الدورة + الأزرار في صف واحد، محاذاة أسفل، تباعد ثابت (بدون فراغ وسط كبير) */
+.sub-agencies-toolbar-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (min-width: 768px) {
+  .sub-agencies-toolbar-row {
+    grid-template-columns: minmax(0, min(100%, 36rem)) auto;
+    align-items: end;
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+  }
+  /* الأزرار بجانب القائمة وليس مُدفعة لطرف الخلية البعيد (كان justify-end يزيد الشعور بفراغ) */
+  .sub-agencies-toolbar-row .erp-toolbar-actions {
+    justify-content: flex-start;
+  }
+}
 .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
 .dash-card { padding: 1.25rem; border-radius: 1rem; transition: transform 0.2s; }
 .dash-card-users { cursor: pointer; }

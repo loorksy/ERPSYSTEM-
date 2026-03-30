@@ -1,13 +1,13 @@
 <div class="sub-agencies-page w-full max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10" dir="rtl">
   <!-- قائمة الوكالات -->
   <div id="subAgenciesList">
-    <!-- الدورة أولاً، ثم صف واحد: تسليم | إضافة وكالة | مزامنة من Google -->
-    <div class="mb-6 space-y-3">
-      <div class="w-full max-w-full lg:max-w-2xl">
+    <!-- موبايل: عمودان؛ لابتوب/تابلت: صف واحد — قائمة الدورة + أزرار بمحاذاة أسفل (items-end) بدون فراغ وسط كبير -->
+    <div class="sub-agencies-toolbar-row mb-6">
+      <div class="min-w-0 w-full">
         <label class="block text-xs font-medium text-slate-600 mb-1.5">مزامنة من ملف الإدارة (كل ورقة بعد ورقة الإدارة = وكالة)</label>
         <select id="subAgencySyncCycleSelect" class="input-select w-full max-w-full"></select>
       </div>
-      <div class="erp-toolbar-actions">
+      <div class="erp-toolbar-actions w-full min-w-0 md:w-auto">
         <button type="button" onclick="subAgenciesOpenDeliveryModal()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-emerald-600 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition text-center touch-manipulation">
           تسليم
         </button>
