@@ -905,6 +905,9 @@
   .min-h-\[1\.25rem\] {
     min-height: 1.25rem;
   }
+  .min-h-\[2\.75rem\] {
+    min-height: 2.75rem;
+  }
   .min-h-\[3rem\] {
     min-height: 3rem;
   }
@@ -1151,6 +1154,9 @@
   }
   .shrink-0 {
     flex-shrink: 0;
+  }
+  .basis-0 {
+    flex-basis: calc(var(--spacing) * 0);
   }
   .border-collapse {
     border-collapse: collapse;
@@ -5169,6 +5175,14 @@
       }
     }
   }
+  .hover\:brightness-105 {
+    &:hover {
+      @media (hover: hover) {
+        --tw-brightness: brightness(105%);
+        filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+      }
+    }
+  }
   .hover\:brightness-110 {
     &:hover {
       @media (hover: hover) {
@@ -5976,6 +5990,11 @@
       max-height: min(48vh, 26rem);
     }
   }
+  .sm\:min-h-0 {
+    @media (width >= 40rem) {
+      min-height: calc(var(--spacing) * 0);
+    }
+  }
   .sm\:min-h-\[9rem\] {
     @media (width >= 40rem) {
       min-height: 9rem;
@@ -6079,6 +6098,11 @@
   .sm\:flex-1 {
     @media (width >= 40rem) {
       flex: 1;
+    }
+  }
+  .sm\:flex-initial {
+    @media (width >= 40rem) {
+      flex: 0 auto;
     }
   }
   .sm\:shrink-0 {

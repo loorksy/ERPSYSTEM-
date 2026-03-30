@@ -13,14 +13,15 @@
         </div>
       </div>
     </div>
-    <div class="border-b border-slate-100 bg-slate-50/95 px-4 py-4 sm:px-6 sm:py-4">
-      <p class="text-xs font-semibold text-slate-500 mb-3 sm:hidden">إجراءات</p>
-      <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-        <button type="button" onclick="accOpenBulk()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-700 text-white text-sm font-semibold shadow-md hover:bg-slate-800 active:scale-[0.99] transition text-center">رفع أرصدة</button>
-        <button type="button" onclick="accOpenDelivery()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition text-center">تسليم</button>
-        <button type="button" onclick="accOpenAdd()" class="btn-add inline-flex w-full sm:w-auto items-center justify-center">
-          <i class="fas fa-plus ml-2"></i>
-          إضافة معتمد
+    <div class="border-b border-slate-100 bg-slate-50/95 px-3 py-3 sm:px-6 sm:py-4">
+      <p class="text-xs font-semibold text-slate-500 mb-2 sm:hidden">إجراءات</p>
+      <!-- موبايل: صف واحد، ثلاثة أعمدة متساوية، خط أصغر — سطح المكتب: كما كان -->
+      <div class="flex flex-row flex-nowrap items-stretch gap-1.5 sm:gap-2 sm:flex-wrap sm:items-center sm:justify-end">
+        <button type="button" onclick="accOpenBulk()" class="inline-flex flex-1 min-w-0 basis-0 sm:flex-initial sm:w-auto items-center justify-center gap-1 rounded-xl px-2 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-slate-700 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-slate-800 active:scale-[0.99] transition text-center touch-manipulation">رفع أرصدة</button>
+        <button type="button" onclick="accOpenDelivery()" class="inline-flex flex-1 min-w-0 basis-0 sm:flex-initial sm:w-auto items-center justify-center gap-1 rounded-xl px-2 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-emerald-600 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition text-center touch-manipulation">تسليم</button>
+        <button type="button" onclick="accOpenAdd()" class="inline-flex flex-1 min-w-0 basis-0 sm:flex-initial sm:w-auto items-center justify-center gap-1 rounded-xl px-2 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-indigo-600 to-indigo-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-indigo-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
+          <i class="fas fa-plus text-[10px] sm:text-sm shrink-0 opacity-95" aria-hidden="true"></i>
+          <span class="text-center">إضافة معتمد</span>
         </button>
       </div>
     </div>
