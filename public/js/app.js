@@ -303,6 +303,20 @@ function initSidebar() {
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
   if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
 
+  /** إغلاق القائمة عند اختيار رابط (قبل الانتقال) + عند الرجوع من ذاكرة المتصفح (bfcache) */
+  if (sidebar) {
+    sidebar.addEventListener('click', function (ev) {
+      var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
+      if (!a || !a.getAttribute('href')) return;
+      var href = a.getAttribute('href');
+      if (href === '#' || href.indexOf('javascript:') === 0) return;
+      closeSidebar();
+    });
+  }
+  window.addEventListener('pageshow', function (ev) {
+    if (ev.persisted && typeof window.closeSidebar === 'function') window.closeSidebar();
+  });
+
   window.updatePayrollDraftNavBadge = function () {
     try {
       var badge = document.getElementById('navPayrollDraftBadge');

@@ -504,6 +504,15 @@ function columnIndexToLetter(idx) {
   return s || 'A';
 }
 
+/** خصم الرواتب: القيمة الفارغة من العميل لا تُفسَّر كـ 0 (تُستبدل بإعدادات المستخدم). */
+function resolvePayrollDiscountRatePct(bodyVal, settingsRow) {
+  const fallback = Number(settingsRow && settingsRow.discount_rate);
+  const safeFb = !isNaN(fallback) ? fallback : 0;
+  if (bodyVal === undefined || bodyVal === null || bodyVal === '') return safeFb;
+  const n = Number(bodyVal);
+  return !isNaN(n) ? n : safeFb;
+}
+
 function columnLetterToIndex(letter) {
   if (letter == null || letter === '') return null;
   const s = String(letter).trim().toUpperCase();
@@ -741,7 +750,7 @@ router.post('/payroll-audit-local', requireAuth, async (req, res) => {
     }
     const db = getDb();
     const payrollSettingsRow = (await db.query('SELECT discount_rate FROM payroll_settings WHERE user_id = $1', [req.session.userId])).rows[0];
-    const discountRatePct = Number(bodyDiscountRate) ?? Number(payrollSettingsRow?.discount_rate) ?? 0;
+    const discountRatePct = resolvePayrollDiscountRatePct(bodyDiscountRate, payrollSettingsRow);
 
     const cycle = (await db.query(
       `SELECT name, management_data, agent_data, user_info_data,
@@ -1032,7 +1041,7 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
     }
     const db = getDb();
     const payrollSettingsRow = (await db.query('SELECT discount_rate FROM payroll_settings WHERE user_id = $1', [req.session.userId])).rows[0];
-    const discountRatePct = Number(bodyDiscountRate) ?? Number(payrollSettingsRow?.discount_rate) ?? 0;
+    const discountRatePct = resolvePayrollDiscountRatePct(bodyDiscountRate, payrollSettingsRow);
 
     const cycle = (await db.query(
       'SELECT name, management_data, agent_data, payroll_audit_user_info_hash, management_spreadsheet_id, management_sheet_name, agent_spreadsheet_id, agent_sheet_name FROM financial_cycles WHERE id = $1 AND user_id = $2',
@@ -1311,10 +1320,14 @@ router.post('/payroll-execute', requireAuth, async (req, res) => {
         } catch (_) {}
       }
 
-      /** نلصق فقط الصفوف التي رقم المستخدم فيها غير موجود في الورقة بعد ولم يُسجَّل كمدقق في هذه الدورة */
+      /** نلصق فقط الصفوف التي رقم المستخدم فيها غير موجود في الورقة بعد ولم يُسجَّل كمدقق — ولا نكرّر نفس الرقم دفعة واحدة */
+      const seenInPasteBatch = new Set();
       const itemsToPaste = items.filter(it => {
         const id = normalizeUserId(it.managementRow[cycleMgmtCol]);
-        return id && !existingInSheetIds.has(id) && !auditedMemberIdsSet.has(id);
+        if (!id || existingInSheetIds.has(id) || auditedMemberIdsSet.has(id)) return false;
+        if (seenInPasteBatch.has(id)) return false;
+        seenInPasteBatch.add(id);
+        return true;
       });
       if (itemsToPaste.length === 0) continue;
 

@@ -18,9 +18,8 @@
     <button class="w-[42px] h-[42px] flex items-center justify-center rounded-xl text-slate-800 text-xl active:bg-slate-50" id="menuToggle" aria-label="القائمة">
       <i class="fas fa-bars"></i>
     </button>
-    <div class="flex items-center gap-2 font-bold text-lg text-indigo-600">
-      <i class="fas fa-chart-line text-xl"></i>
-      <span>LorkERP</span>
+    <div class="min-w-0 flex-1 flex items-center justify-center px-2">
+      <span class="font-bold text-base sm:text-lg text-indigo-600 truncate text-center max-w-[min(100%,14rem)]" id="mobileHeaderTitle"><%= typeof title !== 'undefined' && title ? title : 'LorkERP' %></span>
     </div>
     <div class="cursor-pointer" id="mobileUserBtn">
       <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 text-white flex items-center justify-center font-bold text-sm">

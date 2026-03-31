@@ -518,9 +518,13 @@ async function saveCycle() {
       managementSpreadsheetId: mgmtId || null,
       managementSheetName: (document.getElementById('mgmtSheetName')?.value || '').trim() || null,
       agentSpreadsheetId: agentId || null,
-      agentSheetName: (document.getElementById('agentSheetName')?.value || '').trim() || null,
-      transferDiscountPct: tdpRaw !== undefined && tdpRaw !== '' ? Number(tdpRaw) : 0
+      agentSheetName: (document.getElementById('agentSheetName')?.value || '').trim() || null
     };
+    if (editId) {
+      if (tdpRaw !== undefined && tdpRaw !== '') payload.transferDiscountPct = Number(tdpRaw);
+    } else {
+      payload.transferDiscountPct = tdpRaw !== undefined && tdpRaw !== '' ? Number(tdpRaw) : 0;
+    }
     if ((!mgmtId || !agentId) && (currentManagementRows.length || currentAgentRows.length)) {
       payload.managementData = currentManagementRows;
       payload.agentData = currentAgentRows;

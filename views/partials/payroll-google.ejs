@@ -700,7 +700,7 @@ async function payrollExecute(fromRunAudit) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التطبيق...';
   }
-  var discountRate = document.getElementById('payrollDiscountRate').value;
+  var discountRateRaw = (document.getElementById('payrollDiscountRate') && document.getElementById('payrollDiscountRate').value || '').trim();
   var agentColor = document.getElementById('payrollAgentColor').value;
   var managementColor = document.getElementById('payrollMgmtColor').value;
   var userInfoSheetName = (document.getElementById('payrollUserInfoSheetSelect') && document.getElementById('payrollUserInfoSheetSelect').value) || '';
@@ -718,7 +718,7 @@ async function payrollExecute(fromRunAudit) {
       body: JSON.stringify({
         cycleId: Number(cycleId),
         spreadsheetId: spreadsheetId,
-        discountRate: Number(discountRate) || 0,
+        discountRate: discountRateRaw === '' ? null : Number(discountRateRaw),
         agentColor: agentColor || '#3b82f6',
         managementColor: managementColor || '#10b981',
         userInfoSheetName: userInfoSheetName || undefined,
