@@ -229,35 +229,30 @@
         balEl.innerHTML = '';
       } else {
         if (balSection) balSection.classList.remove('hidden');
-        balEl.innerHTML = (res.balances || []).map(function(b) {
+        var rows = (res.balances || []).map(function(b) {
           var amt = (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
           var cur = b.currency || '';
           var isDebtUsd = balDebt && cur === 'USD';
-          var card =
-            'flex min-w-[6.5rem] flex-col gap-1 rounded-xl border px-3 py-2.5 shadow-sm tabular-nums sm:min-w-[7.5rem] ';
-          if (isDebtUsd) {
-            card += 'border-red-200 bg-red-50/90 ring-1 ring-red-100/70';
-          } else {
-            card += 'border-indigo-200/90 bg-white ring-1 ring-indigo-100/60';
-          }
-          var curCls = isDebtUsd ? 'text-red-600' : 'text-indigo-600';
+          var curCls = isDebtUsd ? 'text-red-700' : 'text-indigo-700';
           var amtCls = isDebtUsd ? 'text-red-950' : 'text-slate-900';
           return (
-            '<div class="' +
-            card +
-            '">' +
-            '<span class="text-[10px] font-bold uppercase tracking-wide ' +
+            '<div role="listitem" class="flex items-baseline justify-between gap-3 border-b border-indigo-100/50 py-2.5 last:border-0 last:pb-0 first:pt-0">' +
+            '<span class="shrink-0 text-sm font-bold uppercase tracking-wide tabular-nums ' +
             curCls +
             '">' +
             cur +
             '</span>' +
-            '<span class="text-xl font-bold leading-tight sm:text-2xl ' +
+            '<span dir="ltr" class="min-w-0 text-end text-2xl font-bold tabular-nums tracking-tight sm:text-3xl ' +
             amtCls +
             '">' +
             amt +
             '</span></div>'
           );
-        }).join('');
+        });
+        balEl.innerHTML =
+          rows.length > 0
+            ? rows.join('')
+            : '<p class="py-1 text-center text-sm text-slate-500 sm:text-start">—</p>';
       }
     }
     document.getElementById('fundDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
