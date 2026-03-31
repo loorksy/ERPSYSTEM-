@@ -273,16 +273,7 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     );
     await syncNetBalance(db, ent.id);
 
-    const mixedBuckets = roundMoney(pay) > 0.0001 && roundMoney(rec) > 0.0001;
-    if (salaryDirection === 'to_us' && !isNaN(discRaw) && discRaw > 0 && rec > 0 && !mixedBuckets) {
-      const cut = roundMoney(Math.min(rec, bal * (discRaw / 100)));
-      rec = roundMoney(rec - cut);
-      await db.query(
-        'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
-        [rec, ent.id]
-      );
-      await syncNetBalance(db, ent.id);
-    }
+    /** لا خصم تلقائي من «دين لنا» عند استيراد راتب لنا — التسوية يدوية فقط. */
 
     if (brokerageAmount > 0) {
       await insertNetProfitLedgerAndMirrorFund(db, {

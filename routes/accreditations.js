@@ -122,7 +122,7 @@ router.post('/:id/pin', requireAuth, async (req, res) => {
 
 /**
  * إضافة مبلغ:
- * - راتب لنا/علينا: وساطة → صافي الربح، الباقي → الصندوق الرئيسي (لنا فقط).
+ * - راتب لنا/علينا: وساطة → صافي الربح، الباقي → الصندوق الرئيسي (لنا فقط). لا خصم تلقائي من «دين لنا» من نسبة خصم الراتب — التسوية يدوية.
  * - دين لنا (لنا): balance_receivable فقط، بدون صندوق وبدون خصم % من الواجهة.
  * - دين علينا (علينا): balance_payable + الصندوق بالصافي؛ الخصم → صافي الربح + صندوق الربح.
  * - لهم (debt_payable_no_fund): مثل علينا لكن بدون إيداع صندوق رئيسي؛ balance_payable + ربح خصم فقط.
@@ -341,17 +341,7 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     );
     await syncNetBalance(db, id);
 
-    /** لا خصم تلقائي من «دين لنا» عند وجود الطرفين معًا — التسوية من لوحة التسوية اليدوية فقط. */
-    const mixedBuckets = roundMoney(pay) > 0.0001 && roundMoney(rec) > 0.0001;
-    if (dir === 'to_us' && !isNaN(discountPct) && discountPct > 0 && rec > 0 && !mixedBuckets) {
-      const cut = roundMoney(Math.min(rec, amt * (discountPct / 100)));
-      rec = roundMoney(rec - cut);
-      await db.query(
-        'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
-        [rec, id]
-      );
-      await syncNetBalance(db, id);
-    }
+    /** لا خصم تلقائي من balance_receivable عند راتب «لنا» (to_us) — أي تخفيض لـ«دين لنا» يتم من لوحة التسوية فقط. */
 
     if (brokerageAmount > 0) {
       await insertNetProfitLedgerAndMirrorFund(db, {
