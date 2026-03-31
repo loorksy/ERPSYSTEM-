@@ -284,6 +284,8 @@ function initSidebar() {
   if (menuToggle) {
     menuToggle.addEventListener('click', () => {
       /* max-lg:translate-x-[calc(100%+4px)] على الشريط يغلب translate-x-0 في Tailwind — نستخدم ! للفتح */
+      /* pointer-events: عند الإغلاق تبقى القائمة فوق z-index الشريط السفلي فتسرق اللمسات — نفعّل اللمس فقط عند الفتح */
+      sidebar.classList.remove('max-lg:pointer-events-none');
       sidebar.classList.add('max-lg:!translate-x-0', 'translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
       sidebarOverlay.classList.remove('hidden');
       sidebarOverlay.classList.add('block');
@@ -293,6 +295,7 @@ function initSidebar() {
 
   function closeSidebar() {
     sidebar.classList.remove('max-lg:!translate-x-0', 'translate-x-0', 'shadow-[-4px_0_24px_rgba(0,0,0,0.2)]');
+    sidebar.classList.add('max-lg:pointer-events-none');
     sidebarOverlay.classList.add('hidden');
     sidebarOverlay.classList.remove('block');
     document.body.style.overflow = '';
@@ -303,13 +306,14 @@ function initSidebar() {
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
   if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
 
-  /** إغلاق القائمة عند اختيار رابط (قبل الانتقال) + عند الرجوع من ذاكرة المتصفح (bfcache) */
+  /** إغلاق القائمة عند اختيار رابط داخلها فقط (لا يُستدعى عند لمس خلفية تمرّر الحدث) */
   if (sidebar) {
     sidebar.addEventListener('click', function (ev) {
       var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
       if (!a || !a.getAttribute('href')) return;
       var href = a.getAttribute('href');
       if (href === '#' || href.indexOf('javascript:') === 0) return;
+      if (sidebar.classList.contains('max-lg:pointer-events-none')) return;
       closeSidebar();
     });
   }
