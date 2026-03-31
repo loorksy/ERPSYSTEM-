@@ -751,6 +751,10 @@
 .sub-agency-profile select#subAgencyCycleSelect.input-select {
   max-width: 100%;
 }
+/* ملف صندوق: قائمة المقصد بعرض الحقل (مثل الوكالة الفرعية) */
+.fund-profile select#fundTransferTo.input-select {
+  max-width: 100%;
+}
 .sub-agency-profile .sub-agency-percent-input.input-percent {
   width: 4rem;
   max-width: 4rem;

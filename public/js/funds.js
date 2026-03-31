@@ -221,36 +221,39 @@
     });
     var hideCashBalance = isMainOrProfit && pay > 0.0001 && hasOpening && hasReturn;
     var balDebt = pay > 0.0001;
+    var balSection = document.getElementById('fundDetailBalancesSection');
     var balEl = document.getElementById('fundDetailBalances');
     if (balEl) {
       if (hideCashBalance) {
-        balEl.classList.add('hidden');
+        if (balSection) balSection.classList.add('hidden');
         balEl.innerHTML = '';
       } else {
-        balEl.classList.remove('hidden');
+        if (balSection) balSection.classList.remove('hidden');
         balEl.innerHTML = (res.balances || []).map(function(b) {
           var amt = (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
           var cur = b.currency || '';
           var isDebtUsd = balDebt && cur === 'USD';
-          var box =
-            'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 shadow-sm tabular-nums ';
+          var card =
+            'flex min-w-[6.5rem] flex-col gap-1 rounded-xl border px-3 py-2.5 shadow-sm tabular-nums sm:min-w-[7.5rem] ';
           if (isDebtUsd) {
-            box +=
-              'border-red-200 bg-gradient-to-l from-red-50 to-white text-red-900 ring-1 ring-red-100/60';
+            card += 'border-red-200 bg-red-50/90 ring-1 ring-red-100/70';
           } else {
-            box +=
-              'border-indigo-200/90 bg-gradient-to-l from-indigo-50/95 to-white text-slate-900 ring-1 ring-indigo-100/50';
+            card += 'border-indigo-200/90 bg-white ring-1 ring-indigo-100/60';
           }
+          var curCls = isDebtUsd ? 'text-red-600' : 'text-indigo-600';
+          var amtCls = isDebtUsd ? 'text-red-950' : 'text-slate-900';
           return (
             '<div class="' +
-            box +
+            card +
             '">' +
             '<span class="text-[10px] font-bold uppercase tracking-wide ' +
-            (isDebtUsd ? 'text-red-700' : 'text-indigo-700') +
+            curCls +
             '">' +
             cur +
             '</span>' +
-            '<span class="text-sm font-bold leading-none">' +
+            '<span class="text-xl font-bold leading-tight sm:text-2xl ' +
+            amtCls +
+            '">' +
             amt +
             '</span></div>'
           );

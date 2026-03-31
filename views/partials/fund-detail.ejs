@@ -1,108 +1,109 @@
-<div id="fundDetailPage" data-fund-id="<%= fundId %>" class="fund-detail-page funds-detail-page w-full max-w-6xl mx-auto min-w-0 px-3 sm:px-6 lg:px-8 pb-8" dir="rtl">
+<div id="fundDetailPage" data-fund-id="<%= fundId %>" class="fund-detail-page funds-detail-page fund-profile w-full max-w-6xl mx-auto min-w-0 px-3 sm:px-6 lg:px-8 pb-8" dir="rtl">
   <div class="space-y-4">
     <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <!-- صف 1: رجوع | هوية فقط -->
-      <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-b border-slate-100 bg-slate-50/50 px-3 py-2.5 sm:px-4">
-        <a href="/funds" class="btn-back inline-flex h-9 w-9 shrink-0 items-center justify-center" title="العودة لقائمة الصناديق" aria-label="العودة لقائمة الصناديق">
+      <!-- صف 1: مطابق لفكرة ملف الوكالة الفرعية — رجوع | هوية + رصيد بارز | أزرار عمودية -->
+      <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 border-b border-slate-100 bg-slate-50/50 px-3 py-3 sm:px-4">
+        <a href="/funds" class="btn-back inline-flex shrink-0" title="العودة لقائمة الصناديق" aria-label="العودة لقائمة الصناديق">
           <i class="fas fa-arrow-right text-sm"></i>
         </a>
-        <div class="flex min-w-0 items-center gap-2.5">
-          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
-            <i class="fas fa-vault text-[0.8rem]" aria-hidden="true"></i>
+        <div class="flex min-w-0 items-start gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
+            <i class="fas fa-vault text-sm" aria-hidden="true"></i>
           </div>
-          <div class="min-w-0">
-            <p class="text-[9px] font-semibold uppercase tracking-wide text-indigo-600">صندوق</p>
-            <h1 id="fundDetailTitle" class="truncate text-sm font-bold text-slate-900 sm:text-base">—</h1>
+          <div class="min-w-0 flex-1">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-600">صندوق</p>
+            <h1 id="fundDetailTitle" class="truncate text-base font-bold text-slate-900 sm:text-lg">—</h1>
+            <div id="fundDetailBalanceBlock" class="mt-2 min-w-0">
+              <div id="fundDetailBalancesSection">
+                <p class="mb-1.5 text-xs font-medium text-slate-500">رصيد الصندوق</p>
+                <div id="fundDetailBalances" class="flex flex-wrap items-stretch gap-2 sm:gap-3"></div>
+              </div>
+              <div id="fundDetailPayables" class="mt-2 hidden max-w-full rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold leading-snug text-red-800"></div>
+            </div>
           </div>
+        </div>
+        <div class="flex shrink-0 flex-col gap-2 sm:items-end">
+          <button type="button" onclick="fundsDownloadLedgerPdf()" class="inline-flex min-h-[2.35rem] w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto sm:min-w-[6.5rem]" title="تقرير PDF">
+            <i class="fas fa-file-pdf text-red-500 text-[0.8rem]" aria-hidden="true"></i>
+            PDF
+          </button>
+          <button type="button" onclick="fundsSetMain()" class="inline-flex min-h-[2.35rem] w-full items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 sm:w-auto sm:min-w-[6.5rem]" title="تعيين كصندوق رئيسي">
+            <i class="fas fa-star text-[0.75rem] text-amber-600" aria-hidden="true"></i>
+            رئيسي
+          </button>
         </div>
       </div>
 
-      <!-- صف 2: رقم + موقع -->
+      <!-- رقم + موقع (نفس نمط مؤشرات الوكالة الفرعية) -->
       <div class="grid grid-cols-2 gap-px bg-slate-200">
-        <div class="bg-white px-2.5 py-2 sm:px-4 sm:py-2.5">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-500">رقم الصندوق</p>
-          <p id="fundDetailNumberDisplay" class="mt-0.5 text-xs font-bold tabular-nums text-slate-900 sm:text-sm">—</p>
+        <div class="bg-white px-3 py-3 sm:px-4">
+          <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">رقم الصندوق</p>
+          <p id="fundDetailNumberDisplay" class="mt-1 text-lg font-bold tabular-nums text-slate-900 sm:text-xl">—</p>
         </div>
-        <div class="bg-white px-2.5 py-2 sm:px-4 sm:py-2.5">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-500">الموقع</p>
-          <p id="fundDetailLocationDisplay" class="mt-0.5 text-xs font-semibold leading-snug text-slate-800 sm:text-sm">—</p>
-        </div>
-      </div>
-
-      <!-- صف 3: رصيد واضح + تنبيه + أزرار — كلها في صف واحد من sm، أزرار مصغّرة -->
-      <div class="border-b border-slate-100 px-2.5 py-2 sm:px-4">
-        <div class="flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-3">
-          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-x-3">
-            <span class="shrink-0 text-[9px] font-bold uppercase tracking-wide text-slate-500">رصيد الصندوق</span>
-            <div id="fundDetailBalances" class="flex min-w-0 flex-wrap items-center gap-1.5"></div>
-            <div id="fundDetailPayables" class="hidden max-w-full rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold leading-tight text-red-800"></div>
-          </div>
-          <div class="flex shrink-0 flex-wrap items-center gap-1 sm:gap-1.5">
-            <button type="button" onclick="fundsDownloadLedgerPdf()" class="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-700 shadow-sm transition hover:bg-slate-50" title="PDF">
-              <i class="fas fa-file-pdf text-red-500 text-[0.65rem]" aria-hidden="true"></i>
-              <span>PDF</span>
-            </button>
-            <button type="button" onclick="fundsSetMain()" class="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 text-[10px] font-bold text-amber-900 transition hover:bg-amber-100" title="تعيين كصندوق رئيسي">
-              <i class="fas fa-star text-[0.6rem]" aria-hidden="true"></i>
-              <span>رئيسي</span>
-            </button>
-          </div>
+        <div class="bg-white px-3 py-3 sm:px-4">
+          <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">الموقع</p>
+          <p id="fundDetailLocationDisplay" class="mt-1 text-base font-semibold leading-snug text-slate-800 sm:text-lg">—</p>
         </div>
       </div>
 
-      <!-- ترحيل: صف واحد — حقول صغيرة -->
-      <div class="border-b border-slate-100 px-2.5 py-2 sm:px-4">
-        <p class="mb-1.5 text-[9px] font-bold uppercase tracking-wide text-slate-500">ترحيل</p>
-        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
-          <div class="min-w-0 flex-1 sm:min-w-[12rem]">
-            <label for="fundTransferTo" class="sr-only">صندوق المقصد</label>
-            <select id="fundTransferTo" class="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/30"></select>
+      <!-- ترحيل: صف الدورة + الأزرار في الوكالة (عمود على الجوال، صف من lg) -->
+      <div class="border-b border-slate-100 px-3 py-2.5 sm:px-4">
+        <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:gap-3">
+          <div class="flex w-full min-w-0 flex-col gap-1.5 lg:w-auto lg:max-w-none lg:flex-row lg:items-center lg:gap-2 lg:shrink-0">
+            <label for="fundTransferTo" class="shrink-0 text-xs font-semibold text-slate-700">الصندوق المقصد</label>
+            <select id="fundTransferTo" class="input-select w-full rounded-lg border-slate-200 py-2 text-sm lg:min-w-[11rem] lg:max-w-[18rem]"></select>
           </div>
-          <div class="w-full sm:w-24">
-            <label for="fundTransferAmt" class="sr-only">مبلغ USD</label>
-            <input type="number" id="fundTransferAmt" step="0.01" placeholder="USD" dir="ltr" class="h-8 w-full rounded-lg border border-slate-200 px-2 text-xs tabular-nums focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/30">
+          <div class="flex w-full min-w-0 flex-col gap-1.5 sm:max-w-[10rem]">
+            <label for="fundTransferAmt" class="text-xs font-medium text-slate-600">مبلغ USD</label>
+            <input type="number" id="fundTransferAmt" step="0.01" placeholder="0.00" dir="ltr" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm tabular-nums focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/30">
           </div>
-          <button type="button" onclick="fundsDoTransfer()" class="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-[10px] font-bold text-white shadow-sm transition hover:bg-indigo-700 sm:min-w-[4.5rem]">ترحيل</button>
+          <button type="button" onclick="fundsDoTransfer()" class="inline-flex min-h-[2.35rem] w-full items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:w-auto sm:min-w-[6.5rem]">ترحيل</button>
         </div>
       </div>
 
-      <!-- مرتجع: صفوف مضغوطة -->
-      <div class="border-b border-slate-100 bg-emerald-50/25 px-2.5 py-2 sm:px-4">
-        <p class="mb-1.5 text-[9px] font-bold uppercase tracking-wide text-emerald-800">مرتجع</p>
-        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
-          <div class="w-full sm:w-24">
-            <label for="fundReturnAmt" class="sr-only">مبلغ</label>
-            <input type="number" id="fundReturnAmt" step="0.01" min="0" placeholder="مبلغ" dir="ltr" class="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20">
+      <!-- مرتجع: شبكة حقول + زر بارز (مثل أزرار المكافأة/الخصم) -->
+      <div class="border-b border-slate-100 bg-emerald-50/30 px-3 py-2.5 sm:px-4">
+        <p class="mb-2 text-xs font-semibold text-emerald-900">مرتجع</p>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-end sm:gap-x-3 sm:gap-y-2">
+          <div class="sm:col-span-4 lg:col-span-3">
+            <label for="fundReturnAmt" class="mb-1 block text-xs font-medium text-slate-600">المبلغ</label>
+            <input type="number" id="fundReturnAmt" step="0.01" min="0" placeholder="0" dir="ltr" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20">
           </div>
-          <div class="w-full sm:w-20">
-            <label for="fundReturnCur" class="sr-only">عملة</label>
-            <select id="fundReturnCur" class="h-8 w-full rounded-lg border border-slate-200 bg-white px-1.5 text-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20">
+          <div class="w-full sm:col-span-3 lg:col-span-2">
+            <label for="fundReturnCur" class="mb-1 block text-xs font-medium text-slate-600">العملة</label>
+            <select id="fundReturnCur" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20">
               <option value="USD">USD</option>
               <option value="TRY">TRY</option>
               <option value="SYP">SYP</option>
             </select>
           </div>
-          <div class="min-w-0 flex-1 sm:min-w-[10rem]">
-            <label for="fundReturnDisposition" class="sr-only">التصرف</label>
-            <select id="fundReturnDisposition" class="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20">
+          <div class="sm:col-span-5 lg:col-span-4">
+            <label for="fundReturnDisposition" class="mb-1 block text-xs font-medium text-slate-600">التصرف</label>
+            <select id="fundReturnDisposition" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20">
               <option value="remain_at_entity">يبقى بالصندوق</option>
               <option value="transfer_to_fund">ترحيل لصندوق آخر</option>
             </select>
           </div>
-          <div id="fundReturnTargetWrap" class="hidden min-w-0 w-full sm:flex-1 sm:min-w-[10rem]">
-            <label for="fundReturnTarget" class="sr-only">صندوق المقصد</label>
-            <select id="fundReturnTarget" class="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20"></select>
+          <div id="fundReturnTargetWrap" class="hidden sm:col-span-12 lg:col-span-4">
+            <label for="fundReturnTarget" class="mb-1 block text-xs font-medium text-slate-600">صندوق المقصد</label>
+            <select id="fundReturnTarget" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20"></select>
           </div>
-          <input type="text" id="fundReturnNotes" class="h-8 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 sm:min-w-[8rem]" placeholder="ملاحظات">
-          <button type="button" onclick="fundsSubmitReturn()" class="h-8 shrink-0 rounded-lg bg-emerald-600 px-2.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-emerald-700">تسجيل</button>
+          <div class="sm:col-span-12 lg:col-span-5">
+            <label for="fundReturnNotes" class="mb-1 block text-xs font-medium text-slate-600">ملاحظات</label>
+            <input type="text" id="fundReturnNotes" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/20" placeholder="اختياري">
+          </div>
+          <div class="sm:col-span-12 lg:col-span-2 lg:justify-self-end">
+            <label class="mb-1 hidden text-xs font-medium text-slate-600 sm:block sm:invisible" aria-hidden="true">تسجيل</label>
+            <button type="button" onclick="fundsSubmitReturn()" class="inline-flex min-h-[2.35rem] w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700">تسجيل</button>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div class="border-b border-slate-100 px-3 py-2 sm:px-4">
+      <div class="border-b border-slate-100 px-3 py-2.5 sm:px-4">
         <h2 class="text-sm font-bold text-slate-900">سجل الحركات</h2>
-        <p class="text-[9px] text-slate-500">المبالغ والرصيد بعد كل حركة</p>
+        <p class="text-[10px] text-slate-500">المبالغ والرصيد بعد كل حركة</p>
       </div>
       <div id="fundDetailLedger" class="fund-detail-ledger mx-3 mb-3 max-h-[min(22rem,48vh)] overflow-y-auto rounded-lg border border-slate-100 bg-slate-50/60 p-3 text-sm sm:mx-4 sm:mb-4 sm:max-h-[min(26rem,52vh)] sm:p-4"></div>
     </section>
