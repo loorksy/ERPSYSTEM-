@@ -10,6 +10,32 @@
   const pageSize = 50;
   let total = 0;
   let q = '';
+  let liveDebounceTimer = null;
+  const LIVE_DEBOUNCE_MS = 320;
+
+  function getQuery() {
+    return (input.value || '').trim();
+  }
+
+  /** بحث لحظي أثناء الكتابة: فارغ أو أرقام فقط (رقم مستخدم) */
+  function isLiveSearchQuery(v) {
+    return v === '' || /^\d+$/.test(v);
+  }
+
+  function runSearch() {
+    q = getQuery();
+    page = 1;
+    load();
+  }
+
+  function scheduleLiveSearch() {
+    clearTimeout(liveDebounceTimer);
+    liveDebounceTimer = setTimeout(() => {
+      const v = getQuery();
+      if (!isLiveSearchQuery(v)) return;
+      runSearch();
+    }, LIVE_DEBOUNCE_MS);
+  }
 
   function esc(s) {
     const d = document.createElement('div');
@@ -82,21 +108,16 @@
     nextBtn.disabled = page >= pages;
   }
 
-  btn.addEventListener('click', () => {
-    q = (input.value || '').trim();
-    page = 1;
-    load();
-  });
+  btn.addEventListener('click', runSearch);
+  input.addEventListener('input', scheduleLiveSearch);
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') btn.click();
+    if (e.key === 'Enter') runSearch();
   });
   pasteBtn.addEventListener('click', async () => {
     try {
       const t = await navigator.clipboard.readText();
       input.value = (t || '').trim();
-      q = input.value;
-      page = 1;
-      load();
+      runSearch();
     } catch (_) {}
   });
   prevBtn.addEventListener('click', () => {
