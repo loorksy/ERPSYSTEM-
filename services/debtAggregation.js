@@ -25,14 +25,36 @@ async function computeDebtBreakdown(db, userId) {
   const accreditationReceivableUsd = accRecv?.t ?? 0;
 
   let payablesSumUsd = 0;
+  /** مجموع صفوف entity_payables المنسوبة لتحويل معتمد بوضع payable (نص الملاحظة يبدأ بـ «تحويل معتمد» كما في accreditations.js) */
+  let entityPayablesFromAccTransferUsd = 0;
   try {
     const payRows = (await db.query(
       `SELECT COALESCE(SUM(amount), 0)::float AS t FROM entity_payables WHERE user_id = $1 AND currency = 'USD'`,
       [userId]
     )).rows[0];
     payablesSumUsd = payRows?.t ?? 0;
+    const epAcc = (await db.query(
+      `SELECT COALESCE(SUM(amount), 0)::float AS t FROM entity_payables
+       WHERE user_id = $1 AND currency = 'USD'
+       AND COALESCE(TRIM(notes), '') ILIKE 'تحويل معتمد%'`,
+      [userId]
+    )).rows[0];
+    entityPayablesFromAccTransferUsd = epAcc?.t ?? 0;
   } catch (_) {
     payablesSumUsd = 0;
+    entityPayablesFromAccTransferUsd = 0;
+  }
+  const entityPayablesOtherUsd = Math.max(0, payablesSumUsd - entityPayablesFromAccTransferUsd);
+
+  let fxSpreadSumUsd = 0;
+  try {
+    const fxRow = (await db.query(
+      `SELECT COALESCE(SUM(spread_usd), 0)::float AS t FROM fx_spread_entries WHERE user_id = $1`,
+      [userId]
+    )).rows[0];
+    fxSpreadSumUsd = fxRow?.t ?? 0;
+  } catch (_) {
+    fxSpreadSumUsd = 0;
   }
 
   const negCompanies = (await db.query(
@@ -74,9 +96,11 @@ async function computeDebtBreakdown(db, userId) {
     accreditationPayableUsd,
     accreditationReceivableUsd,
     payablesSumUsd,
+    entityPayablesFromAccTransferUsd,
+    entityPayablesOtherUsd,
     companyDebtFromBalance,
     fundDebtFromBalance,
-    fxSpreadSumUsd: 0,
+    fxSpreadSumUsd,
     totalDebts,
   };
 }
@@ -130,9 +154,31 @@ async function computeReceivablesToUs(db, userId) {
   const returnsPendingUsd = retRow?.t ?? 0;
   totalUsd += returnsPendingUsd;
 
+  /** رصيد موجب = أصل لنا لدى شركة التحويل (عكس الرصيد السالب في صفحة دين علينا) */
+  const posCompanyRows = (await db.query(
+    `SELECT id, name, balance_amount, balance_currency
+     FROM transfer_companies
+     WHERE user_id = $1 AND balance_amount > 0.0001
+     ORDER BY name`,
+    [userId]
+  )).rows;
+  const transferCompanies = [];
+  posCompanyRows.forEach((c) => {
+    if ((c.balance_currency || 'USD') === 'USD') {
+      const amt = Number(c.balance_amount) || 0;
+      totalUsd += amt;
+      transferCompanies.push({
+        id: c.id,
+        name: c.name,
+        amountOwedToUs: amt,
+        balanceCurrency: c.balance_currency || 'USD',
+      });
+    }
+  });
+
   return {
     totalUsd,
-    transferCompanies: [],
+    transferCompanies,
     subAgencies: subAgencyRows.map((r) => ({
       id: r.id,
       name: r.name,

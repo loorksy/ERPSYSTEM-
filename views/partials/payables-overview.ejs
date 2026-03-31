@@ -25,7 +25,7 @@
         <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm"><i class="fas fa-scale-balanced text-xl"></i></span>
         <div>
           <p class="text-sm text-rose-100">إجمالي التزامات (من الحاسبة)</p>
-          <p class="text-xs text-rose-200/90">يشمل شحن، اعتمادات، يدوي، أرصدة سالبة…</p>
+          <p class="text-xs text-rose-200/90 leading-snug">شحن + مطلوب دفع معتمدين + مجموع entity_payables (يشمل تحويل معتمد payable) + أرصدة سالبة شركات/صناديق</p>
         </div>
       </div>
       <p class="font-mono text-4xl sm:text-5xl font-bold tabular-nums tracking-tight" id="payablesHeroTotal">—</p>
@@ -36,12 +36,20 @@
         <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiShipping">—</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
-        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-certificate text-violet-500"></i> اعتمادات</p>
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-certificate text-violet-500"></i> معتمدون (مطلوب دفع)</p>
         <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiAcc">—</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem] col-span-2 sm:col-span-1">
-        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-pen text-slate-500"></i> مسجّل يدوي</p>
+        <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-database text-slate-500"></i> entity_payables (إجمالي)</p>
         <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiManual">—</p>
+      </div>
+      <div class="rounded-2xl border border-violet-100 bg-violet-50/40 p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+        <p class="text-[0.65rem] font-semibold text-violet-800 leading-tight flex items-start gap-1"><i class="fas fa-stamp text-violet-600 mt-0.5 shrink-0"></i> من تحويل معتمد (payable)</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-violet-950 text-left" dir="ltr" id="payablesKpiEpAcc">—</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+        <p class="text-[0.65rem] font-semibold text-slate-500 leading-tight flex items-start gap-1"><i class="fas fa-ellipsis-h text-slate-400 mt-0.5 shrink-0"></i> أخرى (يدوي، شحن، …)</p>
+        <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiEpOther">—</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
         <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-building text-red-500"></i> شركات</p>
@@ -51,7 +59,7 @@
         <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-piggy-bank text-amber-500"></i> صناديق</p>
         <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiFund">—</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem]">
+      <div id="payablesKpiFxWrap" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-h-[5.5rem] col-span-2 sm:col-span-1">
         <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fas fa-chart-line text-teal-500"></i> فرق تصريف</p>
         <p class="font-mono text-lg font-bold tabular-nums text-slate-900 text-left" dir="ltr" id="payablesKpiFx">—</p>
       </div>
@@ -88,8 +96,8 @@
       <div class="flex items-center gap-3">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-800"><i class="fas fa-list-check"></i></span>
         <div>
-          <h3 class="text-base font-bold text-slate-900">ديون مسجّلة يدوياً</h3>
-          <p class="text-xs text-slate-500">آخر 500 سجل من entity_payables</p>
+          <h3 class="text-base font-bold text-slate-900">سجل التزامات entity_payables</h3>
+          <p class="text-xs text-slate-500">آخر 500 سجل (صندوق/شركة، بما فيها تحويلات معتمد payable عند التسجيل)</p>
         </div>
       </div>
     </div>

@@ -32,6 +32,10 @@ router.get('/overview', requireAuth, async (req, res) => {
     res.json({
       success: true,
       breakdown,
+      entityPayablesSplit: {
+        fromAccreditationTransferUsd: breakdown.entityPayablesFromAccTransferUsd ?? 0,
+        otherUsd: breakdown.entityPayablesOtherUsd ?? 0,
+      },
       payables: payRows,
       negativeCompanies: negCompanies,
       negativeFunds: negFunds,

@@ -79,9 +79,22 @@
         set('payablesKpiShipping', b.shippingDebt);
         set('payablesKpiAcc', b.accreditationPayableUsd != null ? b.accreditationPayableUsd : b.accreditationDebtTotal);
         set('payablesKpiManual', b.payablesSumUsd);
+        set('payablesKpiEpAcc', b.entityPayablesFromAccTransferUsd != null ? b.entityPayablesFromAccTransferUsd : 0);
+        set('payablesKpiEpOther', b.entityPayablesOtherUsd != null ? b.entityPayablesOtherUsd : 0);
         set('payablesKpiCo', b.companyDebtFromBalance);
         set('payablesKpiFund', b.fundDebtFromBalance);
-        set('payablesKpiFx', b.fxSpreadSumUsd != null ? b.fxSpreadSumUsd : 0);
+        var fxVal = b.fxSpreadSumUsd != null ? b.fxSpreadSumUsd : 0;
+        var fxW = document.getElementById('payablesKpiFxWrap');
+        if (fxW) {
+          if (fxVal <= 0.0001) {
+            fxW.classList.add('hidden');
+          } else {
+            fxW.classList.remove('hidden');
+            set('payablesKpiFx', fxVal);
+          }
+        } else {
+          set('payablesKpiFx', fxVal);
+        }
 
         var nc = document.getElementById('payablesNegCompanies');
         if (nc) {
@@ -99,7 +112,7 @@
         var rows = (res.payables || []).slice(0, 50);
         if (!rows.length) {
           tb.innerHTML =
-            '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">لا توجد سجلات يدوية</td></tr>';
+            '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">لا توجد سجلات في entity_payables</td></tr>';
           return;
         }
         tb.innerHTML = rows

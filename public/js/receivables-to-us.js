@@ -117,6 +117,30 @@
               '<span class="text-slate-500"><i class="fas fa-check-circle text-emerald-500 ml-1"></i> لا مرتجعات معلّقة مسجّلة.</span>';
           }
         }
+
+        var rc = document.getElementById('recvCompanies');
+        if (rc) {
+          var tco = d.transferCompanies || [];
+          if (!tco.length) {
+            rc.innerHTML = listEmpty('لا أرصدة موجبة لشركات تحويل (لنا لدى الشركة) مسجّلة حالياً');
+          } else {
+            rc.innerHTML = tco
+              .map(function(x) {
+                return (
+                  '<a href="/debts/company/' +
+                  esc(x.id) +
+                  '" class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-cyan-50/80 to-white px-4 py-3.5 transition hover:border-cyan-200 hover:shadow-sm">' +
+                  '<span class="text-sm font-medium text-slate-800 min-w-0 truncate">' +
+                  esc(x.name) +
+                  '</span>' +
+                  '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-cyan-800">' +
+                  fmt(x.amountOwedToUs != null ? x.amountOwedToUs : 0) +
+                  '</span></a>'
+                );
+              })
+              .join('');
+          }
+        }
       })
       .catch(function() {
         totalEl.textContent = '—';

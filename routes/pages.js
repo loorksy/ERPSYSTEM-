@@ -63,7 +63,6 @@ const pages = [
   { path: '/messages', page: 'messages', title: 'ترتيب الرسائل' },
   { path: '/approvals', page: 'approvals', title: 'ملف الاعتمادات' },
   { path: '/sub-agencies', page: 'sub-agencies', title: 'ملف الوكالات الفرعية' },
-  { path: '/main-agency', page: 'main-agency', title: 'ملف الشركة' },
   { path: '/transfer-companies', page: 'transfer-companies', title: 'شركات التحويل' },
   { path: '/funds', page: 'funds', title: 'قائمة الصناديق' },
   { path: '/shipping', page: 'shipping', title: 'الشحن' },
@@ -122,6 +121,11 @@ router.get('/approvals/:id', requireAuth, (req, res) => {
     accreditationId: id,
     user: req.session.user,
   });
+});
+
+/** إزالة صفحة «ملف الشركة» — إعادة توجيه الروابط القديمة */
+router.get('/main-agency', requireAuth, (req, res) => {
+  res.redirect(301, '/dashboard');
 });
 
 pages.forEach(({ path, page, title }) => {

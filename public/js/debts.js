@@ -59,11 +59,21 @@
         if (totalEl) totalEl.textContent = fmt(d.totalDebts);
 
         var sum = document.getElementById('debtsSummary');
+        var accPay = d.accreditationPayableUsd != null ? d.accreditationPayableUsd : d.accreditationDebtTotal;
+        var epAcc = d.entityPayablesFromAccTransferUsd != null ? d.entityPayablesFromAccTransferUsd : 0;
+        var epOther = d.entityPayablesOtherUsd != null ? d.entityPayablesOtherUsd : 0;
+        var fxV = d.fxSpreadSumUsd != null ? d.fxSpreadSumUsd : 0;
+        var fxCard =
+          fxV > 0.0001
+            ? statCard('fas fa-chart-line', 'bg-teal-100 text-teal-800', 'فرق تصريف', fxV, 'text-teal-900')
+            : '';
         sum.innerHTML =
           statCard('fas fa-truck-fast', 'bg-sky-100 text-sky-700', 'شحن (بيع دين)', d.shippingDebt, 'text-sky-800') +
-          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'اعتمادات (دين لنا عليهم)', d.accreditationReceivableUsd != null ? d.accreditationReceivableUsd : d.accreditationDebtTotal, 'text-violet-900') +
-          statCard('fas fa-pen-fancy', 'bg-slate-100 text-slate-700', 'مسجّل يدوياً (USD)', d.payablesSumUsd, 'text-slate-900') +
-          statCard('fas fa-chart-line', 'bg-teal-100 text-teal-800', 'فرق تصريف', d.fxSpreadSumUsd, 'text-teal-900') +
+          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'معتمدون (مطلوب دفع)', accPay, 'text-violet-900') +
+          statCard('fas fa-database', 'bg-slate-100 text-slate-700', 'entity_payables (إجمالي USD)', d.payablesSumUsd, 'text-slate-900') +
+          statCard('fas fa-stamp', 'bg-violet-50 text-violet-900', 'من تحويل معتمد (payable)', epAcc, 'text-violet-950') +
+          statCard('fas fa-ellipsis-h', 'bg-slate-50 text-slate-600', 'entity_payables — أخرى', epOther, 'text-slate-800') +
+          fxCard +
           statCard('fas fa-building', 'bg-red-100 text-red-700', 'شركات (رصيد سالب)', d.companyDebtFromBalance, 'text-red-800') +
           statCard('fas fa-piggy-bank', 'bg-amber-100 text-amber-800', 'صناديق (رصيد سالب)', d.fundDebtFromBalance, 'text-amber-900');
 

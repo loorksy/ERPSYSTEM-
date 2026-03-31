@@ -4,6 +4,46 @@
   const amount = document.getElementById('maAmount');
   const cycleId = document.getElementById('maCycleId');
   const notes = document.getElementById('maNotes');
+  const msg = document.getElementById('maMsg');
+
+  function setMaMessage(text, variant) {
+    if (!msg) return;
+    msg.textContent = text || '';
+    msg.classList.remove('text-slate-500', 'text-red-600', 'text-emerald-600', 'font-medium');
+    if (variant === 'error') msg.classList.add('text-red-600');
+    else if (variant === 'success') msg.classList.add('text-emerald-600', 'font-medium');
+    else msg.classList.add('text-slate-500');
+  }
+
+  function initKindPills() {
+    if (!kind) return;
+    var tabs = document.querySelectorAll('.ma-kind-btn');
+    if (!tabs.length) return;
+    function sync() {
+      var v = kind.value;
+      tabs.forEach(function (btn) {
+        var k = btn.getAttribute('data-ma-kind');
+        var on = k === v;
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.classList.toggle('bg-white', on);
+        btn.classList.toggle('shadow-md', on);
+        btn.classList.toggle('ring-2', on);
+        btn.classList.toggle('ring-indigo-500', on);
+        btn.classList.toggle('text-indigo-900', on);
+        btn.classList.toggle('bg-slate-100', !on);
+        btn.classList.toggle('text-slate-600', !on);
+      });
+    }
+    tabs.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        kind.value = btn.getAttribute('data-ma-kind') || 'deduct';
+        kind.dispatchEvent(new Event('change', { bubbles: true }));
+        sync();
+      });
+    });
+    kind.addEventListener('change', sync);
+    sync();
+  }
 
   async function loadCycles() {
     if (!cycleId) return;
@@ -25,12 +65,12 @@
     }
   }
   loadCycles();
+  initKindPills();
   const syncSheet = document.getElementById('maSyncSheet');
   const uiUidCol = document.getElementById('maUiUidCol');
   const uiSalCol = document.getElementById('maUiSalCol');
   const btn = document.getElementById('maSubmitBtn');
   const pasteBtn = document.getElementById('maPasteBtn');
-  const msg = document.getElementById('maMsg');
 
   pasteBtn.addEventListener('click', async () => {
     try {
@@ -40,7 +80,7 @@
   });
 
   btn.addEventListener('click', async () => {
-    msg.textContent = '';
+    setMaMessage('', 'neutral');
     const cidRaw = cycleId ? (cycleId.value || '').trim() : '';
     const cid = cidRaw ? parseInt(cidRaw, 10) : null;
     const body = {
@@ -54,13 +94,11 @@
       userInfoSalaryCol: (uiSalCol && uiSalCol.value ? uiSalCol.value : 'L').trim() || 'L',
     };
     if (!body.memberUserId) {
-      msg.textContent = 'أدخل رقم المستخدم';
-      msg.className = 'text-sm text-center text-red-600';
+      setMaMessage('أدخل رقم المستخدم', 'error');
       return;
     }
     if (!(body.amount > 0)) {
-      msg.textContent = 'أدخل مبلغاً صالحاً';
-      msg.className = 'text-sm text-center text-red-600';
+      setMaMessage('أدخل مبلغاً صالحاً', 'error');
       return;
     }
     btn.disabled = true;
@@ -75,28 +113,23 @@
       try {
         data = await res.json();
       } catch (_) {
-        msg.textContent = 'استجابة غير صالحة من الخادم (' + res.status + ')';
-        msg.className = 'text-sm text-center text-red-600';
+        setMaMessage('استجابة غير صالحة من الخادم (' + res.status + ')', 'error');
         btn.disabled = false;
         return;
       }
       if (res.status === 401) {
-        msg.textContent = 'انتهت الجلسة — أعد تسجيل الدخول';
-        msg.className = 'text-sm text-center text-red-600';
+        setMaMessage('انتهت الجلسة — أعد تسجيل الدخول', 'error');
         btn.disabled = false;
         return;
       }
       if (data.success) {
-        msg.textContent = data.message || 'تم';
-        msg.className = 'text-sm text-center text-emerald-600';
+        setMaMessage(data.message || 'تم', 'success');
         amount.value = '';
       } else {
-        msg.textContent = data.message || 'فشل';
-        msg.className = 'text-sm text-center text-red-600';
+        setMaMessage(data.message || 'فشل', 'error');
       }
     } catch (e) {
-      msg.textContent = e.message || 'فشل';
-      msg.className = 'text-sm text-center text-red-600';
+      setMaMessage(e.message || 'فشل', 'error');
     }
     btn.disabled = false;
   });
