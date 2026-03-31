@@ -193,14 +193,10 @@
     var f = res.fund;
     var titleEl = document.getElementById('fundDetailTitle');
     if (titleEl) titleEl.textContent = f.name || '';
-    document.getElementById('fundDetailMeta').innerHTML =
-      '<div class="grid gap-2 sm:grid-cols-2">' +
-      '<div class="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">' +
-      '<p class="text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">رقم الصندوق</p>' +
-      '<p class="mt-0.5 font-bold text-slate-900">' + (f.fund_number || '—') + '</p></div>' +
-      '<div class="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">' +
-      '<p class="text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">الموقع</p>' +
-      '<p class="mt-0.5 font-semibold text-slate-800">' + [f.country || '—', f.region_syria || ''].filter(Boolean).join(' · ') + '</p></div></div>';
+    var numDisp = document.getElementById('fundDetailNumberDisplay');
+    var locDisp = document.getElementById('fundDetailLocationDisplay');
+    if (numDisp) numDisp.textContent = f.fund_number || '—';
+    if (locDisp) locDisp.textContent = [f.country || '—', f.region_syria || ''].filter(Boolean).join(' · ');
     var payBox = document.getElementById('fundDetailPayables');
     var pay = res.openPayablesUsd != null ? res.openPayablesUsd : 0;
     if (payBox) {
@@ -236,7 +232,7 @@
           var cls = balDebt && (b.currency || '') === 'USD'
             ? 'border border-red-100 bg-red-50 text-red-800 ring-1 ring-red-100/80'
             : 'border border-slate-100 bg-white text-slate-800 shadow-sm';
-          return '<span class="inline-flex items-center rounded-xl px-3 py-1.5 text-sm font-semibold tabular-nums ' + cls + '">' +
+          return '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold tabular-nums ' + cls + '">' +
             (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '') + '</span>';
         }).join(' ');
       }
