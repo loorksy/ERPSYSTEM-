@@ -2,10 +2,11 @@
  * تجميع بيانات التقارير المحاسبية (PDF).
  */
 
-const { sumLedgerBucket } = require('./ledgerService');
-const { computeDebtBreakdown } = require('./debtAggregation');
+const { sumLedgerBucket, sumExpenseEntries, aggregateNetProfitBySource } = require('./ledgerService');
+const { computeDebtBreakdown, computeReceivablesToUs } = require('./debtAggregation');
 const { getFundTotalsByCurrency, getMainFundSummary, getMainFundUsdBalance } = require('./fundService');
 const { sumDeferredTotalAllCycles } = require('./deferredSalaryService');
+const { computePaymentDue } = require('./paymentDueService');
 
 const ROW_LIMIT = 600;
 
@@ -465,6 +466,421 @@ async function getComprehensiveReportData(db, userId, cycleId) {
   };
 }
 
+/**
+ * نافذة زمنية للدورة: من created_at لهذه الدورة حتى created_at للدورة التالية (أو الآن).
+ */
+async function getCycleTimeWindow(db, userId, cycleId) {
+  const cycle = await ensureCycleOwnership(db, userId, cycleId);
+  if (!cycle) return null;
+  const list = (
+    await db.query(
+      `SELECT id, name, created_at FROM financial_cycles WHERE user_id = $1 ORDER BY created_at ASC`,
+      [userId]
+    )
+  ).rows;
+  const idx = list.findIndex((c) => c.id === cycleId);
+  if (idx < 0) return null;
+  const windowStart = list[idx].created_at;
+  const windowEnd = idx + 1 < list.length ? list[idx + 1].created_at : new Date();
+  return { cycle, windowStart, windowEnd };
+}
+
+function aggPick(rows, sourceType) {
+  const r = rows.find((x) => x.source_type === sourceType);
+  return r ? Number(r.total) || 0 : 0;
+}
+
+/**
+ * تقرير المطابقة — يقرأ من getSummarySnapshot وcomputeDebtBreakdown وaggregateNetProfitBySource وغيرها دون صيغ جديدة.
+ */
+async function getReconciliationReportData(db, userId, cycleId) {
+  const summary = await getSummarySnapshot(db, userId, cycleId);
+  const debt = await computeDebtBreakdown(db, userId);
+  const receivables = await computeReceivablesToUs(db, userId);
+  const paymentDue = await computePaymentDue(db, userId);
+  const netProfitBySource = await aggregateNetProfitBySource(db, userId, 'USD');
+
+  const debtOnUs =
+    (Number(debt.accreditationPayableUsd) || 0) + (Number(debt.payablesSumUsd) || 0);
+
+  const debtToUsRow = (
+    await db.query(
+      `SELECT COALESCE(SUM(balance_receivable), 0)::float AS t
+       FROM accreditation_entities WHERE user_id = $1`,
+      [userId]
+    )
+  ).rows[0];
+  const debtToUs = Number(debtToUsRow?.t) || 0;
+
+  const totalExpenses = await sumExpenseEntries(db, userId, 'USD');
+
+  const adminBrokerageRow = (
+    await db.query(
+      `SELECT COALESCE(SUM(amount), 0)::float AS t FROM admin_brokerage_entries WHERE user_id = $1`,
+      [userId]
+    )
+  ).rows[0];
+  const adminBrokerageSum = Number(adminBrokerageRow?.t) || 0;
+
+  const subAgencyProfitRow = (
+    await db.query(
+      `SELECT COALESCE(SUM(amount), 0)::float AS t FROM sub_agency_transactions WHERE type = 'profit'`,
+      []
+    )
+  ).rows[0];
+  const subAgencyProfitSum = Number(subAgencyProfitRow?.t) || 0;
+
+  const deferredCountRow = (
+    await db.query(
+      `SELECT COUNT(DISTINCT member_user_id)::int AS c
+       FROM deferred_salary_lines
+       WHERE user_id = $1 AND COALESCE(balance_d, 0) > 0.0001`,
+      [userId]
+    )
+  ).rows[0];
+  const deferredPersonCount = deferredCountRow?.c ?? 0;
+
+  const profitTransferDiscount = aggPick(netProfitBySource, 'transfer_discount_profit');
+  const profitAccreditationBrokerage = aggPick(netProfitBySource, 'accreditation_brokerage');
+  const profitAuditYz = aggPick(netProfitBySource, 'audit_management_yz');
+  const profitSubAgencyCompany = aggPick(netProfitBySource, 'sub_agency_company_profit');
+  const profitFxSpread = aggPick(netProfitBySource, 'fx_spread_profit');
+  const shippingProfit = Number(summary.shippingProfit) || 0;
+
+  /** بنود 7–13 بدون ازدواج: ربح الوكالة الفرعية من حركات profit فقط (سطر 10). */
+  const totalProfitsSection =
+    profitTransferDiscount +
+    profitAccreditationBrokerage +
+    profitAuditYz +
+    subAgencyProfitSum +
+    profitFxSpread +
+    shippingProfit +
+    adminBrokerageSum;
+
+  const netResult = totalProfitsSection - totalExpenses - debtOnUs;
+
+  return {
+    cycleId: summary.cycleId,
+    cycleName: summary.cycleName,
+    lines: {
+      mainFundUsd: Number(summary.mainFundUsd) || 0,
+      debtOnUs,
+      debtToUs,
+      totalExpenses,
+      paymentDueTotal: Number(paymentDue.totalUsd) || 0,
+      deferredBalance: Number(summary.deferredBalance) || 0,
+      profitTransferDiscount,
+      profitAccreditationBrokerage,
+      profitAuditYz,
+      profitSubAgencyCompanyLedger: profitSubAgencyCompany,
+      profitSubAgencyTransactionsProfit: subAgencyProfitSum,
+      profitFxSpread,
+      shippingProfit,
+      adminBrokerageSum,
+      totalProfitsSection,
+    },
+    settlement: {
+      netResult,
+      showDeficit: netResult < 0,
+      deficitOrSurplusAmount: Math.abs(netResult),
+      uncollectedTotal: Number(receivables.totalUsd) || 0,
+      weMustPayTotal: debtOnUs,
+      paymentDueOnly: Number(paymentDue.totalUsd) || 0,
+      deferredBalance: Number(summary.deferredBalance) || 0,
+      deferredPersonCount,
+      deferredNote: 'وديعة لم يتم تسليمها بعد',
+    },
+    raw: { summary, debt, receivables, paymentDue },
+  };
+}
+
+/**
+ * صف موحّد للجدول المدمج في PDF.
+ * @typedef {{ source: string, created_at: Date|string, fundName?: string, companyName?: string, entityName?: string, agencyName?: string, movementLabelAr: string, directionAr: string, amountSigned: number, flowIn: boolean, amountDisplay: number, badge: string }} UnifiedMovementRow
+ */
+
+/**
+ * دمج حركات الدورة (cycle_id للجداول التي تدعمه + نافذة زمنية لبقية الجداول).
+ */
+async function getCycleUnifiedLedgerReportData(db, userId, cycleId) {
+  const tw = await getCycleTimeWindow(db, userId, cycleId);
+  if (!tw) return null;
+
+  const { windowStart, windowEnd, cycle } = tw;
+  const ws = windowStart;
+  const we = windowEnd;
+
+  const ledgerEntries = (
+    await db.query(
+      `SELECT id, bucket, source_type, amount, currency, direction, cycle_id, ref_table, ref_id, notes, created_at
+       FROM ledger_entries
+       WHERE user_id = $1 AND cycle_id = $2
+       ORDER BY created_at ASC`,
+      [userId, cycleId]
+    )
+  ).rows;
+
+  const accLedger = (
+    await db.query(
+      `SELECT l.id, l.entry_type, l.amount, l.currency, l.direction, l.cycle_id, l.notes, l.created_at,
+              e.name AS entity_name
+       FROM accreditation_ledger l
+       JOIN accreditation_entities e ON e.id = l.accreditation_id AND e.user_id = $1
+       WHERE l.cycle_id = $2
+       ORDER BY l.created_at ASC`,
+      [userId, cycleId]
+    )
+  ).rows;
+
+  const subAgencyTx = (
+    await db.query(
+      `SELECT t.id, t.sub_agency_id, t.type, t.amount, t.notes, t.cycle_id, t.created_at, a.name AS agency_name
+       FROM sub_agency_transactions t
+       JOIN shipping_sub_agencies a ON a.id = t.sub_agency_id
+       WHERE t.cycle_id = $1
+       ORDER BY t.created_at ASC`,
+      [cycleId]
+    )
+  ).rows;
+
+  const fundLed = (
+    await db.query(
+      `SELECT fl.id, fl.fund_id, fl.type, fl.amount, fl.currency, fl.notes, fl.ref_table, fl.created_at, f.name AS fund_name
+       FROM fund_ledger fl
+       JOIN funds f ON f.id = fl.fund_id AND f.user_id = $1
+       WHERE fl.created_at >= $2 AND fl.created_at < $3
+       ORDER BY fl.created_at ASC`,
+      [userId, ws, we]
+    )
+  ).rows;
+
+  const tcRows = (
+    await db.query(
+      `SELECT l.id, l.company_id, l.amount, l.currency, l.notes, l.created_at, c.name AS company_name
+       FROM transfer_company_ledger l
+       JOIN transfer_companies c ON c.id = l.company_id AND c.user_id = $1
+       WHERE l.created_at >= $2 AND l.created_at < $3
+       ORDER BY l.created_at ASC`,
+      [userId, ws, we]
+    )
+  ).rows;
+
+  const shipRows = (
+    await db.query(
+      `SELECT id, type, item_type, quantity, unit_price, total, payment_method, status, notes, profit_amount, created_at
+       FROM shipping_transactions
+       WHERE created_at >= $1 AND created_at < $2
+       ORDER BY created_at ASC`,
+      [ws, we]
+    )
+  ).rows;
+
+  const expRows = (
+    await db.query(
+      `SELECT e.id, e.amount, e.currency, e.category, e.notes, e.created_at
+       FROM expense_entries e
+       WHERE e.user_id = $1
+         AND e.id IN (
+           SELECT ref_id FROM ledger_entries
+           WHERE user_id = $1 AND cycle_id = $4 AND ref_table = 'expense_entries' AND ref_id IS NOT NULL
+           UNION
+           SELECT id FROM expense_entries
+           WHERE user_id = $1 AND created_at >= $2 AND created_at < $3
+         )
+       ORDER BY e.created_at ASC`,
+      [userId, ws, we, cycleId]
+    )
+  ).rows;
+
+  /** @type {UnifiedMovementRow[]} */
+  const unified = [];
+
+  for (const r of fundLed) {
+    unified.push({
+      source: 'fund',
+      created_at: r.created_at,
+      fundName: r.fund_name,
+      movementLabelAr: '',
+      directionAr: '',
+      amountSigned: Number(r.amount) || 0,
+      flowIn: (Number(r.amount) || 0) >= 0,
+      badge: 'صندوق',
+      raw: r,
+    });
+  }
+  for (const r of tcRows) {
+    unified.push({
+      source: 'tc_ledger',
+      created_at: r.created_at,
+      companyName: r.company_name,
+      movementLabelAr: 'حركة شركة تحويل',
+      directionAr: (Number(r.amount) || 0) >= 0 ? 'in' : 'out',
+      amountSigned: Math.abs(Number(r.amount) || 0),
+      flowIn: (Number(r.amount) || 0) >= 0,
+      badge: 'شركة تحويل',
+      raw: r,
+    });
+  }
+  for (const r of ledgerEntries) {
+    const signed = (Number(r.amount) || 0) * (Number(r.direction) || 1);
+    unified.push({
+      source: 'ledger_entries',
+      created_at: r.created_at,
+      movementLabelAr: r.source_type || '',
+      directionAr: signed >= 0 ? 'in' : 'out',
+      amountSigned: Math.abs(Number(r.amount) || 0),
+      flowIn: signed >= 0,
+      badge: 'دفتر محاسبي',
+      bucket: r.bucket,
+      raw: r,
+    });
+  }
+  for (const r of accLedger) {
+    const toUs = r.direction === 'to_us' || r.direction === 'from_us';
+    unified.push({
+      source: 'accreditation',
+      created_at: r.created_at,
+      entityName: r.entity_name,
+      movementLabelAr: r.entry_type || '',
+      directionAr: toUs ? 'in' : 'out',
+      amountSigned: Math.abs(Number(r.amount) || 0),
+      flowIn: toUs,
+      badge: 'اعتماد',
+      raw: r,
+    });
+  }
+  for (const r of shipRows) {
+    const isSell = r.type === 'sell';
+    unified.push({
+      source: 'shipping',
+      created_at: r.created_at,
+      movementLabelAr: `${r.type}/${r.payment_method || ''}`,
+      directionAr: isSell ? 'in' : 'out',
+      amountSigned: Math.abs(Number(r.total) || 0),
+      flowIn: isSell,
+      badge: 'شحن',
+      raw: r,
+    });
+  }
+  for (const r of subAgencyTx) {
+    const t = r.type;
+    const flowIn = t === 'profit' || t === 'reward';
+    unified.push({
+      source: 'sub_agency',
+      created_at: r.created_at,
+      agencyName: r.agency_name,
+      movementLabelAr: t || '',
+      directionAr: flowIn ? 'in' : 'out',
+      amountSigned: Math.abs(Number(r.amount) || 0),
+      flowIn,
+      badge: 'وكالة فرعية',
+      raw: r,
+    });
+  }
+  for (const r of expRows) {
+    unified.push({
+      source: 'expense',
+      created_at: r.created_at,
+      movementLabelAr: r.category || 'manual',
+      directionAr: 'out',
+      amountSigned: Math.abs(Number(r.amount) || 0),
+      flowIn: false,
+      badge: 'مصاريف',
+      raw: r,
+    });
+  }
+
+  unified.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  let running = 0;
+  const withRunning = unified.map((row) => {
+    running += row.flowIn ? row.amountSigned : -row.amountSigned;
+    return { ...row, runningBalance: running };
+  });
+
+  const reconciliation = await getReconciliationReportData(db, userId, cycleId);
+
+  return {
+    cycleId,
+    cycleName: cycle.name,
+    windowStart: ws,
+    windowEnd: we,
+    noteScope:
+      'الجداول بدون عمود دورة (صناديق، شركات تحويل، شحن، مصاريف مرتبطة بالنافذة الزمنية) تُفلتر بالتاريخ بين بداية الدورة ونهايتها.',
+    rows: withRunning,
+    rowCount: withRunning.length,
+    truncated: withRunning.length > ROW_LIMIT,
+    reconciliation,
+  };
+}
+
+/** جميع الوكالات الفرعية مع حركات ومكافأة أرباح (بدون منطق حساب جديد). */
+async function getAllSubAgenciesBulkReportData(db, userId, cycleId) {
+  const agencies = (await db.query(`SELECT id, name, commission_percent, company_percent FROM shipping_sub_agencies ORDER BY name`)).rows;
+  const cyc = cycleId ? await ensureCycleOwnership(db, userId, cycleId) : null;
+  const out = [];
+  for (const ag of agencies) {
+    const balance = await calculateSubAgencyBalance(db, ag.id);
+    let txQuery = `SELECT id, type, amount, notes, cycle_id, created_at FROM sub_agency_transactions WHERE sub_agency_id = $1`;
+    const pr = [ag.id];
+    if (cycleId) {
+      txQuery += ` AND cycle_id = $2`;
+      pr.push(cycleId);
+    }
+    txQuery += ` ORDER BY created_at DESC LIMIT 301`;
+    const transactions = (await db.query(txQuery, pr)).rows;
+    const profitSumRow = (
+      await db.query(
+        `SELECT COALESCE(SUM(amount), 0)::float AS t FROM sub_agency_transactions WHERE sub_agency_id = $1 AND type = 'profit'${cycleId ? ' AND cycle_id = $2' : ''}`,
+        cycleId ? [ag.id, cycleId] : [ag.id]
+      )
+    ).rows[0];
+    const profitSum = Number(profitSumRow?.t) || 0;
+    out.push({
+      agency: ag,
+      balance,
+      profitSum,
+      net: balance,
+      transactions: transactions.slice(0, 300),
+      truncated: transactions.length > 300,
+      cycleName: cyc?.name || null,
+    });
+  }
+  return { cycleId: cycleId || null, cycleName: cyc?.name || null, agencies: out };
+}
+
+/** جميع الصناديق مع حركة مختصرة */
+async function getAllFundsBulkReportData(db, userId) {
+  const funds = (
+    await db.query(
+      `SELECT id, name, fund_number, is_main FROM funds WHERE user_id = $1 ORDER BY is_main DESC, name`,
+      [userId]
+    )
+  ).rows;
+  const out = [];
+  for (const f of funds) {
+    const rows = (
+      await db.query(
+        `SELECT id, type, amount, currency, notes, created_at FROM fund_ledger WHERE fund_id = $1 ORDER BY created_at DESC LIMIT 201`,
+        [f.id]
+      )
+    ).rows;
+    const balRow = (
+      await db.query(
+        `SELECT COALESCE(amount, 0)::float AS t FROM fund_balances WHERE fund_id = $1 AND currency = 'USD'`,
+        [f.id]
+      )
+    ).rows[0];
+    out.push({
+      fund: f,
+      usdBalance: Number(balRow?.t) || 0,
+      rows: rows.slice(0, 200),
+      truncated: rows.length > 200,
+    });
+  }
+  return { funds: out };
+}
+
 module.exports = {
   ROW_LIMIT,
   ensureCycleOwnership,
@@ -476,4 +892,9 @@ module.exports = {
   getFundLedgerReportData,
   getMovementsReportData,
   getComprehensiveReportData,
+  getCycleTimeWindow,
+  getReconciliationReportData,
+  getCycleUnifiedLedgerReportData,
+  getAllSubAgenciesBulkReportData,
+  getAllFundsBulkReportData,
 };

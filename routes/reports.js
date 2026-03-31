@@ -12,6 +12,10 @@ const {
   getFundLedgerReportData,
   getMovementsReportData,
   getComprehensiveReportData,
+  getReconciliationReportData,
+  getCycleUnifiedLedgerReportData,
+  getAllSubAgenciesBulkReportData,
+  getAllFundsBulkReportData,
 } = require('../services/accountingReportData');
 const { enrichFundLedgerDisplayNotes } = require('../services/fundLedgerNotes');
 const { resolveReportTerminologyMode } = require('../services/financialTerminology');
@@ -23,7 +27,13 @@ const {
   renderFundLedger,
   renderMovements,
   renderComprehensive,
+  renderReconciliationReport,
+  renderCycleUnifiedLedger,
+  renderBulkSubAgencies,
+  renderBulkFunds,
+  renderAccreditationsWithNet,
   htmlToPdfBuffer,
+  htmlToPdfBufferWithFooter,
   encodeFilenameRfc5987,
 } = require('../services/pdf/htmlAccountingPdf');
 
@@ -43,6 +53,21 @@ function parseCycleId(q) {
   if (!q || q === '') return null;
   const n = parseInt(q, 10);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function filenameDateYmd() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}${mo}${day}`;
+}
+
+function safeFilenamePart(s) {
+  return String(s || '')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, '-')
+    .trim() || 'report';
 }
 
 /** GET /api/reports/pdf/sub-agency?subAgencyId=&cycleId= */
@@ -194,6 +219,100 @@ router.get('/summary', requireAuth, async (req, res) => {
     res.json({ success: true, summary: s });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** POST /api/reports/cycle-unified — PDF موحّد للدورة (مطابقة + جدول حركات) */
+router.post('/cycle-unified', requireAuth, async (req, res) => {
+  try {
+    const cycleId = parseInt((req.body && req.body.cycleId) || '', 10);
+    if (!cycleId) {
+      return res.status(400).json({ success: false, message: 'cycleId مطلوب' });
+    }
+    const db = getDb();
+    const userId = req.session.userId;
+    const c = await ensureCycleOwnership(db, userId, cycleId);
+    if (!c) return res.status(404).json({ success: false, message: 'الدورة غير موجودة' });
+    const data = await getCycleUnifiedLedgerReportData(db, userId, cycleId);
+    if (!data) return res.status(404).json({ success: false, message: 'تعذر بناء التقرير' });
+    const html = renderCycleUnifiedLedger(data, resolveReportTerminologyMode(req));
+    const buf = await htmlToPdfBufferWithFooter(html);
+    const name = `تقرير-موحد-${safeFilenamePart(data.cycleName)}-${filenameDateYmd()}.pdf`;
+    sendPdf(res, name, buf);
+  } catch (e) {
+    console.error('[reports] cycle-unified PDF:', e);
+    res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
+  }
+});
+
+/** GET /api/reports/pdf/reconciliation?cycleId= */
+router.get('/pdf/reconciliation', requireAuth, async (req, res) => {
+  try {
+    const cycleId = parseCycleId(req.query.cycleId);
+    const db = getDb();
+    const userId = req.session.userId;
+    const data = await getReconciliationReportData(db, userId, cycleId);
+    const html = renderReconciliationReport(data, resolveReportTerminologyMode(req));
+    const buf = await htmlToPdfBuffer(html);
+    const name = `تقرير-مطابقة-${safeFilenamePart(data.cycleName)}-${filenameDateYmd()}.pdf`;
+    sendPdf(res, name, buf);
+  } catch (e) {
+    console.error('[reports] reconciliation PDF:', e);
+    res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
+  }
+});
+
+/** GET /api/reports/pdf/all-sub-agencies?cycleId= */
+router.get('/pdf/all-sub-agencies', requireAuth, async (req, res) => {
+  try {
+    const cycleId = parseCycleId(req.query.cycleId);
+    const db = getDb();
+    const userId = req.session.userId;
+    if (cycleId) {
+      const c = await ensureCycleOwnership(db, userId, cycleId);
+      if (!c) return res.status(404).json({ success: false, message: 'الدورة غير موجودة' });
+    }
+    const data = await getAllSubAgenciesBulkReportData(db, userId, cycleId);
+    const html = renderBulkSubAgencies(data, resolveReportTerminologyMode(req));
+    const buf = await htmlToPdfBuffer(html);
+    sendPdf(res, `وكالات-فرعية-${filenameDateYmd()}.pdf`, buf);
+  } catch (e) {
+    console.error('[reports] all-sub-agencies PDF:', e);
+    res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
+  }
+});
+
+/** GET /api/reports/pdf/all-funds */
+router.get('/pdf/all-funds', requireAuth, async (req, res) => {
+  try {
+    const db = getDb();
+    const data = await getAllFundsBulkReportData(db, req.session.userId);
+    const html = renderBulkFunds(data, resolveReportTerminologyMode(req));
+    const buf = await htmlToPdfBuffer(html);
+    sendPdf(res, `صناديق-${filenameDateYmd()}.pdf`, buf);
+  } catch (e) {
+    console.error('[reports] all-funds PDF:', e);
+    res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
+  }
+});
+
+/** GET /api/reports/pdf/accreditations-net?cycleId= — اعتمادات مع صافي */
+router.get('/pdf/accreditations-net', requireAuth, async (req, res) => {
+  try {
+    const cycleId = parseCycleId(req.query.cycleId);
+    const db = getDb();
+    const userId = req.session.userId;
+    if (cycleId) {
+      const c = await ensureCycleOwnership(db, userId, cycleId);
+      if (!c) return res.status(404).json({ success: false, message: 'الدورة غير موجودة' });
+    }
+    const data = await getAccreditationsReportData(db, userId, cycleId);
+    const html = renderAccreditationsWithNet(data, resolveReportTerminologyMode(req));
+    const buf = await htmlToPdfBuffer(html);
+    sendPdf(res, `اعتمادات-صافي-${filenameDateYmd()}.pdf`, buf);
+  } catch (e) {
+    console.error('[reports] accreditations-net PDF:', e);
+    res.status(500).json({ success: false, message: e.message || 'فشل إنشاء PDF' });
   }
 });
 
