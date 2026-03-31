@@ -129,6 +129,8 @@
         <%- include('partials/payables-overview') %>
       <% } else if (page === 'receivables-to-us') { %>
         <%- include('partials/receivables-to-us') %>
+      <% } else if (page === 'financial-movements') { %>
+        <%- include('partials/financial-movements') %>
       <% } else if (page === 'payment-due') { %>
         <%- include('partials/payment-due') %>
       <% } else if (page === 'member-directory') { %>
@@ -236,6 +238,9 @@
   <% } %>
   <% if (page === 'receivables-to-us') { %>
     <script src="/js/receivables-to-us.js"></script>
+  <% } %>
+  <% if (page === 'financial-movements') { %>
+    <script src="/js/financial-movements.js"></script>
   <% } %>
   <% if (page === 'payment-due') { %>
     <script src="/js/payment-due.js"></script>

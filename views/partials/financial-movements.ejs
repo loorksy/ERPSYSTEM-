@@ -1,0 +1,87 @@
+<div class="max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10 space-y-6 lg:space-y-8" dir="rtl" id="fmPageRoot">
+  <nav class="erp-toolbar-nav mb-2 flex flex-wrap gap-2" aria-label="تنقل سريع">
+    <a href="/payables-us" class="border border-rose-200 bg-rose-50 text-rose-900 shadow-sm hover:bg-rose-100 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-usd text-rose-600 text-[10px] sm:text-xs shrink-0"></i>
+      دين علينا
+    </a>
+    <a href="/receivables-to-us" class="border border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm hover:bg-emerald-100 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-heart text-emerald-600 text-[10px] sm:text-xs shrink-0"></i>
+      دين لنا
+    </a>
+    <a href="/dashboard" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50 text-[11px] sm:text-sm">
+      <i class="fas fa-arrow-right text-[10px] sm:text-xs opacity-70 shrink-0"></i>
+      الرئيسية
+    </a>
+  </nav>
+
+  <header class="space-y-2">
+    <h1 class="text-xl sm:text-2xl font-bold text-slate-900">سجل الحركات المالية</h1>
+    <p class="text-sm text-slate-600 leading-relaxed max-w-3xl">
+      عرض موحّد للحركات المرتبطة بـ <strong class="font-semibold text-rose-800">دين علينا</strong>،
+      <strong class="font-semibold text-emerald-800">دين لنا</strong>، و<strong class="font-semibold text-indigo-800">إجمالي الالتزامات</strong>.
+      اضغط على أي صف لرؤية السبب والآلية والتاريخ والبيانات الخام.
+    </p>
+  </header>
+
+  <section class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+    <div class="rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-600 to-indigo-900 p-5 text-white shadow-md">
+      <p class="text-xs text-indigo-100 font-medium">إجمالي الالتزامات (USD)</p>
+      <p class="font-mono text-2xl sm:text-3xl font-bold tabular-nums mt-1" id="fmKpiObligation">—</p>
+      <p class="text-[0.65rem] text-indigo-200/90 mt-2 leading-snug">من حاسبة الديون + فرق التصريف</p>
+    </div>
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
+      <p class="text-xs text-emerald-800 font-medium">دين لنا (تقريبي USD)</p>
+      <p class="font-mono text-2xl sm:text-3xl font-bold tabular-nums text-emerald-900 mt-1" id="fmKpiRecv">—</p>
+      <p class="text-[0.65rem] text-emerald-700/80 mt-2 leading-snug">من تجميع «ديين لنا»</p>
+    </div>
+    <div class="rounded-2xl border border-rose-200 bg-rose-50/80 p-5 shadow-sm">
+      <p class="text-xs text-rose-800 font-medium">دين علينا — جدول التزامات (USD)</p>
+      <p class="font-mono text-2xl sm:text-3xl font-bold tabular-nums text-rose-900 mt-1" id="fmKpiPayables">—</p>
+      <p class="text-[0.65rem] text-rose-700/80 mt-2 leading-snug">مجموع <code class="text-[0.6rem] bg-white/60 px-1 rounded">entity_payables</code></p>
+    </div>
+  </section>
+
+  <div class="flex flex-wrap items-center gap-2" role="tablist" aria-label="تصفية السجل">
+    <button type="button" data-fm-bucket="all" class="fm-filter-btn rounded-xl border px-3 py-2 text-sm font-medium transition-colors border-indigo-500 bg-indigo-50 text-indigo-900">الكل</button>
+    <button type="button" data-fm-bucket="payable" class="fm-filter-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-rose-200 hover:bg-rose-50">دين علينا</button>
+    <button type="button" data-fm-bucket="receivable" class="fm-filter-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-emerald-200 hover:bg-emerald-50">دين لنا</button>
+    <button type="button" data-fm-bucket="obligation" class="fm-filter-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-indigo-200 hover:bg-indigo-50">التزامات</button>
+    <button type="button" data-fm-bucket="transfer" class="fm-filter-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-amber-200 hover:bg-amber-50">ترحيل نقدي</button>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
+      <h2 class="text-base font-bold text-slate-900">الحركات</h2>
+      <span class="text-xs text-slate-500" id="fmCount">—</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-right">
+        <thead class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+          <tr>
+            <th class="px-3 py-3 font-semibold">التصنيف</th>
+            <th class="px-3 py-3 font-semibold">العنوان</th>
+            <th class="px-3 py-3 font-semibold">متى</th>
+            <th class="px-3 py-3 font-semibold text-left" dir="ltr">المبلغ</th>
+          </tr>
+        </thead>
+        <tbody id="fmTableBody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+    <p id="fmEmpty" class="hidden px-6 py-12 text-center text-slate-500 text-sm">لا توجد حركات في هذا التصفية.</p>
+    <p id="fmError" class="hidden px-6 py-8 text-center text-rose-600 text-sm"></p>
+  </div>
+</div>
+
+<!-- Modal تفاصيل -->
+<div id="fmModal" class="hidden fixed inset-0 z-[1005] flex items-end sm:items-center justify-center p-0 sm:p-4" aria-hidden="true">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]" data-fm-close></div>
+  <div class="relative w-full max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl border border-slate-200 text-right" role="dialog" aria-modal="true" aria-labelledby="fmModalTitle">
+    <div class="sticky top-0 flex items-center justify-between gap-2 border-b border-slate-100 bg-white px-4 py-3 z-10">
+      <h3 id="fmModalTitle" class="text-lg font-bold text-slate-900">تفاصيل الحركة</h3>
+      <button type="button" class="rounded-xl p-2 text-slate-500 hover:bg-slate-100" data-fm-close aria-label="إغلاق">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-4 space-y-4 text-sm" id="fmModalBody"></div>
+  </div>
+</div>
