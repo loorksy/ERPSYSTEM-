@@ -1,6 +1,8 @@
 (function() {
   'use strict';
   var currentFundId = null;
+  var fundLedgerById = {};
+  var fundLedgerModalRow = null;
 
   function apiCall(url, opts) {
     if (typeof window.apiCall === 'function') return window.apiCall(url, opts);
@@ -255,6 +257,10 @@
             : '<p class="py-1 text-center text-sm text-slate-500 sm:text-start">—</p>';
       }
     }
+    fundLedgerById = {};
+    (res.ledger || []).forEach(function(l) {
+      if (l.id != null) fundLedgerById[l.id] = l;
+    });
     document.getElementById('fundDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
       var cat = l.colorCategory || 'balance';
       var border = 'border-s-[3px] border-s-[#047857]';
@@ -265,11 +271,13 @@
         ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
         : '—';
       var noteLine = (l.displayNotes || l.notes || '');
-      return '<div class="flex flex-col gap-1 border-b border-slate-100 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between ' + border + '">' +
+      var rowClick = l.id ? ' role="button" tabindex="0" onclick="fundsOpenLedgerRow(' + l.id + ')"' : '';
+      var rowHover = l.id ? ' cursor-pointer rounded-lg -mx-1 px-1 hover:bg-white/90 transition-colors' : '';
+      return '<div class="flex flex-col gap-1 border-b border-slate-100 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between ' + border + rowHover + '"' + rowClick + '>' +
         '<div class="min-w-0 pr-1"><span class="text-sm font-semibold text-slate-800">' + (l.labelAr || l.type || '') + '</span>' +
-        (noteLine ? '<span class="mt-0.5 block text-[0.7rem] leading-snug text-slate-500">' + noteLine + '</span>' : '') + '</div>' +
+        (noteLine ? '<span class="mt-0.5 block text-[0.7rem] leading-snug text-slate-500">' + escHtml(noteLine) + '</span>' : '') + '</div>' +
         '<div class="shrink-0 text-left sm:min-w-[9rem]"><span class="font-bold tabular-nums text-slate-900">' +
-        (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (l.currency || '') + '</span>' +
+        (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + escHtml(l.currency || '') + '</span>' +
         '<span class="mt-0.5 block text-[0.65rem] text-slate-500">بعد: ' + after + '</span></div></div>';
     }).join('') || '<p class="py-10 text-center text-sm text-slate-400">لا سجل حركات بعد</p>';
     apiCall('/api/funds/list').then(function(r2) {
@@ -289,6 +297,65 @@
       fundsToggleReturnTarget();
     });
   }
+
+  window.fundsOpenLedgerRow = function(id) {
+    var l = fundLedgerById[id];
+    if (!l) return;
+    fundLedgerModalRow = l;
+    var titleEl = document.getElementById('fundLedgerMoveModalTitle');
+    var bodyEl = document.getElementById('fundLedgerMoveModalBody');
+    var btn = document.getElementById('fundLedgerMoveModalCancelBtn');
+    if (titleEl) titleEl.textContent = l.labelAr || l.type || 'حركة';
+    if (bodyEl) {
+      var parts = [];
+      parts.push(
+        '<p><span class="font-semibold text-slate-600">المبلغ:</span> ' +
+          (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+          ' ' +
+          escHtml(l.currency || '') +
+          '</p>'
+      );
+      var noteLine = l.displayNotes || l.notes || '';
+      if (noteLine) {
+        parts.push('<p class="break-words"><span class="font-semibold text-slate-600">الوصف:</span> ' + escHtml(noteLine) + '</p>');
+      }
+      if (l.type) parts.push('<p class="text-xs text-slate-500">النوع: ' + escHtml(l.type) + '</p>');
+      if (l.created_at) {
+        try {
+          parts.push('<p class="text-xs text-slate-500">' + escHtml(new Date(l.created_at).toLocaleString('ar-SY')) + '</p>');
+        } catch (_) {}
+      }
+      if (l.cancelled_at) parts.push('<p class="text-amber-800 font-semibold text-sm">هذه الحركة ملغاة</p>');
+      bodyEl.innerHTML = parts.join('');
+    }
+    if (btn) btn.classList.toggle('hidden', !l.canCancel);
+    var modal = document.getElementById('fundLedgerMoveModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  };
+
+  window.fundsCloseLedgerModal = function() {
+    fundLedgerModalRow = null;
+    var modal = document.getElementById('fundLedgerMoveModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  };
+
+  window.fundsConfirmCancelLedger = function() {
+    if (!fundLedgerModalRow || !currentFundId || !fundLedgerModalRow.id || !fundLedgerModalRow.canCancel) return;
+    if (!window.confirm('إلغاء هذه الحركة واسترجاع الأرصدة والالتزامات المرتبطة بها؟')) return;
+    apiCall('/api/funds/' + currentFundId + '/ledger/' + fundLedgerModalRow.id + '/cancel', { method: 'POST' }).then(function(res) {
+      toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
+      if (res.success) {
+        fundsCloseLedgerModal();
+        fundsReloadDetail();
+      }
+    });
+  };
 
   window.fundsReloadDetail = function() {
     if (!currentFundId) return;

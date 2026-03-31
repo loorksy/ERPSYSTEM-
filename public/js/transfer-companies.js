@@ -1,4 +1,15 @@
 (function() {
+  var tcLedgerById = {};
+  var tcLedgerModalRow = null;
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function apiCall(url, opts) {
     if (typeof window.apiCall === 'function') return window.apiCall(url, opts);
     opts = opts || {};
@@ -158,6 +169,10 @@
             (c.balance_currency || 'USD');
         }
       }
+      tcLedgerById = {};
+      (res.ledger || []).forEach(function(l) {
+        if (l.id != null) tcLedgerById[l.id] = l;
+      });
       document.getElementById('tcDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
         var cat = l.colorCategory || 'balance';
         var border = 'border-s-[3px] border-s-[#047857]';
@@ -165,11 +180,13 @@
         var after = l.balanceAfterUsd != null && !isNaN(l.balanceAfterUsd)
           ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
           : '—';
-        return '<div class="py-2.5 px-2 -mx-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 border-b border-slate-50 ' + border + '">' +
-          '<div class="min-w-0"><span class="text-sm font-medium text-slate-800">' + (l.labelAr || '') + '</span>' +
-          '<span class="block text-[0.7rem] text-slate-500 truncate">' + (l.notes || '') + '</span></div>' +
+        var rowClick = l.id ? ' role="button" tabindex="0" onclick="tcOpenLedgerRow(' + l.id + ')"' : '';
+        var rowHover = l.id ? ' cursor-pointer hover:bg-slate-100/80' : '';
+        return '<div class="py-2.5 px-2 -mx-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 border-b border-slate-50 ' + border + rowHover + '"' + rowClick + '>' +
+          '<div class="min-w-0"><span class="text-sm font-medium text-slate-800">' + escHtml(l.labelAr || '') + '</span>' +
+          '<span class="block text-[0.7rem] text-slate-500 truncate">' + escHtml(l.notes || '') + '</span></div>' +
           '<div class="text-left shrink-0"><span class="font-semibold tabular-nums">' +
-          (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (l.currency || '') + '</span>' +
+          (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + escHtml(l.currency || '') + '</span>' +
           '<span class="block text-[0.65rem] text-slate-500">الرصيد بعد: ' + after + '</span></div></div>';
       }).join('') || '<p class="text-slate-400">لا سجل</p>';
       var hid = document.getElementById('tcReturnCompanyId');
@@ -177,6 +194,62 @@
       tcToggleReturnFund();
       document.getElementById('tcDetailModal').classList.remove('hidden');
       document.getElementById('tcDetailModal').classList.add('flex');
+    });
+  };
+
+  window.tcOpenLedgerRow = function(id) {
+    var l = tcLedgerById[id];
+    if (!l) return;
+    tcLedgerModalRow = l;
+    var titleEl = document.getElementById('tcLedgerMoveModalTitle');
+    var bodyEl = document.getElementById('tcLedgerMoveModalBody');
+    var btn = document.getElementById('tcLedgerMoveModalCancelBtn');
+    if (titleEl) titleEl.textContent = l.labelAr || 'حركة';
+    if (bodyEl) {
+      var parts = [];
+      parts.push(
+        '<p><span class="font-semibold text-slate-600">المبلغ:</span> ' +
+          (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+          ' ' +
+          escHtml(l.currency || '') +
+          '</p>'
+      );
+      if (l.notes) parts.push('<p class="break-words"><span class="font-semibold text-slate-600">الوصف:</span> ' + escHtml(l.notes) + '</p>');
+      if (l.created_at) {
+        try {
+          parts.push('<p class="text-xs text-slate-500">' + escHtml(new Date(l.created_at).toLocaleString('ar-SY')) + '</p>');
+        } catch (_) {}
+      }
+      if (l.cancelled_at) parts.push('<p class="text-amber-800 font-semibold text-sm">هذه الحركة ملغاة</p>');
+      bodyEl.innerHTML = parts.join('');
+    }
+    if (btn) btn.classList.toggle('hidden', !l.canCancel);
+    var modal = document.getElementById('tcLedgerMoveModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  };
+
+  window.tcCloseLedgerModal = function() {
+    tcLedgerModalRow = null;
+    var modal = document.getElementById('tcLedgerMoveModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  };
+
+  window.tcConfirmCancelLedger = function() {
+    if (!tcLedgerModalRow || !tcCurrentId || !tcLedgerModalRow.id || !tcLedgerModalRow.canCancel) return;
+    if (!window.confirm('إلغاء هذه الحركة واسترجاع الأرصدة والالتزامات المرتبطة بها؟')) return;
+    apiCall('/api/transfer-companies/' + tcCurrentId + '/ledger/' + tcLedgerModalRow.id + '/cancel', { method: 'POST' }).then(function(res) {
+      toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
+      if (res.success) {
+        tcCloseLedgerModal();
+        tcOpen(tcCurrentId);
+        load();
+      }
     });
   };
 

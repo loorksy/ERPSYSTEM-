@@ -1,9 +1,11 @@
 const express = require('express');
+const { randomUUID } = require('crypto');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb, runTransaction } = require('../db/database');
 const { adjustFundBalance, getMainFundId, getMainFundUsdBalance } = require('../services/fundService');
 const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
+const { cancelTransferCompanyLedgerMovement, canCancelCompanyLedgerRow } = require('../services/ledgerCancelService');
 
 const DEFAULT_TYPES = ['شام كاش', 'هرم', 'فؤاد', 'USDT', 'سرياتيل كاش', 'العالمية'];
 
@@ -89,30 +91,50 @@ router.post('/:id/payout-from-main', requireAuth, async (req, res) => {
     }
 
     let payablesSettled = 0;
-    const doPayables = applyToPayables !== false;
-    if (doPayables) {
-      const open = await sumOpenPayables(db, uid, 'transfer_company', id);
-      const settleBudget = Math.min(amt, open);
-      if (settleBudget > 0) {
-        const r = await settleOpenPayablesFifo(db, uid, 'transfer_company', id, settleBudget);
-        payablesSettled = r.settled;
+    let cashPortion = 0;
+    await runTransaction(async (client) => {
+      const doPayables = applyToPayables !== false;
+      if (doPayables) {
+        const open = await sumOpenPayables(client, uid, 'transfer_company', id);
+        const settleBudget = Math.min(amt, open);
+        if (settleBudget > 0) {
+          const r = await settleOpenPayablesFifo(client, uid, 'transfer_company', id, settleBudget);
+          payablesSettled = r.settled;
+        }
       }
-    }
 
-    const cashPortion = Math.max(0, amt - payablesSettled);
+      cashPortion = Math.max(0, amt - payablesSettled);
+      const groupId = randomUUID();
 
-    await adjustFundBalance(db, mainId, 'USD', -amt, 'company_payout', notes || 'صرف لشركة تحويل', 'transfer_companies', id);
-    if (cashPortion > 0) {
-      const ledNotes = (notes || 'صرف من الصندوق الرئيسي') + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '');
-      await db.query(
-        `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, 'USD', $3)`,
-        [id, cashPortion, ledNotes]
+      await adjustFundBalance(client, mainId, 'USD', -amt, 'company_payout', notes || 'صرف لشركة تحويل', 'transfer_companies', id, groupId);
+      if (cashPortion > 0) {
+        const ledNotes = (notes || 'صرف من الصندوق الرئيسي') + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '');
+        await client.query(
+          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, movement_group_id) VALUES ($1, $2, 'USD', $3, $4)`,
+          [id, cashPortion, ledNotes, groupId]
+        );
+        await client.query(
+          `UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3`,
+          [cashPortion, id, uid]
+        );
+      }
+      await client.query(
+        `INSERT INTO movement_side_effects (user_id, movement_group_id, payload_json) VALUES ($1, $2, $3)`,
+        [
+          uid,
+          groupId,
+          JSON.stringify({
+            kind: 'company_payout',
+            companyId: id,
+            mainFundId,
+            amount: amt,
+            payablesSettled,
+            cashToCompany: cashPortion,
+            currency: 'USD',
+          }),
+        ]
       );
-      await db.query(
-        `UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3`,
-        [cashPortion, id, uid]
-      );
-    }
+    });
     res.json({
       success: true,
       message: payablesSettled > 0
@@ -152,17 +174,38 @@ router.post('/:id/add-receivable', requireAuth, async (req, res) => {
         payablesSettled = r.settled;
       }
       cashPortion = Math.max(0, amt - payablesSettled);
+      const groupId = randomUUID();
       if (cashPortion > 0) {
         const noteSuffix = payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} ${cur})` : '';
         await client.query(
-          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, $3, $4)`,
-          [id, cashPortion, cur, noteText + noteSuffix]
+          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, movement_group_id) VALUES ($1, $2, $3, $4, $5)`,
+          [id, cashPortion, cur, noteText + noteSuffix, groupId]
         );
         await client.query(
           `UPDATE transfer_companies SET balance_amount = balance_amount + $1, balance_currency = $2 WHERE id = $3 AND user_id = $4`,
           [cashPortion, cur, id, uid]
         );
+      } else if (payablesSettled > 0) {
+        await client.query(
+          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, movement_group_id) VALUES ($1, $2, $3, $4, $5)`,
+          [id, 0, cur, `تسوية دين علينا فقط — ${noteText}`, groupId]
+        );
       }
+      await client.query(
+        `INSERT INTO movement_side_effects (user_id, movement_group_id, payload_json) VALUES ($1, $2, $3)`,
+        [
+          uid,
+          groupId,
+          JSON.stringify({
+            kind: 'add_receivable',
+            companyId: id,
+            amount: amt,
+            payablesSettled,
+            cashToBalance: cashPortion,
+            currency: cur,
+          }),
+        ]
+      );
     });
     let message = 'تم تسجيل دين لنا';
     if (payablesSettled > 0 && cashPortion > 0) {
@@ -203,6 +246,7 @@ router.get('/:id', requireAuth, async (req, res) => {
       else if (/استيراد|معتمد|اعتماد/i.test(n)) l.labelAr = 'من الاعتمادات';
       else l.labelAr = 'حركة';
       l.colorCategory = Number(l.amount) >= 0 ? 'balance' : 'payout';
+      l.canCancel = canCancelCompanyLedgerRow(l);
     });
     let types = [];
     try {
@@ -212,6 +256,24 @@ router.get('/:id', requireAuth, async (req, res) => {
     res.json({ success: true, company: { ...row, transfer_types: types }, ledger: tx, openPayablesUsd });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** إلغاء حركة من دفتر شركة التحويل */
+router.post('/:id/ledger/:ledgerId/cancel', requireAuth, async (req, res) => {
+  try {
+    const companyId = parseInt(req.params.id, 10);
+    const ledgerId = parseInt(req.params.ledgerId, 10);
+    if (!companyId || !ledgerId) return res.json({ success: false, message: 'معرف غير صالح' });
+    const db = getDb();
+    const row = (await db.query('SELECT company_id FROM transfer_company_ledger WHERE id = $1', [ledgerId])).rows[0];
+    if (!row || row.company_id !== companyId) {
+      return res.json({ success: false, message: 'الحركة لا تنتمي لهذه الشركة' });
+    }
+    await cancelTransferCompanyLedgerMovement(db, req.session.userId, ledgerId);
+    res.json({ success: true, message: 'تم إلغاء التحويل واسترجاع الحسابات' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل الإلغاء' });
   }
 });
 

@@ -67,6 +67,7 @@
           <button type="button" onclick="tcSubmitReceivable()" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold">تسجيل</button>
         </div>
       </div>
+      <p class="text-[10px] text-slate-500 mb-2">اضغط على أي حركة لعرض التفاصيل أو إلغاء التحويل</p>
       <div id="tcDetailLedger" class="space-y-2 text-sm"></div>
       <div class="border-t border-slate-200 pt-4 mt-4">
         <h5 class="font-bold text-slate-800 mb-2">تسجيل مرتجع</h5>
@@ -87,6 +88,17 @@
         <input type="text" id="tcReturnNotes" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm mb-2" placeholder="ملاحظات (اختياري)">
         <button type="button" onclick="tcSubmitReturn()" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold">تسجيل المرتجع</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="tcLedgerMoveModal" class="fixed inset-0 z-[2100] hidden items-center justify-center p-4 bg-black/50" onclick="if(event.target===this)tcCloseLedgerModal()">
+  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onclick="event.stopPropagation()">
+    <h4 id="tcLedgerMoveModalTitle" class="text-lg font-bold mb-3 text-slate-900">تفاصيل الحركة</h4>
+    <div id="tcLedgerMoveModalBody" class="space-y-2 text-sm text-slate-700 mb-6 min-h-[4rem]"></div>
+    <div class="flex flex-col-reverse gap-2 sm:flex-row">
+      <button type="button" onclick="tcCloseLedgerModal()" class="w-full py-3 rounded-xl bg-slate-100 font-semibold text-slate-800">إغلاق</button>
+      <button type="button" id="tcLedgerMoveModalCancelBtn" onclick="tcConfirmCancelLedger()" class="hidden w-full py-3 rounded-xl bg-red-600 text-white font-semibold">إلغاء التحويل</button>
     </div>
   </div>
 </div>

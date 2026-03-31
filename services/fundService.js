@@ -47,7 +47,7 @@ async function getProfitFundId(db, userId) {
   return ensureDefaultProfitFund(db, userId);
 }
 
-async function adjustFundBalance(db, fundId, currency, delta, type, notes, refTable, refId) {
+async function adjustFundBalance(db, fundId, currency, delta, type, notes, refTable, refId, movementGroupId) {
   const cur = currency || 'USD';
   await db.query(
     `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
@@ -55,9 +55,9 @@ async function adjustFundBalance(db, fundId, currency, delta, type, notes, refTa
     [fundId, cur, delta]
   );
   await db.query(
-    `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [fundId, type, delta, cur, notes || null, refTable || null, refId || null]
+    `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id, movement_group_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [fundId, type, delta, cur, notes || null, refTable || null, refId || null, movementGroupId || null]
   );
 }
 

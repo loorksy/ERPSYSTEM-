@@ -222,6 +222,49 @@ async function ensureUserSimpleFinancialTermsColumn() {
   }
 }
 
+/** إلغاء التحويلات: أعمدة دفتر + جدول آثار جانبية + إلغاء المرتجعات */
+async function ensureLedgerCancellationSupport() {
+  if (!pgPool) return;
+  const stmts = [
+    'ALTER TABLE fund_ledger ADD COLUMN IF NOT EXISTS movement_group_id TEXT',
+    'ALTER TABLE fund_ledger ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP',
+    'ALTER TABLE fund_ledger ADD COLUMN IF NOT EXISTS cancelled_by_ledger_id INTEGER',
+    'ALTER TABLE transfer_company_ledger ADD COLUMN IF NOT EXISTS movement_group_id TEXT',
+    'ALTER TABLE transfer_company_ledger ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP',
+    'ALTER TABLE transfer_company_ledger ADD COLUMN IF NOT EXISTS cancelled_by_ledger_id INTEGER',
+    'ALTER TABLE fund_transfers ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP',
+    'ALTER TABLE financial_returns ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP',
+    'ALTER TABLE financial_returns ADD COLUMN IF NOT EXISTS movement_group_id TEXT',
+    'ALTER TABLE financial_returns ADD COLUMN IF NOT EXISTS payables_settled REAL DEFAULT 0',
+    'ALTER TABLE financial_returns ADD COLUMN IF NOT EXISTS net_amount REAL',
+    `CREATE TABLE IF NOT EXISTS movement_side_effects (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      movement_group_id TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (user_id, movement_group_id)
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_movement_side_effects_user ON movement_side_effects(user_id)',
+  ];
+  for (const s of stmts) {
+    try {
+      await pgPool.query(s);
+    } catch (e) {
+      if (!/already exists|duplicate column/i.test(String(e.message))) {
+        console.warn('[DB] ledger cancellation:', e.message);
+      }
+    }
+  }
+  try {
+    await pgPool.query(
+      'UPDATE financial_returns SET net_amount = amount, payables_settled = 0 WHERE net_amount IS NULL'
+    );
+  } catch (e) {
+    console.warn('[DB] financial_returns net_amount backfill:', e.message);
+  }
+}
+
 /** مزامنة المؤجل مع المعتمد الرئيسي + جلسة إغلاق التدقيق */
 async function ensurePayrollDeferredSyncAndAuditSessionColumns() {
   if (!pgPool) return;
@@ -266,6 +309,7 @@ async function initDatabase() {
     await ensurePayrollDeferredSyncAndAuditSessionColumns();
     await ensureMemberDirectoryTables();
     await ensureUserSimpleFinancialTermsColumn();
+    await ensureLedgerCancellationSupport();
     await ensureAdminUser();
     return getDb();
   }

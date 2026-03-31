@@ -1,11 +1,13 @@
 const express = require('express');
+const { randomUUID } = require('crypto');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
-const { getDb } = require('../db/database');
+const { getDb, runTransaction } = require('../db/database');
 const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
 const { adjustFundBalance, getMainFundId, getMainFundUsdBalance, ensureDefaultMainFund } = require('../services/fundService');
 const { labelFundLedgerType, movementColorCategory } = require('../services/accountingLabelsAr');
 const { enrichFundLedgerDisplayNotes } = require('../services/fundLedgerNotes');
+const { canCancelFundLedgerRow, cancelFundLedgerMovement } = require('../services/ledgerCancelService');
 
 router.get('/transfer-companies/list', requireAuth, async (req, res) => {
   try {
@@ -152,6 +154,7 @@ router.get('/:id', requireAuth, async (req, res) => {
       l.balanceAfterUsd = runUsd;
       l.labelAr = labelFundLedgerType(l.type);
       l.colorCategory = movementColorCategory({ fundLedgerType: l.type, amount: l.amount });
+      l.canCancel = canCancelFundLedgerRow(l);
     });
     const openPayablesUsd = await sumOpenPayables(db, req.session.userId, 'fund', id);
     res.json({ success: true, fund: f, balances: bals, ledger, openPayablesUsd });
@@ -209,33 +212,54 @@ router.post('/:id/receive-from-main', requireAuth, async (req, res) => {
     }
 
     let payablesSettled = 0;
-    const doPayables = applyToPayables !== false;
-    if (doPayables) {
-      const open = await sumOpenPayables(db, uid, 'fund', id);
-      const settleBudget = Math.min(amt, open);
-      if (settleBudget > 0) {
-        const r = await settleOpenPayablesFifo(db, uid, 'fund', id, settleBudget);
-        payablesSettled = r.settled;
+    let creditPortion = 0;
+    await runTransaction(async (client) => {
+      const doPayables = applyToPayables !== false;
+      if (doPayables) {
+        const open = await sumOpenPayables(client, uid, 'fund', id);
+        const settleBudget = Math.min(amt, open);
+        if (settleBudget > 0) {
+          const r = await settleOpenPayablesFifo(client, uid, 'fund', id, settleBudget);
+          payablesSettled = r.settled;
+        }
       }
-    }
 
-    const creditPortion = Math.max(0, amt - payablesSettled);
+      creditPortion = Math.max(0, amt - payablesSettled);
+      const groupId = randomUUID();
 
-    await adjustFundBalance(db, mainId, 'USD', -amt, 'fund_allocation', notes || 'تحويل لصندوق', 'funds', id);
-    if (creditPortion > 0) {
-      const recvNotes = (notes || 'وارد من الصندوق الرئيسي')
-        + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '');
-      await adjustFundBalance(
-        db,
-        id,
-        'USD',
-        creditPortion,
-        'fund_receive_from_main',
-        recvNotes,
-        'funds',
-        mainId
+      await adjustFundBalance(client, mainId, 'USD', -amt, 'fund_allocation', notes || 'تحويل لصندوق', 'funds', id, groupId);
+      if (creditPortion > 0) {
+        const recvNotes = (notes || 'وارد من الصندوق الرئيسي')
+          + (payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} $)` : '');
+        await adjustFundBalance(
+          client,
+          id,
+          'USD',
+          creditPortion,
+          'fund_receive_from_main',
+          recvNotes,
+          'funds',
+          mainId,
+          groupId
+        );
+      }
+      await client.query(
+        `INSERT INTO movement_side_effects (user_id, movement_group_id, payload_json) VALUES ($1, $2, $3)`,
+        [
+          uid,
+          groupId,
+          JSON.stringify({
+            kind: 'receive_from_main',
+            mainFundId: mainId,
+            targetFundId: id,
+            amount: amt,
+            payablesSettled,
+            creditedToFund: creditPortion,
+            currency: 'USD',
+          }),
+        ]
       );
-    }
+    });
     res.json({
       success: true,
       message: payablesSettled > 0
@@ -264,16 +288,53 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
     const a = (await db.query('SELECT id FROM funds WHERE id = $1 AND user_id = $2', [fromId, u])).rows[0];
     const b = (await db.query('SELECT id FROM funds WHERE id = $1 AND user_id = $2', [toId, u])).rows[0];
     if (!a || !b) return res.json({ success: false, message: 'صندوق غير صالح' });
-    const insFt = await db.query(
-      `INSERT INTO fund_transfers (from_fund_id, to_fund_id, amount, currency, notes) VALUES ($1, $2, $3, $4, $5)`,
-      [fromId, toId, amt, cur, notes || null]
-    );
-    const ftId = insFt.lastInsertRowid;
-    await adjustFundBalance(db, fromId, cur, -amt, 'transfer_out', notes || 'ترحيل لصندوق آخر', 'fund_transfers', ftId);
-    await adjustFundBalance(db, toId, cur, amt, 'transfer_in', notes || 'وارد من صندوق', 'fund_transfers', ftId);
+    await runTransaction(async (client) => {
+      const insFt = await client.query(
+        `INSERT INTO fund_transfers (from_fund_id, to_fund_id, amount, currency, notes) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [fromId, toId, amt, cur, notes || null]
+      );
+      const ftId = insFt.rows[0].id;
+      const groupId = randomUUID();
+      await adjustFundBalance(client, fromId, cur, -amt, 'transfer_out', notes || 'ترحيل لصندوق آخر', 'fund_transfers', ftId, groupId);
+      await adjustFundBalance(client, toId, cur, amt, 'transfer_in', notes || 'وارد من صندوق', 'fund_transfers', ftId, groupId);
+      await client.query(
+        `INSERT INTO movement_side_effects (user_id, movement_group_id, payload_json) VALUES ($1, $2, $3)`,
+        [
+          u,
+          groupId,
+          JSON.stringify({
+            kind: 'fund_transfer',
+            fundTransferId: ftId,
+            fromFundId: fromId,
+            toFundId: toId,
+            amount: amt,
+            currency: cur,
+            payablesSettled: 0,
+          }),
+        ]
+      );
+    });
     res.json({ success: true, message: 'تم الترحيل' });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/** إلغاء حركة من دفتر الصندوق (استرجاع الأرصدة والالتزامات حسب نوع الحركة) */
+router.post('/:id/ledger/:ledgerId/cancel', requireAuth, async (req, res) => {
+  try {
+    const fundId = parseInt(req.params.id, 10);
+    const ledgerId = parseInt(req.params.ledgerId, 10);
+    if (!fundId || !ledgerId) return res.json({ success: false, message: 'معرف غير صالح' });
+    const db = getDb();
+    const row = (await db.query('SELECT fund_id FROM fund_ledger WHERE id = $1', [ledgerId])).rows[0];
+    if (!row || row.fund_id !== fundId) {
+      return res.json({ success: false, message: 'الحركة لا تنتمي لهذا الصندوق' });
+    }
+    await cancelFundLedgerMovement(db, req.session.userId, ledgerId);
+    res.json({ success: true, message: 'تم إلغاء التحويل واسترجاع الحسابات' });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل الإلغاء' });
   }
 });
 

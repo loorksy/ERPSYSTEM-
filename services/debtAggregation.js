@@ -106,7 +106,7 @@ async function computeDebtBreakdown(db, userId) {
 }
 
 /**
- * تجميع «ديين لنا»: وكالات فرعية (رصيد سالب)، معتمدين (رصيد سالب = لنا عليهم)، مستخدمون، مرتجعات معلّقة.
+ * تجميع «ديين لنا»: وكالات فرعية (رصيد سالب)، معتمدين (رصيد سالب = لنا عليهم)، مستخدمون، مرتجعات صناديق (يبقى بالصندوق) صافية.
  * أرصدة المعتمد الموجبة تُعرض في «مطلوب دفع» وليست ديناً لنا.
  */
 async function computeReceivablesToUs(db, userId) {
@@ -147,8 +147,18 @@ async function computeReceivablesToUs(db, userId) {
     totalUsd += Number(r.debt_to_company_usd) || 0;
   });
 
+  /**
+   * مرتجعات «يبقى بالصندوق» للصناديق فقط: الصافي بعد تسوية «دين علينا» (net_amount)، لا يُكرَّر مع أرصدة شركات التحويل.
+   * ترحيل لصندوق آخر (transfer_to_fund) لا يُدخل هنا — النقد يظهر في الصندوق المستلم.
+   */
   const retRow = (await db.query(
-    `SELECT COALESCE(SUM(amount), 0)::float AS t FROM financial_returns WHERE user_id = $1 AND disposition = 'remain_at_entity'`,
+    `SELECT COALESCE(SUM(COALESCE(net_amount, amount)), 0)::float AS t
+     FROM financial_returns
+     WHERE user_id = $1
+       AND disposition = 'remain_at_entity'
+       AND entity_type = 'fund'
+       AND cancelled_at IS NULL
+       AND COALESCE(NULLIF(TRIM(currency), ''), 'USD') = 'USD'`,
     [userId]
   )).rows[0];
   const returnsPendingUsd = retRow?.t ?? 0;

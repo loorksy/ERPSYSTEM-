@@ -1,3 +1,4 @@
+const { randomUUID } = require('crypto');
 const { runTransaction } = require('../db/database');
 const { settleOpenPayablesFifo, sumOpenPayables } = require('./entityPayablesService');
 
@@ -57,11 +58,21 @@ async function createReturn(db, userId, body) {
   let netAmount = 0;
 
   await runTransaction(async (client) => {
+    const movementGroupId = randomUUID();
+    const et = entityType === 'fund' ? 'fund' : 'transfer_company';
+    const open = await sumOpenPayables(client, userId, et, entityId, currency);
+    const settleBudget = Math.min(amount, open);
+    if (settleBudget > 0) {
+      const r = await settleOpenPayablesFifo(client, userId, et, entityId, settleBudget, currency);
+      payablesSettled = r.settled;
+    }
+    netAmount = Math.max(0, amount - payablesSettled);
+
     const ins = await client.query(
       `INSERT INTO financial_returns (
         user_id, entity_type, entity_id, amount, currency, sent_amount, utilized_amount,
-        disposition, target_fund_id, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+        disposition, target_fund_id, notes, movement_group_id, payables_settled, net_amount
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
       [
         userId,
         entityType,
@@ -73,19 +84,13 @@ async function createReturn(db, userId, body) {
         disposition,
         disposition === 'transfer_to_fund' ? targetFundId : null,
         notes,
+        movementGroupId,
+        payablesSettled,
+        netAmount,
       ]
     );
     returnId = ins.rows[0].id;
     const noteLine = notes || `مرتجع #${returnId}`;
-
-    const et = entityType === 'fund' ? 'fund' : 'transfer_company';
-    const open = await sumOpenPayables(client, userId, et, entityId, currency);
-    const settleBudget = Math.min(amount, open);
-    if (settleBudget > 0) {
-      const r = await settleOpenPayablesFifo(client, userId, et, entityId, settleBudget, currency);
-      payablesSettled = r.settled;
-    }
-    netAmount = Math.max(0, amount - payablesSettled);
     const netNote = payablesSettled > 0
       ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} ${currency})`
       : '';
@@ -94,9 +99,9 @@ async function createReturn(db, userId, body) {
       if (disposition === 'transfer_to_fund') {
         if (netAmount > 0) {
           await client.query(
-            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [entityId, -netAmount, currency, `مرتجع إلى صندوق${netNote} — ${noteLine}`, 'financial_returns', returnId]
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id, movement_group_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [entityId, -netAmount, currency, `مرتجع إلى صندوق${netNote} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
           );
           await client.query(
             'UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3',
@@ -108,8 +113,8 @@ async function createReturn(db, userId, body) {
             [targetFundId, currency, netAmount]
           );
           await client.query(
-            `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id, movement_group_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
               targetFundId,
               'return_in',
@@ -118,21 +123,22 @@ async function createReturn(db, userId, body) {
               `مرتجع من شركة تحويل${netNote} — ${noteLine}`,
               'financial_returns',
               returnId,
+              movementGroupId,
             ]
           );
         } else if (payablesSettled > 0) {
           await client.query(
-            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [entityId, 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id, movement_group_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [entityId, 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
           );
         }
       } else {
         if (netAmount > 0) {
           await client.query(
-            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [entityId, netAmount, currency, `مرتجع يبقى لدى الشركة (دين لنا)${netNote} — إجمالي ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id, movement_group_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [entityId, netAmount, currency, `مرتجع يبقى لدى الشركة (دين لنا)${netNote} — إجمالي ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
           );
           await client.query(
             'UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3',
@@ -140,9 +146,9 @@ async function createReturn(db, userId, body) {
           );
         } else if (payablesSettled > 0) {
           await client.query(
-            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [entityId, 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id, movement_group_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [entityId, 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
           );
         }
       }
@@ -154,9 +160,9 @@ async function createReturn(db, userId, body) {
           [entityId, currency, -netAmount]
         );
         await client.query(
-          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [entityId, 'return_out', -netAmount, currency, `مرتجع صادر إلى صندوق آخر${netNote} — ${noteLine}`, 'financial_returns', returnId]
+          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id, movement_group_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [entityId, 'return_out', -netAmount, currency, `مرتجع صادر إلى صندوق آخر${netNote} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
         );
         await client.query(
           `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
@@ -164,8 +170,8 @@ async function createReturn(db, userId, body) {
           [targetFundId, currency, netAmount]
         );
         await client.query(
-          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id, movement_group_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             targetFundId,
             'return_in',
@@ -174,13 +180,14 @@ async function createReturn(db, userId, body) {
             `مرتجع وارد من صندوق${netNote} — ${noteLine}`,
             'financial_returns',
             returnId,
+            movementGroupId,
           ]
         );
       } else if (payablesSettled > 0) {
         await client.query(
-          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [entityId, 'return_recorded', 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id, movement_group_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [entityId, 'return_recorded', 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
         );
       }
     } else if (netAmount > 0) {
@@ -190,17 +197,36 @@ async function createReturn(db, userId, body) {
         [entityId, currency, netAmount]
       );
       await client.query(
-        `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [entityId, 'return_recorded', netAmount, currency, `مرتجع يبقى بالصندوق (دين لنا)${netNote} — إجمالي ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+        `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id, movement_group_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [entityId, 'return_recorded', netAmount, currency, `مرتجع يبقى بالصندوق (دين لنا)${netNote} — إجمالي ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
       );
     } else if (payablesSettled > 0) {
       await client.query(
-        `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [entityId, 'return_recorded', 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+        `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id, movement_group_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [entityId, 'return_recorded', 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId, movementGroupId]
       );
     }
+
+    await client.query(
+      `INSERT INTO movement_side_effects (user_id, movement_group_id, payload_json) VALUES ($1, $2, $3)`,
+      [
+        userId,
+        movementGroupId,
+        JSON.stringify({
+          kind: 'financial_return',
+          returnId,
+          payablesSettled,
+          netAmount,
+          currency,
+          entityType,
+          entityId,
+          disposition,
+          targetFundId: disposition === 'transfer_to_fund' ? targetFundId : null,
+        }),
+      ]
+    );
   });
 
   return { id: returnId, payablesSettled, netAmount, currency };

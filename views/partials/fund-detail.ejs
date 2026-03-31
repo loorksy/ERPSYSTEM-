@@ -100,9 +100,20 @@
     <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div class="border-b border-slate-100 px-3 py-2.5 sm:px-4">
         <h2 class="text-sm font-bold text-slate-900">سجل الحركات</h2>
-        <p class="text-[10px] text-slate-500">المبالغ والرصيد بعد كل حركة</p>
+        <p class="text-[10px] text-slate-500">المبالغ والرصيد بعد كل حركة — اضغط على سطر لعرض التفاصيل أو إلغاء التحويل</p>
       </div>
       <div id="fundDetailLedger" class="fund-detail-ledger mx-3 mb-3 max-h-[min(22rem,48vh)] overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm sm:mx-4 sm:mb-4 sm:max-h-[min(26rem,52vh)] sm:p-4"></div>
     </section>
+  </div>
+
+  <div id="fundLedgerMoveModal" class="fixed inset-0 z-[2100] hidden items-center justify-center p-4 bg-black/50" onclick="if(event.target===this)fundsCloseLedgerModal()">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onclick="event.stopPropagation()">
+      <h4 id="fundLedgerMoveModalTitle" class="text-lg font-bold mb-3 text-slate-900">تفاصيل الحركة</h4>
+      <div id="fundLedgerMoveModalBody" class="space-y-2 text-sm text-slate-700 mb-6 min-h-[4rem]"></div>
+      <div class="flex flex-col-reverse gap-2 sm:flex-row">
+        <button type="button" onclick="fundsCloseLedgerModal()" class="w-full py-3 rounded-xl bg-slate-100 font-semibold text-slate-800">إغلاق</button>
+        <button type="button" id="fundLedgerMoveModalCancelBtn" onclick="fundsConfirmCancelLedger()" class="hidden w-full py-3 rounded-xl bg-red-600 text-white font-semibold">إلغاء التحويل</button>
+      </div>
+    </div>
   </div>
 </div>

@@ -111,7 +111,7 @@
             rt.innerHTML =
               '<span class="inline-flex items-center gap-2 rounded-xl bg-orange-50 border border-orange-100 px-4 py-3 font-mono font-bold text-orange-900 tabular-nums">' +
               fmt(rp) +
-              '</span><span class="block mt-3 text-xs text-slate-500">إجمالي مرتجعات معلّقة (USD تقريباً)</span>';
+              '</span><span class="block mt-3 text-xs text-slate-500">مرتجعات «يبقى بالصندوق» (صافي بعد تسوية دين علينا إن وُجد) — USD — لا تشمل الترحيل لصندوق آخر ولا تُكرَّر أرصدة شركات التحويل</span>';
           } else {
             rt.innerHTML =
               '<span class="text-slate-500"><i class="fas fa-check-circle text-emerald-500 ml-1"></i> لا مرتجعات معلّقة مسجّلة.</span>';
