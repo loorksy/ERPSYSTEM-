@@ -911,10 +911,9 @@
   background: rgba(99, 102, 241, 0.2);
   box-shadow: inset 3px 0 0 rgba(165, 180, 252, 0.95);
 }
+/* أيقونة نشطة: طبقة واحدة فقط (بدون تكديس مع ظلال الطي) */
 #sidebar .sidebar-nav-item--active .sidebar-nav-ico {
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /*
@@ -959,6 +958,10 @@
     margin-right: 0.35rem;
     padding: 0.65rem 0.35rem;
   }
+  body.sidebar-desktop-collapsed #sidebar a.sidebar-nav-item--active {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
   body.sidebar-desktop-collapsed #sidebar nav a.sidebar-nav-item {
     justify-content: center;
     gap: 0;
@@ -970,21 +973,19 @@
     padding-left: 0.2rem;
     padding-right: 0.2rem;
   }
-  /* أيقونات فقط: مربعات متساوية + ظل خفيف عند الطي */
+  /* أيقونات فقط: نفس الظل للجميع؛ النشط يُميَّز بلون الحدود والخلفية فقط */
   body.sidebar-desktop-collapsed #sidebar .sidebar-nav-ico {
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 0.85rem;
     font-size: 1.05rem;
-    box-shadow:
-      0 1px 0 rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
   body.sidebar-desktop-collapsed #sidebar .sidebar-nav-item--active .sidebar-nav-ico {
-    box-shadow:
-      0 0 0 1px rgba(129, 140, 248, 0.45),
-      0 4px 14px rgba(79, 70, 229, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border-color: rgba(165, 180, 252, 0.65) !important;
+    background: rgba(79, 70, 229, 0.42) !important;
+    color: #e0e7ff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
   body.sidebar-desktop-collapsed #sidebar .sidebar-nav-sep {
     height: 2px;
