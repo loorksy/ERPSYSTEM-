@@ -33,9 +33,18 @@
     total = data.total || 0;
     const rows = data.rows || [];
     if (!rows.length) {
+      try {
+        sessionStorage.removeItem('mdMemberNavIds');
+      } catch (_) {}
       tbody.innerHTML =
         '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">لا توجد نتائج — يُستخرج الأعضاء من التدقيق، المؤجل، أو الوكالات</td></tr>';
     } else {
+      try {
+        sessionStorage.setItem(
+          'mdMemberNavIds',
+          JSON.stringify(rows.map((r) => String(r.member_user_id)))
+        );
+      } catch (_) {}
       tbody.innerHTML = rows
         .map((r) => {
           const idEnc = encodeURIComponent(r.member_user_id);

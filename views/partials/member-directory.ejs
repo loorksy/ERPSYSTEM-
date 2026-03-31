@@ -1,32 +1,41 @@
-<div class="max-w-5xl mx-auto space-y-6 pb-8" dir="rtl">
-  <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="p-4 sm:p-6 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i class="fas fa-address-book text-indigo-600"></i>
-          بيانات المستخدمين
-        </h2>
-        <p class="text-xs text-slate-500">بحث برقم المستخدم أو الاسم — يُحدَّث الملف عند التدقيق</p>
+<div class="member-directory-page w-full max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10" dir="rtl">
+  <section class="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 bg-slate-50/50 px-3 py-3 sm:px-4 sm:py-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex min-w-0 items-center gap-2">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
+            <i class="fas fa-address-book text-sm" aria-hidden="true"></i>
+          </span>
+          <div>
+            <h2 class="text-base font-bold text-slate-900 sm:text-lg">بيانات المستخدمين</h2>
+            <p class="text-[11px] text-slate-500 mt-0.5">بحث برقم المستخدم أو الاسم — يُحدَّث الملف عند التدقيق</p>
+          </div>
+        </div>
       </div>
-      <div class="flex flex-col sm:flex-row gap-2">
+    </div>
+    <div class="p-3 sm:p-4">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <input type="text" id="mdSearchInput" placeholder="بحث..."
-          class="flex-1 py-2.5 px-3 border-2 border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
-        <button type="button" id="mdPasteBtn"
-          class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-sm font-medium hover:bg-slate-100">
-          لصق من الحافظة
-        </button>
-        <button type="button" id="mdSearchBtn"
-          class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
-          بحث
-        </button>
+          class="input-select flex-1 min-w-0 max-w-none w-full py-2.5 px-3 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+        <div class="erp-toolbar-actions erp-toolbar-actions--2 sm:!flex sm:flex-nowrap sm:justify-end sm:gap-2 sm:w-auto">
+          <button type="button" id="mdPasteBtn"
+            class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-slate-700 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-slate-800 active:scale-[0.99] transition text-center touch-manipulation">
+            لصق من الحافظة
+          </button>
+          <button type="button" id="mdSearchBtn"
+            class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-indigo-600 to-indigo-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-indigo-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
+            <i class="fas fa-search text-[10px] sm:text-sm shrink-0 opacity-95" aria-hidden="true"></i>
+            <span>بحث</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
       <table class="min-w-full text-sm text-right">
-        <thead class="bg-slate-50 text-slate-600 text-xs font-semibold">
+        <thead class="bg-slate-50 text-slate-600 text-xs font-semibold border-b border-slate-100">
           <tr>
             <th class="px-4 py-3">رقم المستخدم</th>
             <th class="px-4 py-3">الاسم</th>
@@ -40,11 +49,11 @@
         <tbody id="mdTableBody" class="divide-y divide-slate-100 text-slate-800"></tbody>
       </table>
     </div>
-    <div class="p-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
+    <div class="p-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/40">
       <span id="mdPageInfo" class="text-xs text-slate-500"></span>
       <div class="flex gap-2">
-        <button type="button" id="mdPrevBtn" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 disabled:opacity-40">السابق</button>
-        <button type="button" id="mdNextBtn" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 disabled:opacity-40">التالي</button>
+        <button type="button" id="mdPrevBtn" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-40">السابق</button>
+        <button type="button" id="mdNextBtn" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-40">التالي</button>
       </div>
     </div>
   </section>

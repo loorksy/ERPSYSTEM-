@@ -49,6 +49,36 @@
     );
   }
 
+  function wireMdNav() {
+    const prev = document.getElementById('mdNavPrev');
+    const next = document.getElementById('mdNavNext');
+    if (!prev || !next) return;
+    let ids = [];
+    try {
+      ids = JSON.parse(sessionStorage.getItem('mdMemberNavIds') || '[]');
+    } catch (_) {
+      ids = [];
+    }
+    if (!Array.isArray(ids)) ids = [];
+    const cur = String(memberUserId);
+    const idx = ids.indexOf(cur);
+    if (idx < 0) {
+      prev.disabled = true;
+      next.disabled = true;
+      prev.onclick = null;
+      next.onclick = null;
+      return;
+    }
+    prev.disabled = idx <= 0;
+    next.disabled = idx >= ids.length - 1;
+    prev.onclick = function () {
+      if (idx > 0) window.location.href = '/member-directory/member/' + encodeURIComponent(ids[idx - 1]);
+    };
+    next.onclick = function () {
+      if (idx < ids.length - 1) window.location.href = '/member-directory/member/' + encodeURIComponent(ids[idx + 1]);
+    };
+  }
+
   async function load() {
     const url = '/api/member-directory/member/' + encodeURIComponent(memberUserId);
     const res = await fetch(url, { credentials: 'same-origin' });
@@ -58,6 +88,7 @@
         '<div class="rounded-xl border border-red-100 bg-red-50/90 px-4 py-3 text-sm text-red-800">' +
         esc(data.message || 'فشل التحميل') +
         '</div>';
+      wireMdNav();
       return;
     }
     const p = data.profile;
@@ -253,6 +284,7 @@
           '</tbody></table></div>'
         : '<p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500">لا مبيعات شحن مسجّلة لهذا الرقم كمستخدم.</p>';
     }
+    wireMdNav();
   }
 
   load();
