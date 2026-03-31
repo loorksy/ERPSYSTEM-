@@ -33,17 +33,41 @@
     return Number(balances[0].amount) || 0;
   }
 
-  /** نفس تدرجات بطاقات الوكالات الفرعية */
-  var agencyCardColors = [
-    'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)',
-    'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)',
-    'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)',
-    'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%)',
-    'linear-gradient(135deg, #cffafe 0%, #a5f3fc 50%, #67e8f9 100%)',
-    'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c4b5fd 100%)',
-    'linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%)',
-    'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)',
+  /** شريط علوي ملون — نفس بطاقات الاعتمادات والوكالات الفرعية */
+  var fundsCardBarColors = [
+    'bg-indigo-500',
+    'bg-emerald-500',
+    'bg-amber-500',
+    'bg-rose-500',
+    'bg-violet-500',
+    'bg-sky-500',
+    'bg-orange-500',
+    'bg-teal-500',
   ];
+
+  function fundsEmptyStateHtml(kind, msg) {
+    if (kind === 'loading') {
+      return (
+        '<div class="col-span-full acc-approvals-empty text-slate-400 text-center">' +
+        '<i class="fas fa-spinner fa-spin text-3xl text-indigo-400" aria-hidden="true"></i>' +
+        '<span class="text-sm font-medium">جاري التحميل...</span></div>'
+      );
+    }
+    if (kind === 'error') {
+      return (
+        '<div class="col-span-full acc-approvals-empty text-slate-600 text-center">' +
+        '<i class="fas fa-circle-exclamation text-4xl text-red-400" aria-hidden="true"></i>' +
+        '<p class="text-red-600 font-medium text-sm">' + escHtml(msg || 'حدث خطأ') + '</p></div>'
+      );
+    }
+    return (
+      '<div class="col-span-full acc-approvals-empty text-slate-500 text-center">' +
+      '<span class="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">' +
+      '<i class="fas fa-piggy-bank text-4xl" aria-hidden="true"></i></span>' +
+      '<p class="font-medium text-slate-600">لا توجد صناديق</p>' +
+      '<p class="text-xs text-slate-400 max-w-sm leading-relaxed mx-auto">أضف صندوقاً من زر «إضافة صندوق» أو عدّل الصندوق الرئيسي.</p></div>'
+    );
+  }
 
   function fillCountries() {
     var sel = document.getElementById('fundAddCountry');
@@ -70,17 +94,15 @@
   window.fundsLoadList = function() {
     var box = document.getElementById('fundsCards');
     if (!box) return;
-    box.innerHTML = '<p class="text-slate-400 col-span-full text-center py-12">جاري التحميل...</p>';
+    box.innerHTML = fundsEmptyStateHtml('loading');
     apiCall('/api/funds/list').then(function(res) {
       if (!res.success) {
-        box.innerHTML =
-          '<p class="text-red-500 col-span-full text-center py-12">' + escHtml(res.message || 'فشل') + '</p>';
+        box.innerHTML = fundsEmptyStateHtml('error', res.message || '');
         return;
       }
       var list = res.funds || [];
       if (list.length === 0) {
-        box.innerHTML =
-          '<p class="text-slate-400 col-span-full text-center py-12">لا توجد صناديق</p>';
+        box.innerHTML = fundsEmptyStateHtml('empty');
         return;
       }
       box.innerHTML = list.map(function(f, idx) {
@@ -102,7 +124,7 @@
         var metaStr = metaParts.length ? metaParts.join(' · ') : '—';
         var debt = (f.openPayablesUsd || 0) > 0.0001;
         var debtLine = debt
-          ? '<p class="agency-meta mt-2 pt-2 border-t border-white/40" style="color:#b91c1c;font-weight:600">دين علينا: ' +
+          ? '<p class="mt-2 border-t border-slate-100 pt-2 text-[11px] font-semibold leading-snug text-rose-700">دين علينا: ' +
             escHtml(
               (Number(f.openPayablesUsd) || 0).toLocaleString('en-US', {
                 minimumFractionDigits: 2,
@@ -111,26 +133,36 @@
             ) +
             '</p>'
           : '';
-        var bg = agencyCardColors[idx % agencyCardColors.length];
+        var bar = fundsCardBarColors[idx % fundsCardBarColors.length];
         return (
-          '<div class="agency-card fund-card relative" style="background:' +
-          bg +
-          '; color:#1e293b;" onclick="fundsOpenDetail(' +
+          '<div class="funds-list-card group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" onclick="fundsOpenDetail(' +
           f.id +
           ')">' +
-          '<h5>' +
+          '<div class="' +
+          bar +
+          ' h-1 w-full"></div>' +
+          '<div class="p-4">' +
+          '<div class="flex items-start justify-between gap-2">' +
+          '<h5 class="min-w-0 flex-1 text-base font-bold leading-snug text-slate-900 sm:text-[1.05rem]">' +
           escHtml(f.name || '') +
           '</h5>' +
-          '<p class="agency-meta">' +
+          '<button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]" ' +
+          'onclick="event.stopPropagation(); fundsDownloadLedgerPdfFor(' +
+          f.id +
+          ')" title="تنزيل PDF"><i class="fas fa-file-pdf text-red-500"></i></button>' +
+          '</div>' +
+          '<p class="mt-2 font-mono text-[11px] text-slate-500 sm:text-xs">' +
           escHtml(metaStr) +
           '</p>' +
-          '<p class="agency-balance" style="color:' +
+          '<div class="mt-3 flex flex-wrap items-end justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
+          '<span class="text-xs font-semibold text-slate-500">الرصيد</span>' +
+          '<span class="text-lg font-bold tabular-nums" style="color:' +
           textColor +
-          '">رصيد: ' +
+          '">' +
           (balStr || '0.00') +
-          '</p>' +
+          '</span></div>' +
           debtLine +
-          '</div>'
+          '</div></div>'
         );
       }).join('');
     });
@@ -248,6 +280,11 @@
   window.fundsDownloadLedgerPdf = function() {
     if (!currentFundId) return;
     window.open('/api/reports/pdf/fund-ledger?fundId=' + encodeURIComponent(currentFundId), '_blank');
+  };
+
+  window.fundsDownloadLedgerPdfFor = function(fundId) {
+    if (!fundId) return;
+    window.open('/api/reports/pdf/fund-ledger?fundId=' + encodeURIComponent(fundId), '_blank');
   };
 
   window.fundsCloseDetail = function() {

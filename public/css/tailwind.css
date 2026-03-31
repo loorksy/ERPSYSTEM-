@@ -7827,7 +7827,9 @@
     #accDeliveryModal,
     #accAddModal,
     #accDetailModal,
-    #accConfirmModal {
+    #accConfirmModal,
+    #fundAddModal,
+    #fundEditMainModal {
     top: calc(60px + env(safe-area-inset-top, 0px));
     right: 0;
     bottom: calc(65px + env(safe-area-inset-bottom, 0px));
@@ -7854,7 +7856,9 @@
     border-radius: 1rem;
   }
   #accAddModal > div.bg-white,
-    #accDetailModal > div.bg-white {
+    #accDetailModal > div.bg-white,
+    #fundAddModal > div,
+    #fundEditMainModal > div {
     max-height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -8445,6 +8449,10 @@
   .funds-page .agency-card .agency-meta,
   .funds-page .agency-card .agency-balance {
     text-align: center;
+  }
+  .funds-list-page .agencies-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 #sidebar .sidebar-nav-sep {
