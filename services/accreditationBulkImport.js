@@ -1,7 +1,7 @@
 const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('./ledgerService');
 const { syncNetBalance, applySalaryToThem } = require('./accreditationBalance');
-const { splitDebtPayableWithDiscount, roundMoney } = require('./accreditationDebtAmounts');
+const { splitDebtPayableWithDiscount, roundMoney, parseReceivableOffsetFromBody } = require('./accreditationDebtAmounts');
 
 /**
  * استيراد أرصدة معتمدين من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
@@ -89,7 +89,6 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     const salaryDirection = it.salaryDirection === 'to_them' ? 'to_them' : 'to_us';
     const amountKind = normalizeBulkAmountKind(it.amountKind);
     const discRaw = it.discountPct != null && it.discountPct !== '' ? parseFloat(it.discountPct) : null;
-    const debtMeta = !isNaN(discRaw) && discRaw > 0 ? JSON.stringify({ discountPct: discRaw }) : null;
 
     if (!code || isNaN(bal) || bal <= 0) {
       errs.push(`صف ${i + 1}: بيانات غير صالحة`);
@@ -132,19 +131,77 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     }
 
     if (amountKind === 'debt_payable') {
-      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(bal, discRaw);
-      const ledgerMeta = metaJson || debtMeta;
-      const noteImp = (it.notes && String(it.notes).trim()) || (discountAmt > 0
-        ? `استيراد — دين علينا (صافي بعد خصم)`
-        : 'استيراد — دين علينا');
-      pay += netAmt;
+      const rec0 = roundMoney(rec);
+      const gross = roundMoney(bal);
+      const offsetBody = {
+        receivableOffsetMode: it.receivableOffsetMode || 'defer',
+        receivableOffsetUsd: it.receivableOffsetUsd,
+      };
+      let offsetUsd = 0;
+      try {
+        offsetUsd = parseReceivableOffsetFromBody(offsetBody, rec0, gross).s;
+      } catch (e) {
+        errs.push(`صف ${i + 1}: ${e.message || 'offset'}`);
+        continue;
+      }
+      const remainingGross = roundMoney(gross - offsetUsd);
+      if (remainingGross < 0) {
+        errs.push(`صف ${i + 1}: المبلغ بعد خصم الدين غير صالح`);
+        continue;
+      }
+      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(remainingGross, discRaw);
+      const baseMeta = metaJson ? JSON.parse(metaJson) : {};
+      const debtMetaObj = {
+        ...baseMeta,
+        grossInputUsd: gross,
+        offsetFromReceivableUsd: offsetUsd,
+        remainingGrossAfterOffsetUsd: remainingGross,
+      };
+      const ledgerMeta = JSON.stringify(debtMetaObj);
+      const noteImp =
+        (it.notes && String(it.notes).trim()) ||
+        (discountAmt > 0
+          ? `استيراد — دين علينا (صافي بعد خصم)`
+          : offsetUsd > 0
+            ? `استيراد — دين علينا (بعد خصم ${offsetUsd.toFixed(2)} من دين لنا)`
+            : 'استيراد — دين علينا');
+      pay = roundMoney(pay + netAmt);
+      rec = roundMoney(rec0 - offsetUsd);
+
+      if (offsetUsd > 0.0001) {
+        await db.query(
+          `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+           VALUES ($1, 'receivable_offset_from_credit', $2, 'USD', 'to_us', $3, $4, $5)`,
+          [
+            ent.id,
+            offsetUsd,
+            cid,
+            `استيراد — خصم من دين لنا (${gross.toFixed(2)})`,
+            JSON.stringify({ grossInputUsd: gross, offsetUsd }),
+          ]
+        );
+      }
+      if (netAmt <= 0.0001 && discountAmt <= 0.0001) {
+        await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+          pay,
+          rec,
+          ent.id,
+        ]);
+        await syncNetBalance(db, ent.id);
+        ok++;
+        continue;
+      }
       const led = await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
          VALUES ($1, 'debt_to_them', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
         [ent.id, netAmt, cid, noteImp, ledgerMeta]
       );
       const ledgerId = led.lastInsertRowid != null ? led.lastInsertRowid : led.rows[0]?.id;
-      await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, ent.id]);
+      await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+        pay,
+        rec,
+        ent.id,
+      ]);
       await syncNetBalance(db, ent.id);
       if (mainFundId && netAmt > 0) {
         await adjustFundBalance(
@@ -197,19 +254,78 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     }
 
     if (amountKind === 'debt_payable_no_fund') {
-      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(bal, discRaw);
-      const ledgerMeta = metaJson || debtMeta;
-      const noteImp = (it.notes && String(it.notes).trim()) || (discountAmt > 0
-        ? `استيراد — لهم (صافي بعد خصم)`
-        : 'استيراد — لهم (بدون صندوق رئيسي)');
-      pay += netAmt;
+      const rec0 = roundMoney(rec);
+      const gross = roundMoney(bal);
+      const offsetBody = {
+        receivableOffsetMode: it.receivableOffsetMode || 'defer',
+        receivableOffsetUsd: it.receivableOffsetUsd,
+      };
+      let offsetUsd = 0;
+      try {
+        offsetUsd = parseReceivableOffsetFromBody(offsetBody, rec0, gross).s;
+      } catch (e) {
+        errs.push(`صف ${i + 1}: ${e.message || 'offset'}`);
+        continue;
+      }
+      const remainingGross = roundMoney(gross - offsetUsd);
+      if (remainingGross < 0) {
+        errs.push(`صف ${i + 1}: المبلغ بعد خصم الدين غير صالح`);
+        continue;
+      }
+      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(remainingGross, discRaw);
+      const baseMeta = metaJson ? JSON.parse(metaJson) : {};
+      const debtMetaObj = {
+        ...baseMeta,
+        grossInputUsd: gross,
+        offsetFromReceivableUsd: offsetUsd,
+        remainingGrossAfterOffsetUsd: remainingGross,
+        noMainFund: true,
+      };
+      const ledgerMeta = JSON.stringify(debtMetaObj);
+      const noteImp =
+        (it.notes && String(it.notes).trim()) ||
+        (discountAmt > 0
+          ? `استيراد — لهم (صافي بعد خصم)`
+          : offsetUsd > 0
+            ? `استيراد — لهم (بعد خصم ${offsetUsd.toFixed(2)} من دين لنا)`
+            : 'استيراد — لهم (بدون صندوق رئيسي)');
+      pay = roundMoney(pay + netAmt);
+      rec = roundMoney(rec0 - offsetUsd);
+
+      if (offsetUsd > 0.0001) {
+        await db.query(
+          `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+           VALUES ($1, 'receivable_offset_from_credit', $2, 'USD', 'to_us', $3, $4, $5)`,
+          [
+            ent.id,
+            offsetUsd,
+            cid,
+            `استيراد — خصم من دين لنا (${gross.toFixed(2)})`,
+            JSON.stringify({ grossInputUsd: gross, offsetUsd, noMainFund: true }),
+          ]
+        );
+      }
+      if (netAmt <= 0.0001 && discountAmt <= 0.0001) {
+        await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+          pay,
+          rec,
+          ent.id,
+        ]);
+        await syncNetBalance(db, ent.id);
+        ok++;
+        continue;
+      }
       const led = await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
          VALUES ($1, 'debt_to_them_no_fund', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
         [ent.id, netAmt, cid, noteImp, ledgerMeta]
       );
       const ledgerId = led.lastInsertRowid != null ? led.lastInsertRowid : led.rows[0]?.id;
-      await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, ent.id]);
+      await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+        pay,
+        rec,
+        ent.id,
+      ]);
       await syncNetBalance(db, ent.id);
       if (discountAmt > 0) {
         await insertNetProfitLedgerAndMirrorFund(db, {
@@ -239,22 +355,62 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
       continue;
     }
 
-    const brokerageAmount = pct > 0 ? bal * (pct / 100) : 0;
-    const remainder = bal - brokerageAmount;
+    const rec0 = roundMoney(rec);
+    const brokerageAmount = pct > 0 ? roundMoney(bal * (pct / 100)) : 0;
+    const remainder = roundMoney(bal - brokerageAmount);
+    let offsetUsd = 0;
+    const offsetBody = {
+      receivableOffsetMode: it.receivableOffsetMode || 'defer',
+      receivableOffsetUsd: it.receivableOffsetUsd,
+    };
     if (salaryDirection === 'to_us') {
-      pay += bal;
-    } else if (rec > 0.0001) {
-      pay += bal;
+      try {
+        offsetUsd = parseReceivableOffsetFromBody(offsetBody, rec0, bal, {
+          salaryRemainderAfterBrokerage: remainder,
+        }).s;
+      } catch (e) {
+        errs.push(`صف ${i + 1}: ${e.message || 'offset'}`);
+        continue;
+      }
+      pay = roundMoney(pay + bal - offsetUsd);
+      rec = roundMoney(rec0 - offsetUsd);
+    } else if (rec0 > 0.0001) {
+      pay = roundMoney(pay + bal);
+      rec = roundMoney(rec0);
     } else {
-      const br = applySalaryToThem(pay, rec, bal);
-      pay = br.pay;
-      rec = br.rec;
+      const br = applySalaryToThem(pay, rec0, bal);
+      pay = roundMoney(br.pay);
+      rec = roundMoney(br.rec);
     }
-    pay = roundMoney(pay);
-    rec = roundMoney(rec);
+    const fundDepositToUs = salaryDirection === 'to_us' ? roundMoney(remainder - offsetUsd) : 0;
+
+    if (salaryDirection === 'to_us' && offsetUsd > 0.0001) {
+      await db.query(
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+         VALUES ($1, 'receivable_offset_from_credit', $2, 'USD', 'to_us', $3, $4, $5)`,
+        [
+          ent.id,
+          offsetUsd,
+          cid,
+          'استيراد — خصم من دين لنا (راتب)',
+          JSON.stringify({ grossSalaryUsd: bal, offsetUsd }),
+        ]
+      );
+    }
+
+    const salaryMeta =
+      salaryDirection === 'to_us' && offsetUsd > 0.0001
+        ? JSON.stringify({
+            offsetUsd,
+            grossSalaryUsd: bal,
+            remainderAfterBrokerageUsd: remainder,
+            fundDepositUsd: fundDepositToUs,
+          })
+        : null;
+
     const led = await db.query(
-      `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes)
-       VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7) RETURNING id`,
+      `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes, meta_json)
+       VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7, $8) RETURNING id`,
       [
         ent.id,
         bal,
@@ -263,6 +419,7 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
         pct > 0 ? brokerageAmount : null,
         cid,
         'استيراد دفعة — ' + (parentRef || ''),
+        salaryMeta,
       ]
     );
     const ledgerId = led.lastInsertRowid != null ? led.lastInsertRowid : led.rows[0]?.id;
@@ -272,8 +429,6 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
       [pay, rec, ent.id]
     );
     await syncNetBalance(db, ent.id);
-
-    /** لا خصم تلقائي من «دين لنا» عند استيراد راتب لنا — التسوية يدوية فقط. */
 
     if (brokerageAmount > 0) {
       await insertNetProfitLedgerAndMirrorFund(db, {
@@ -287,15 +442,15 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
         notes: 'وساطة معتمد — استيراد دفعة',
       });
     }
-    if (remainder > 0 && salaryDirection === 'to_us' && mainFundId) {
+    if (fundDepositToUs > 0.0001 && salaryDirection === 'to_us' && mainFundId) {
       const fundType = pct > 0 ? 'accreditation_remainder' : 'accreditation_bulk';
       const fundNotes = pct > 0 ? 'باقي بعد الوساطة — استيراد' : 'استيراد رصيد معتمد';
-      await adjustFundBalance(db, mainFundId, 'USD', remainder, fundType, fundNotes, 'accreditation_ledger', ledgerId);
+      await adjustFundBalance(db, mainFundId, 'USD', fundDepositToUs, fundType, fundNotes, 'accreditation_ledger', ledgerId);
       await insertLedgerEntry(db, {
         userId,
         bucket: 'main_cash',
         sourceType: pct > 0 ? 'accreditation_remainder' : 'accreditation_bulk_import',
-        amount: remainder,
+        amount: fundDepositToUs,
         cycleId: cid,
         refTable: 'accreditation_ledger',
         refId: ledgerId,

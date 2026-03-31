@@ -21,7 +21,11 @@ const {
   applyTransferOut,
   computeLedgerWithBalanceAfter,
 } = require('../services/accreditationBalance');
-const { splitDebtPayableWithDiscount, roundMoney } = require('../services/accreditationDebtAmounts');
+const {
+  splitDebtPayableWithDiscount,
+  roundMoney,
+  parseReceivableOffsetFromBody,
+} = require('../services/accreditationDebtAmounts');
 
 const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -173,27 +177,94 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       });
     }
 
-    // دين علينا — الصافي في الصندوق ومطلوب الدفع؛ الخصم كربح (يتطابق مع إجمالي النقد دون فروق)
+    // دين علينا — الصافي في الصندوق ومطلوب الدفع؛ خصم اختياري من «دين لنا» من المبلغ الإجمالي ثم split على المتبقي
     if (kind === 'debt_payable') {
       const mainFundId = await getMainFundId(db, req.session.userId);
       if (!mainFundId) {
         return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً من قسم الصناديق قبل تسجيل دين علينا.' });
       }
-      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(amt, discountPctRaw);
-      const ledgerMeta =
-        metaJson ||
-        (!isNaN(discountPct) && discountPct > 0 ? JSON.stringify({ discountPct }) : null);
-      const noteDebt = notes || (discountAmt > 0
-        ? `دين علينا — صافي بعد خصم ${discountPct}%`
-        : 'دين علينا — مطلوب دفع');
-      pay += netAmt;
+      const rec0 = roundMoney(rec);
+      const gross = roundMoney(amt);
+      if (rec0 > 0.0001 && (req.body.receivableOffsetMode == null || req.body.receivableOffsetMode === '')) {
+        return res.status(400).json({
+          success: false,
+          code: 'RECEIVABLE_OFFSET_REQUIRED',
+          message: 'يرجى اختيار خصم من الدين أو التأجيل من نافذة التأكيد',
+        });
+      }
+      let offsetUsd = 0;
+      try {
+        offsetUsd = parseReceivableOffsetFromBody(req.body, rec0, gross).s;
+      } catch (e) {
+        return res.json({ success: false, message: e.message || 'فشل', code: e.code });
+      }
+      const remainingGross = roundMoney(gross - offsetUsd);
+      if (remainingGross < 0) {
+        return res.json({ success: false, message: 'المبلغ بعد خصم الدين غير صالح' });
+      }
+      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(remainingGross, discountPctRaw);
+      const baseMeta = metaJson ? JSON.parse(metaJson) : {};
+      const debtMetaObj = {
+        ...baseMeta,
+        grossInputUsd: gross,
+        offsetFromReceivableUsd: offsetUsd,
+        remainingGrossAfterOffsetUsd: remainingGross,
+      };
+      const ledgerMeta = JSON.stringify(debtMetaObj);
+      const noteDebt =
+        notes ||
+        (discountAmt > 0
+          ? `دين علينا — صافي بعد خصم ${discountPct}%`
+          : offsetUsd > 0
+            ? `دين علينا — بعد خصم ${offsetUsd.toFixed(2)} من دين لنا`
+            : 'دين علينا — مطلوب دفع');
+      pay = roundMoney(pay + netAmt);
+      rec = roundMoney(rec0 - offsetUsd);
+
+      let ledgerId;
+      if (offsetUsd > 0.0001) {
+        await db.query(
+          `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+           VALUES ($1, 'receivable_offset_from_credit', $2, 'USD', 'to_us', $3, $4, $5)`,
+          [
+            id,
+            offsetUsd,
+            cid,
+            notes || `خصم من دين لنا — بموجب ائتمان ${gross.toFixed(2)}`,
+            JSON.stringify({ grossInputUsd: gross, offsetUsd }),
+          ]
+        );
+      }
+      if (netAmt <= 0.0001 && discountAmt <= 0.0001) {
+        await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+          pay,
+          rec,
+          id,
+        ]);
+        await syncNetBalance(db, id);
+        const outOnly = (await db.query(
+          'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+          [id]
+        )).rows[0];
+        return res.json({
+          success: true,
+          message: 'تم خصم من دين لنا (لا يوجد باقي إيداع بعد الخصم)',
+          newBalance: outOnly.balance_amount,
+          balance_payable: outOnly.balance_payable,
+          balance_receivable: outOnly.balance_receivable,
+        });
+      }
       const led = await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
          VALUES ($1, 'debt_to_them', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
         [id, netAmt, cid, noteDebt, ledgerMeta]
       );
-      const ledgerId = led.rows[0]?.id;
-      await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, id]);
+      ledgerId = led.rows[0]?.id;
+      await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+        pay,
+        rec,
+        id,
+      ]);
       await syncNetBalance(db, id);
       if (netAmt > 0) {
         await adjustFundBalance(
@@ -250,22 +321,90 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       });
     }
 
-    // لهم — مثل «علينا» (صافي + خصم ربح) لكن بدون أي إيداع في الصندوق الرئيسي
+    // لهم — مثل «علينا» (صافي + خصم ربح) لكن بدون أي إيداع في الصندوق الرئيسي؛ خصم من «دين لنا» على الإجمالي ثم split
     if (kind === 'debt_payable_no_fund') {
-      const debtMeta = !isNaN(discountPct) && discountPct > 0 ? JSON.stringify({ discountPct }) : null;
-      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(amt, discountPctRaw);
-      const ledgerMeta = metaJson || debtMeta;
-      const noteDebt = notes || (discountAmt > 0
-        ? `لهم — صافي بعد خصم ${discountPct}%`
-        : 'لهم — مطلوب دفع (بدون صندوق رئيسي)');
-      pay += netAmt;
+      const rec0 = roundMoney(rec);
+      const gross = roundMoney(amt);
+      if (rec0 > 0.0001 && (req.body.receivableOffsetMode == null || req.body.receivableOffsetMode === '')) {
+        return res.status(400).json({
+          success: false,
+          code: 'RECEIVABLE_OFFSET_REQUIRED',
+          message: 'يرجى اختيار خصم من الدين أو التأجيل من نافذة التأكيد',
+        });
+      }
+      let offsetUsd = 0;
+      try {
+        offsetUsd = parseReceivableOffsetFromBody(req.body, rec0, gross).s;
+      } catch (e) {
+        return res.json({ success: false, message: e.message || 'فشل', code: e.code });
+      }
+      const remainingGross = roundMoney(gross - offsetUsd);
+      if (remainingGross < 0) {
+        return res.json({ success: false, message: 'المبلغ بعد خصم الدين غير صالح' });
+      }
+      const { netAmt, discountAmt, metaJson } = splitDebtPayableWithDiscount(remainingGross, discountPctRaw);
+      const baseMeta = metaJson ? JSON.parse(metaJson) : {};
+      const debtMetaObj = {
+        ...baseMeta,
+        grossInputUsd: gross,
+        offsetFromReceivableUsd: offsetUsd,
+        remainingGrossAfterOffsetUsd: remainingGross,
+        noMainFund: true,
+      };
+      const ledgerMeta = JSON.stringify(debtMetaObj);
+      const noteDebt =
+        notes ||
+        (discountAmt > 0
+          ? `لهم — صافي بعد خصم ${discountPct}%`
+          : offsetUsd > 0
+            ? `لهم — بعد خصم ${offsetUsd.toFixed(2)} من دين لنا`
+            : 'لهم — مطلوب دفع (بدون صندوق رئيسي)');
+      pay = roundMoney(pay + netAmt);
+      rec = roundMoney(rec0 - offsetUsd);
+
+      if (offsetUsd > 0.0001) {
+        await db.query(
+          `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+           VALUES ($1, 'receivable_offset_from_credit', $2, 'USD', 'to_us', $3, $4, $5)`,
+          [
+            id,
+            offsetUsd,
+            cid,
+            notes || `خصم من دين لنا — بموجب لهم ${gross.toFixed(2)}`,
+            JSON.stringify({ grossInputUsd: gross, offsetUsd, noMainFund: true }),
+          ]
+        );
+      }
+      if (netAmt <= 0.0001 && discountAmt <= 0.0001) {
+        await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+          pay,
+          rec,
+          id,
+        ]);
+        await syncNetBalance(db, id);
+        const outNf = (await db.query(
+          'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+          [id]
+        )).rows[0];
+        return res.json({
+          success: true,
+          message: 'تم خصم من دين لنا (لا يوجد باقي مطلوب دفع بعد الخصم)',
+          newBalance: outNf.balance_amount,
+          balance_payable: outNf.balance_payable,
+          balance_receivable: outNf.balance_receivable,
+        });
+      }
       const led = await db.query(
         `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
          VALUES ($1, 'debt_to_them_no_fund', $2, 'USD', 'to_them', $3, $4, $5) RETURNING id`,
         [id, netAmt, cid, noteDebt, ledgerMeta]
       );
       const ledgerId = led.rows[0]?.id;
-      await db.query('UPDATE accreditation_entities SET balance_payable = $1 WHERE id = $2', [pay, id]);
+      await db.query('UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3', [
+        pay,
+        rec,
+        id,
+      ]);
       await syncNetBalance(db, id);
       if (discountAmt > 0) {
         await insertNetProfitLedgerAndMirrorFund(db, {
@@ -308,30 +447,71 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     if (!mainFundId) {
       return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً من قسم الصناديق قبل إضافة مبالغ.' });
     }
+    const rec0 = roundMoney(rec);
     const pct = parseFloat(brokeragePct);
     const brokerageAmount = !isNaN(pct) && pct > 0 ? roundMoney(amt * (pct / 100)) : 0;
     const remainder = roundMoney(amt - brokerageAmount);
     const dir = salaryDirection === 'to_us' ? 'to_us' : 'to_them';
 
+    let offsetUsd = 0;
     if (dir === 'to_us') {
-      pay += amt;
-    } else if (rec > 0.0001) {
+      if (rec0 > 0.0001 && (req.body.receivableOffsetMode == null || req.body.receivableOffsetMode === '')) {
+        return res.status(400).json({
+          success: false,
+          code: 'RECEIVABLE_OFFSET_REQUIRED',
+          message: 'يرجى اختيار خصم من الدين أو التأجيل من نافذة التأكيد',
+        });
+      }
+      try {
+        offsetUsd = parseReceivableOffsetFromBody(req.body, rec0, amt, {
+          salaryRemainderAfterBrokerage: remainder,
+        }).s;
+      } catch (e) {
+        return res.json({ success: false, message: e.message || 'فشل', code: e.code });
+      }
+      pay = roundMoney(pay + amt - offsetUsd);
+      rec = roundMoney(rec0 - offsetUsd);
+    } else if (rec0 > 0.0001) {
       /** وجود «دين لنا» على المعتمد: لا تطبيق applySalaryToThem (كان يضيف المتبقي إلى لنا).
        *  يُسجَّل المبلغ كاملًا في «علينا» حتى تُحدَّد التسوية يدويًا من شاشة التسوية. */
-      pay += amt;
+      pay = roundMoney(pay + amt);
+      rec = roundMoney(rec0);
     } else {
-      const br = applySalaryToThem(pay, rec, amt);
-      pay = br.pay;
-      rec = br.rec;
+      const br = applySalaryToThem(pay, rec0, amt);
+      pay = roundMoney(br.pay);
+      rec = roundMoney(br.rec);
     }
 
-    pay = roundMoney(pay);
-    rec = roundMoney(rec);
+    const fundDepositToUs = dir === 'to_us' ? roundMoney(remainder - offsetUsd) : 0;
+
+    if (dir === 'to_us' && offsetUsd > 0.0001) {
+      await db.query(
+        `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+         VALUES ($1, 'receivable_offset_from_credit', $2, 'USD', 'to_us', $3, $4, $5)`,
+        [
+          id,
+          offsetUsd,
+          cid,
+          notes || `خصم من دين لنا — بموجب راتب ${amt.toFixed(2)}`,
+          JSON.stringify({ grossSalaryUsd: amt, offsetUsd }),
+        ]
+      );
+    }
+
+    const salaryMeta =
+      dir === 'to_us' && offsetUsd > 0.0001
+        ? JSON.stringify({
+            offsetUsd,
+            grossSalaryUsd: amt,
+            remainderAfterBrokerageUsd: remainder,
+            fundDepositUsd: fundDepositToUs,
+          })
+        : null;
 
     const led = await db.query(
-      `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes)
-       VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7) RETURNING id`,
-      [id, amt, dir, !isNaN(pct) ? pct : null, brokerageAmount || null, cid, notes || null]
+      `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes, meta_json)
+       VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [id, amt, dir, !isNaN(pct) ? pct : null, brokerageAmount || null, cid, notes || null, salaryMeta]
     );
     const ledgerId = led.rows[0]?.id;
 
@@ -340,8 +520,6 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       [pay, rec, id]
     );
     await syncNetBalance(db, id);
-
-    /** لا خصم تلقائي من balance_receivable عند راتب «لنا» (to_us) — أي تخفيض لـ«دين لنا» يتم من لوحة التسوية فقط. */
 
     if (brokerageAmount > 0) {
       await insertNetProfitLedgerAndMirrorFund(db, {
@@ -355,16 +533,16 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         notes: 'وساطة معتمد',
       });
     }
-    if (remainder !== 0 && dir === 'to_us') {
+    if (Math.abs(fundDepositToUs) > 0.0001 && dir === 'to_us') {
       await adjustFundBalance(
-        db, mainFundId, 'USD', remainder, 'accreditation_remainder',
+        db, mainFundId, 'USD', fundDepositToUs, 'accreditation_remainder',
         'باقي بعد الوساطة', 'accreditation_ledger', ledgerId
       );
       await insertLedgerEntry(db, {
         userId: req.session.userId,
         bucket: 'main_cash',
         sourceType: 'accreditation_remainder',
-        amount: remainder,
+        amount: fundDepositToUs,
         cycleId: cid,
         refTable: 'accreditation_ledger',
         refId: ledgerId,

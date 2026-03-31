@@ -161,6 +161,14 @@
       font-size: 1rem;
       line-height: 1.5;
     }
+    #accListAddAmountModal input,
+    #accListAddAmountModal select,
+    #accListTransferModal input,
+    #accListTransferModal select,
+    #accReceivableOffsetModal input {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     #accBulkModal .acc-bulk-src-btn {
@@ -532,7 +540,11 @@
     #accDeliveryModal,
     #accAddModal,
     #accDetailModal,
-    #accConfirmModal {
+    #accConfirmModal,
+    /* معتمد: إضافة مبلغ / تحويل من القائمة + نافذة خصم من دين لنا */
+    #accListAddAmountModal,
+    #accListTransferModal,
+    #accReceivableOffsetModal {
       top: calc(60px + env(safe-area-inset-top, 0px));
       right: 0;
       bottom: calc(65px + env(safe-area-inset-bottom, 0px));
@@ -571,6 +583,19 @@
     #accConfirmModal > div {
       max-height: 100%;
       overflow-y: auto;
+    }
+    #accListAddAmountModal,
+    #accListTransferModal,
+    #accReceivableOffsetModal {
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    #accListAddAmountModal > div,
+    #accListTransferModal > div,
+    #accReceivableOffsetModal > div {
+      max-height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     /*
      * نافذة الدورات المالية (Sheet): نفس منطق الـ inset بين الهيدر والشريط السفلي.

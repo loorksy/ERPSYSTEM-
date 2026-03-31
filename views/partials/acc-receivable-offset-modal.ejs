@@ -1,0 +1,48 @@
+<div id="accReceivableOffsetModal" class="fixed inset-0 z-[10060] hidden items-center justify-center p-4 sm:p-6 bg-slate-900/55 backdrop-blur-[3px]" dir="rtl" onclick="if(event.target===this && typeof accCloseReceivableOffsetModal==='function')accCloseReceivableOffsetModal()">
+  <div class="relative max-h-[min(90vh,28rem)] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-2xl border border-indigo-200/90 bg-white shadow-2xl ring-1 ring-indigo-900/5" onclick="event.stopPropagation()">
+    <div class="flex items-start gap-3 border-b border-indigo-100 bg-gradient-to-l from-indigo-50/90 to-white px-5 py-4">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-lg text-white shadow-md shadow-indigo-600/25">
+        <i class="fas fa-scale-balanced" aria-hidden="true"></i>
+      </div>
+      <div class="min-w-0 flex-1 pt-0.5">
+        <h2 class="text-lg font-bold leading-tight text-slate-900">خصم من دين لنا</h2>
+        <p class="mt-1 text-xs leading-relaxed text-slate-600">يوجد <span class="font-semibold text-slate-800">دين لنا</span> على هذا المعتمد. اختر كيف يُطبَّق المبلغ المُدخل على «دين لنا» مقابل «علينا».</p>
+      </div>
+      <button type="button" onclick="accCloseReceivableOffsetModal()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" aria-label="إغلاق">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <div class="space-y-4 p-5">
+      <div class="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-[11px] text-slate-700">
+        <span class="text-slate-500">دين لنا (قبل):</span>
+        <span id="accReceivableOffsetRecDisplay" class="ms-1 font-bold tabular-nums text-slate-900">0</span>
+        <span class="acc-currency-sym ms-0.5 text-slate-500"></span>
+        <span class="mx-2 text-slate-300">|</span>
+        <span class="text-slate-500">مبلغ الإدخال:</span>
+        <span id="accReceivableOffsetAmtDisplay" class="ms-1 font-bold tabular-nums text-slate-900">0</span>
+        <span class="acc-currency-sym ms-0.5 text-slate-500"></span>
+      </div>
+      <p class="text-[11px] font-semibold text-slate-800">يرجى اختيار أحد الخيارات</p>
+      <div class="grid gap-2">
+        <button type="button" id="accReceivableOffsetBtnDefer" class="rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-right text-sm font-bold text-slate-800 transition hover:border-indigo-300 hover:bg-indigo-50/50">
+          تأجيل — لا خصم من «دين لنا» الآن
+        </button>
+        <button type="button" id="accReceivableOffsetBtnFull" class="rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-right text-sm font-bold text-slate-800 transition hover:border-emerald-300 hover:bg-emerald-50/50">
+          خصم كامل — حتى أقل الحدّين (دين لنا / المبلغ)
+        </button>
+        <button type="button" id="accReceivableOffsetBtnCustom" class="rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-right text-sm font-bold text-slate-800 transition hover:border-amber-300 hover:bg-amber-50/50">
+          مخصص — أدخل مبلغ الخصم
+        </button>
+      </div>
+      <div id="accReceivableOffsetCustomWrap" class="hidden space-y-1.5">
+        <label class="block text-[11px] font-medium text-slate-600">مبلغ الخصم من «دين لنا» (حتى <span id="accReceivableOffsetMaxHint" class="tabular-nums font-semibold">0</span>)</label>
+        <input type="number" id="accReceivableOffsetCustomInput" step="0.01" min="0" dir="ltr" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm tabular-nums" placeholder="0.00" />
+      </div>
+      <p id="accReceivableOffsetErr" class="hidden text-xs font-semibold text-red-600"></p>
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end sm:gap-3">
+        <button type="button" onclick="accCloseReceivableOffsetModal()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto">إلغاء</button>
+        <button type="button" id="accReceivableOffsetSubmit" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-indigo-600 px-6 text-sm font-bold text-white shadow-md transition hover:bg-indigo-700 sm:w-auto">متابعة</button>
+      </div>
+    </div>
+  </div>
+</div>

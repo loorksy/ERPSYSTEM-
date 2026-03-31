@@ -29,7 +29,53 @@ function splitDebtPayableWithDiscount(grossAmount, discountPctRaw) {
   return { netAmt, discountAmt, metaJson };
 }
 
+/**
+ * خصم من «دين لنا» عند إضافة ائتمان (علينا/راتب لنا).
+ * @param {object} body - req.body (receivableOffsetMode, receivableOffsetUsd)
+ * @param {number} recBefore
+ * @param {number} grossCredit - المبلغ الإجمالي للائتمان
+ * @param {{ salaryRemainderAfterBrokerage?: number }} [opts] — للراتب: لا يتجاوز الخصم الباقي بعد الوساطة (إيداع الصندوق)
+ */
+function parseReceivableOffsetFromBody(body, recBefore, grossCredit, opts = {}) {
+  const rec0 = roundMoney(recBefore);
+  const gross = roundMoney(grossCredit);
+  const mode = body && body.receivableOffsetMode;
+  const rawCustom = body && body.receivableOffsetUsd;
+
+  if (rec0 <= 0.0001) return { s: 0, mode: 'defer' };
+  if (!mode || mode === 'defer') return { s: 0, mode: 'defer' };
+
+  let maxCap = roundMoney(Math.min(rec0, gross));
+  if (opts.salaryRemainderAfterBrokerage != null) {
+    const rem = roundMoney(opts.salaryRemainderAfterBrokerage);
+    maxCap = roundMoney(Math.min(maxCap, rem));
+  }
+
+  let s = 0;
+  if (mode === 'full') {
+    s = maxCap;
+  } else if (mode === 'custom') {
+    const c = roundMoney(parseFloat(rawCustom));
+    if (isNaN(c) || c <= 0) {
+      const err = new Error('أدخل مبلغ الخصم من الدين أو اختر تأجيل');
+      err.code = 'INVALID_OFFSET';
+      throw err;
+    }
+    if (c > maxCap + 0.001) {
+      const err = new Error(`الخصم لا يتجاوز ${maxCap.toFixed(2)}`);
+      err.code = 'INVALID_OFFSET';
+      throw err;
+    }
+    s = c;
+  } else {
+    return { s: 0, mode: 'defer' };
+  }
+
+  return { s: roundMoney(s), mode };
+}
+
 module.exports = {
   roundMoney,
   splitDebtPayableWithDiscount,
+  parseReceivableOffsetFromBody,
 };

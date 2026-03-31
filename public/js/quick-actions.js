@@ -309,7 +309,9 @@
         apiCall('/api/accreditations/' + id + '/add-amount', {
           method: 'POST',
           body: JSON.stringify({
+            amountKind: 'salary',
             salaryDirection: 'to_us',
+            receivableOffsetMode: 'defer',
             amount: amt,
             brokeragePct: document.getElementById('qaAcBr').value,
             notes: document.getElementById('qaAcNotes').value

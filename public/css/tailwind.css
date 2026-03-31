@@ -592,6 +592,9 @@
   .-mx-2 {
     margin-inline: calc(var(--spacing) * -2);
   }
+  .mx-2 {
+    margin-inline: calc(var(--spacing) * 2);
+  }
   .mx-3 {
     margin-inline: calc(var(--spacing) * 3);
   }
@@ -603,6 +606,12 @@
   }
   .my-2\.5 {
     margin-block: calc(var(--spacing) * 2.5);
+  }
+  .ms-0\.5 {
+    margin-inline-start: calc(var(--spacing) * 0.5);
+  }
+  .ms-1 {
+    margin-inline-start: calc(var(--spacing) * 1);
   }
   .-mt-5 {
     margin-top: calc(var(--spacing) * -5);
@@ -903,6 +912,9 @@
   }
   .max-h-\[min\(42vh\,22rem\)\] {
     max-height: min(42vh, 22rem);
+  }
+  .max-h-\[min\(90vh\,28rem\)\] {
+    max-height: min(90vh, 28rem);
   }
   .max-h-\[min\(90vh\,32rem\)\] {
     max-height: min(90vh, 32rem);
@@ -2333,6 +2345,12 @@
     background-color: color-mix(in srgb, oklch(20.8% 0.042 265.755) 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-slate-900) 50%, transparent);
+    }
+  }
+  .bg-slate-900\/55 {
+    background-color: color-mix(in srgb, oklch(20.8% 0.042 265.755) 55%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-slate-900) 55%, transparent);
     }
   }
   .bg-slate-900\/60 {
@@ -3977,6 +3995,9 @@
       --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 20%, transparent) var(--tw-shadow-alpha), transparent);
     }
   }
+  .ring-amber-200 {
+    --tw-ring-color: var(--color-amber-200);
+  }
   .ring-amber-200\/80 {
     --tw-ring-color: color-mix(in srgb, oklch(92.4% 0.12 95.746) 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -3995,14 +4016,26 @@
       --tw-ring-color: color-mix(in oklab, var(--color-black) 10%, transparent);
     }
   }
+  .ring-emerald-200 {
+    --tw-ring-color: var(--color-emerald-200);
+  }
   .ring-emerald-200\/80 {
     --tw-ring-color: color-mix(in srgb, oklch(90.5% 0.093 164.15) 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       --tw-ring-color: color-mix(in oklab, var(--color-emerald-200) 80%, transparent);
     }
   }
+  .ring-indigo-200 {
+    --tw-ring-color: var(--color-indigo-200);
+  }
   .ring-indigo-500 {
     --tw-ring-color: var(--color-indigo-500);
+  }
+  .ring-indigo-900\/5 {
+    --tw-ring-color: color-mix(in srgb, oklch(35.9% 0.144 278.697) 5%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      --tw-ring-color: color-mix(in oklab, var(--color-indigo-900) 5%, transparent);
+    }
   }
   .ring-slate-100 {
     --tw-ring-color: var(--color-slate-100);
@@ -4718,6 +4751,13 @@
       }
     }
   }
+  .hover\:border-amber-300 {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--color-amber-300);
+      }
+    }
+  }
   .hover\:border-cyan-200 {
     &:hover {
       @media (hover: hover) {
@@ -4905,6 +4945,16 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-emerald-50);
+      }
+    }
+  }
+  .hover\:bg-emerald-50\/50 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: color-mix(in srgb, oklch(97.9% 0.021 166.113) 50%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--color-emerald-50) 50%, transparent);
+        }
       }
     }
   }
@@ -7721,6 +7771,14 @@
     font-size: 1rem;
     line-height: 1.5;
   }
+  #accListAddAmountModal input,
+    #accListAddAmountModal select,
+    #accListTransferModal input,
+    #accListTransferModal select,
+    #accReceivableOffsetModal input {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   #accBulkModal .acc-bulk-src-btn {
@@ -8131,7 +8189,11 @@
     #accDeliveryModal,
     #accAddModal,
     #accDetailModal,
-    #accConfirmModal {
+    #accConfirmModal,
+    
+    #accListAddAmountModal,
+    #accListTransferModal,
+    #accReceivableOffsetModal {
     top: calc(60px + env(safe-area-inset-top, 0px));
     right: 0;
     bottom: calc(65px + env(safe-area-inset-bottom, 0px));
@@ -8170,6 +8232,19 @@
   #accConfirmModal > div {
     max-height: 100%;
     overflow-y: auto;
+  }
+  #accListAddAmountModal,
+    #accListTransferModal,
+    #accReceivableOffsetModal {
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  #accListAddAmountModal > div,
+    #accListTransferModal > div,
+    #accReceivableOffsetModal > div {
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   #cycleModal {
     top: calc(60px + env(safe-area-inset-top, 0px));

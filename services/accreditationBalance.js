@@ -65,8 +65,18 @@ function undoAccreditationLedgerRow(row, pay, rec) {
   if (type === 'receivable_settlement') {
     return { pay: pay + amt, rec: rec + amt };
   }
+  if (type === 'receivable_offset_from_credit') {
+    return { pay, rec: rec + amt };
+  }
   if (type === 'salary') {
     if (row.direction === 'to_us') {
+      try {
+        const m = row.meta_json ? JSON.parse(row.meta_json) : {};
+        const s = Number(m.offsetUsd) || 0;
+        if (s > 0.0001) {
+          return { pay: pay - (amt - s), rec: rec + s };
+        }
+      } catch (e) {}
       return { pay: pay - amt, rec };
     }
     return undoSalaryToThem(pay, rec, amt);

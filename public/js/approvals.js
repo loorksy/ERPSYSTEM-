@@ -4,6 +4,11 @@
   var accBulkStagingItems = [];
   /** معرف المعتمد عند فتح «إضافة مبلغ» أو «تحويل» من بطاقة القائمة */
   var accShortcutModalId = null;
+  /** تُملأ من accPopulateDetail / accOpenShortcut لاستخدام نافذة خصم «دين لنا» */
+  var accDetailBalanceReceivable = 0;
+  var accListModalReceivable = 0;
+  var accReceivableOffsetPending = null;
+  var accReceivableOffsetSelectedMode = 'defer';
 
   function escHtml(s) {
     if (s == null) return '';
@@ -16,6 +21,137 @@
   function accCloseSidebarIfOpen() {
     if (typeof window.closeSidebar === 'function') window.closeSidebar();
   }
+
+  function accNeedsReceivableOffsetModal(kind, rec, amountStr) {
+    if (kind !== 'debt_payable' && kind !== 'debt_payable_no_fund') return false;
+    var g = parseFloat(String(amountStr != null ? amountStr : '').replace(/,/g, ''));
+    if (isNaN(g) || g <= 0) return false;
+    return (Number(rec) || 0) > 0.0001;
+  }
+
+  function accApplyReceivableOffsetBtnStyles(mode) {
+    var styles = {
+      defer: 'border-slate-200 bg-white hover:border-indigo-300',
+      full: 'border-slate-200 bg-white hover:border-emerald-300',
+      custom: 'border-slate-200 bg-white hover:border-amber-300',
+    };
+    var sel = {
+      defer: 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200',
+      full: 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-200',
+      custom: 'border-amber-500 bg-amber-50 ring-1 ring-amber-200',
+    };
+    ['defer', 'full', 'custom'].forEach(function(m) {
+      var el = document.getElementById(
+        m === 'defer' ? 'accReceivableOffsetBtnDefer' : m === 'full' ? 'accReceivableOffsetBtnFull' : 'accReceivableOffsetBtnCustom'
+      );
+      if (!el) return;
+      el.className =
+        'rounded-xl border-2 px-4 py-3 text-right text-sm font-bold text-slate-800 transition ' +
+        (mode === m ? sel[m] : styles[m]);
+    });
+    var wrap = document.getElementById('accReceivableOffsetCustomWrap');
+    var err = document.getElementById('accReceivableOffsetErr');
+    if (err) {
+      err.classList.add('hidden');
+      err.textContent = '';
+    }
+    if (wrap) wrap.classList.toggle('hidden', mode !== 'custom');
+  }
+
+  function accCloseReceivableOffsetModal() {
+    var modal = document.getElementById('accReceivableOffsetModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    accReceivableOffsetPending = null;
+  }
+
+  function wireAccReceivableOffsetModal() {
+    var modal = document.getElementById('accReceivableOffsetModal');
+    if (!modal || modal.dataset.accRecvOffBound) return;
+    modal.dataset.accRecvOffBound = '1';
+    function setMode(m) {
+      accReceivableOffsetSelectedMode = m;
+      accApplyReceivableOffsetBtnStyles(m);
+    }
+    var bd = document.getElementById('accReceivableOffsetBtnDefer');
+    var bf = document.getElementById('accReceivableOffsetBtnFull');
+    var bc = document.getElementById('accReceivableOffsetBtnCustom');
+    if (bd) bd.addEventListener('click', function() { setMode('defer'); });
+    if (bf) bf.addEventListener('click', function() { setMode('full'); });
+    if (bc) bc.addEventListener('click', function() { setMode('custom'); });
+    var sub = document.getElementById('accReceivableOffsetSubmit');
+    if (sub) {
+      sub.addEventListener('click', function() {
+        var p = accReceivableOffsetPending;
+        if (!p) return;
+        var mode = accReceivableOffsetSelectedMode;
+        var body = Object.assign({}, p.baseBody);
+        body.receivableOffsetMode = mode;
+        if (mode === 'custom') {
+          var inp = document.getElementById('accReceivableOffsetCustomInput');
+          var raw = inp && inp.value !== '' ? parseFloat(inp.value) : NaN;
+          var maxC = Math.min(Number(p.rec) || 0, Number(p.amount) || 0);
+          if (isNaN(raw) || raw <= 0) {
+            var err = document.getElementById('accReceivableOffsetErr');
+            if (err) {
+              err.textContent = 'أدخل مبلغ الخصم أو اختر خياراً آخر.';
+              err.classList.remove('hidden');
+            }
+            return;
+          }
+          if (raw > maxC + 0.001) {
+            var err2 = document.getElementById('accReceivableOffsetErr');
+            if (err2) {
+              err2.textContent = 'الخصم لا يتجاوز ' + accFmtMoney(maxC) + '.';
+              err2.classList.remove('hidden');
+            }
+            return;
+          }
+          body.receivableOffsetUsd = raw;
+        }
+        apiCall(p.url, { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
+          accCloseReceivableOffsetModal();
+          if (typeof p.onDone === 'function') p.onDone(res);
+        });
+      });
+    }
+  }
+
+  function accOpenReceivableOffsetModal(opts) {
+    wireAccReceivableOffsetModal();
+    var modal = document.getElementById('accReceivableOffsetModal');
+    if (!modal) {
+      if (opts && typeof opts.onDone === 'function') {
+        var body = Object.assign({}, opts.baseBody, { receivableOffsetMode: 'defer' });
+        apiCall(opts.url, { method: 'POST', body: JSON.stringify(body) }).then(opts.onDone);
+      }
+      return;
+    }
+    accReceivableOffsetPending = opts;
+    accReceivableOffsetSelectedMode = 'defer';
+    accSyncCurrencyUi();
+    var recD = document.getElementById('accReceivableOffsetRecDisplay');
+    var amtD = document.getElementById('accReceivableOffsetAmtDisplay');
+    var maxH = document.getElementById('accReceivableOffsetMaxHint');
+    var cinp = document.getElementById('accReceivableOffsetCustomInput');
+    if (recD) recD.textContent = accFmtMoney(opts.rec);
+    if (amtD) amtD.textContent = accFmtMoney(opts.amount);
+    var mx = Math.round(Math.min(Number(opts.rec) || 0, Number(opts.amount) || 0) * 100) / 100;
+    if (maxH) maxH.textContent = accFmtMoney(mx);
+    if (cinp) {
+      cinp.value = mx > 0 ? String(mx) : '';
+      cinp.setAttribute('max', String(mx));
+    }
+    accApplyReceivableOffsetBtnStyles('defer');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  window.accCloseReceivableOffsetModal = accCloseReceivableOffsetModal;
 
   var accConfirmCallback = null;
 
@@ -136,6 +272,7 @@
       delivery: 'تسليم — تصفير علينا',
       deferred_reserve_sync: 'مزامنة احتياطي مؤجل',
       receivable_settlement: 'تسوية بين دين لنا وعلينا',
+      receivable_offset_from_credit: 'خصم من دين لنا (بموجب ائتمان)',
     };
     return m[t] || t || '';
   }
@@ -182,6 +319,13 @@
         '<span class="font-bold tabular-nums text-indigo-700">' +
         escHtml(accFmtMoney(amt)) +
         '</span> <span class="text-[10px] text-slate-500">(يُنقص لنا وعلينا)</span>'
+      );
+    }
+    if (t === 'receivable_offset_from_credit') {
+      return (
+        '<span class="font-bold tabular-nums text-amber-800">−' +
+        absFmt +
+        '</span> <span class="text-[10px] text-slate-500">(من دين لنا)</span>'
       );
     }
     return '<span class="font-semibold tabular-nums text-slate-800">' + escHtml(accFmtMoney(amt)) + '</span>';
@@ -463,6 +607,7 @@
       if (!skipDisc && r.discountPct !== '' && r.discountPct != null && String(r.discountPct).trim() !== '') {
         it.discountPct = r.discountPct;
       }
+      it.receivableOffsetMode = 'defer';
       return it;
     });
     apiCall('/api/accreditations/bulk-balance-commit', {
@@ -964,6 +1109,7 @@
       if (!res.success) return;
       var e = res.entity;
       currentPinned = !!e.pinned;
+      accDetailBalanceReceivable = Number(e.balance_receivable) || 0;
       var titleEl = document.getElementById('accDetailTitle');
       if (titleEl) titleEl.textContent = e.name || '';
       var pinBtn = document.getElementById('accPinBtn');
@@ -991,7 +1137,7 @@
               accFmtMoney(recV) +
               ' — علينا له: ' +
               accFmtMoney(payV) +
-              '. أُضيف مبلغ إلى «علينا» دون خصم تلقائي من «دين لنا»؛ حدّد هنا مبلغ التسوية (حتى ' +
+              '. يمكنك عند «إضافة مبلغ» من نوع علينا/لهم اختيار خصم من «دين لنا» من النافذة، أو تنفيذ تسوية متقابلة هنا (حتى ' +
               accFmtMoney(mx) +
               ').';
           }
@@ -1098,6 +1244,7 @@
         return;
       }
       var name = res.entity.name || '';
+      accListModalReceivable = Number(res.entity.balance_receivable) || 0;
       var sub = document.getElementById(k === 'add' ? 'accListAddAmountModalSubtitle' : 'accListTransferModalSubtitle');
       if (sub) sub.textContent = name;
       accFillListModalSelects().then(function() {
@@ -1201,6 +1348,23 @@
     };
     var dp = document.getElementById('accListDiscountPct');
     if (kind !== 'debt_receivable' && dp && dp.value !== '' && dp.value != null) body.discountPct = dp.value;
+    var rec = accListModalReceivable;
+    if (accNeedsReceivableOffsetModal(kind, rec, body.amount)) {
+      accOpenReceivableOffsetModal({
+        rec: rec,
+        amount: parseFloat(String(body.amount).replace(/,/g, '')),
+        baseBody: body,
+        url: '/api/accreditations/' + id + '/add-amount',
+        onDone: function(res) {
+          toast(res.message || '', res.success ? 'success' : 'error');
+          if (res.success) {
+            accCloseListAddAmountModal();
+            accLoad();
+          }
+        },
+      });
+      return;
+    }
     apiCall('/api/accreditations/' + id + '/add-amount', {
       method: 'POST',
       body: JSON.stringify(body),
@@ -1327,6 +1491,20 @@
     };
     var dp = document.getElementById('accDiscountPct');
     if (kind !== 'debt_receivable' && dp && dp.value !== '' && dp.value != null) body.discountPct = dp.value;
+    var rec = accDetailBalanceReceivable;
+    if (accNeedsReceivableOffsetModal(kind, rec, body.amount)) {
+      accOpenReceivableOffsetModal({
+        rec: rec,
+        amount: parseFloat(String(body.amount).replace(/,/g, '')),
+        baseBody: body,
+        url: '/api/accreditations/' + currentId + '/add-amount',
+        onDone: function(res) {
+          toast(res.message || '', res.success ? 'success' : 'error');
+          if (res.success) accReloadDetail();
+        },
+      });
+      return;
+    }
     apiCall('/api/accreditations/' + currentId + '/add-amount', {
       method: 'POST',
       body: JSON.stringify(body)
@@ -1493,6 +1671,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
+    wireAccReceivableOffsetModal();
     var accDetailPg = document.getElementById('accDetailPage');
     if (accDetailPg && accDetailPg.dataset.accreditationId) {
       initAccProfileNav();
