@@ -53,9 +53,15 @@ router.get('/list', requireAuth, async (req, res) => {
     const db = getDb();
     await ensureDefaultMainFund(db, req.session.userId);
     const uid = req.session.userId;
+    const forAccTransfer = String(req.query.forAccreditationTransfer || '') === '1';
+    let fundWhere = 'user_id = $1';
+    if (forAccTransfer) {
+      fundWhere +=
+        ' AND COALESCE(is_main,0) = 0 AND COALESCE(exclude_from_dashboard,0) = 0 AND TRIM(name) <> \'صندوق الربح\'';
+    }
     const rows = (await db.query(
-      `SELECT id, name, fund_number, country, region_syria, is_main, transfer_company_id, created_at
-       FROM funds WHERE user_id = $1 ORDER BY is_main DESC, name`,
+      `SELECT id, name, fund_number, country, region_syria, is_main, transfer_company_id, created_at, exclude_from_dashboard
+       FROM funds WHERE ${fundWhere} ORDER BY is_main DESC, name`,
       [uid]
     )).rows;
     const payRows = (await db.query(

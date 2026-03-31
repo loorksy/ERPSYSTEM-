@@ -6,7 +6,7 @@ const XLSX = require('xlsx');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getDb } = require('../db/database');
-const { adjustFundBalance, getMainFundId } = require('../services/fundService');
+const { adjustFundBalance, getMainFundId, getMainFundUsdBalance } = require('../services/fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('../services/ledgerService');
 const {
   processAccreditationBulkRows,
@@ -537,33 +537,162 @@ router.get('/with-balance', requireAuth, async (req, res) => {
 router.post('/:id/transfer', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { transferType, amount, fundId, companyId, notes } = req.body || {};
+    const { transferType, amount, fundId, companyId, notes, transferMode: transferModeRaw } = req.body || {};
     const amt = parseFloat(amount);
     if (!id || isNaN(amt) || amt <= 0) return res.json({ success: false, message: 'مبلغ غير صالح' });
     const db = getDb();
+    const uid = req.session.userId;
     const ent = (await db.query(
       'SELECT * FROM accreditation_entities WHERE id = $1 AND user_id = $2',
-      [id, req.session.userId]
+      [id, uid]
     )).rows[0];
     if (!ent) return res.json({ success: false, message: 'غير موجود' });
-    const meta = { transferType, fundId, companyId };
+    const accName = String(ent.name || '').trim() || 'معتمد';
+    const noteUser = notes && String(notes).trim() ? String(notes).trim() : null;
+
+    /** @type {'payable'|'main_fund'|'legacy'|undefined} */
+    let mode = transferModeRaw;
+    if (transferType === 'fund' || transferType === 'company') {
+      if (mode !== 'payable' && mode !== 'main_fund') mode = 'legacy';
+    } else {
+      mode = undefined;
+    }
+
+    const meta = { transferType, fundId, companyId, transferMode: mode };
     let metaJson = JSON.stringify(meta);
+
     if (transferType === 'fund') {
       const fid = parseInt(fundId, 10);
       if (!fid) return res.json({ success: false, message: 'اختر الصندوق' });
-      await adjustFundBalance(db, fid, 'USD', amt, 'accreditation_transfer_in', 'تحويل من معتمد', 'accreditation_entities', id);
+      const destFund = (await db.query(
+        'SELECT id, name FROM funds WHERE id = $1 AND user_id = $2',
+        [fid, uid]
+      )).rows[0];
+      if (!destFund) return res.json({ success: false, message: 'صندوق غير صالح' });
+
+      if (mode === 'payable') {
+        const epNote = `تحويل معتمد — ${accName}${noteUser ? ` — ${noteUser}` : ''}`;
+        await db.query(
+          `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
+           VALUES ($1, 'fund', $2, $3, 'USD', $4, 'payable')`,
+          [uid, fid, amt, epNote]
+        );
+        const ledNote = `تحويل إلى معتمد ${accName} — دين علينا${noteUser ? ` — ${noteUser}` : ''}`;
+        await adjustFundBalance(
+          db,
+          fid,
+          'USD',
+          0,
+          'accreditation_transfer_payable',
+          ledNote,
+          'accreditation_entities',
+          id
+        );
+      } else if (mode === 'main_fund') {
+        const { mainFundId, usd: mainUsd } = await getMainFundUsdBalance(db, uid);
+        if (!mainFundId) return res.json({ success: false, message: 'لا يوجد صندوق رئيسي' });
+        if ((Number(mainUsd) || 0) < amt - 0.0001) {
+          return res.json({
+            success: false,
+            code: 'INSUFFICIENT_MAIN',
+            message: 'رصيد الصندوق الرئيسي غير كافٍ.',
+          });
+        }
+        await adjustFundBalance(
+          db,
+          mainFundId,
+          'USD',
+          -amt,
+          'accreditation_transfer_from_main',
+          `تحويل إلى معتمد ${accName} (صندوق)${noteUser ? ` — ${noteUser}` : ''}`,
+          'accreditation_entities',
+          id
+        );
+        await adjustFundBalance(
+          db,
+          fid,
+          'USD',
+          amt,
+          'accreditation_transfer_in',
+          `تحويل إلى معتمد ${accName}${noteUser ? ` — ${noteUser}` : ''}`,
+          'accreditation_entities',
+          id
+        );
+      } else {
+        await adjustFundBalance(
+          db,
+          fid,
+          'USD',
+          amt,
+          'accreditation_transfer_in',
+          'تحويل من معتمد',
+          'accreditation_entities',
+          id
+        );
+      }
     } else if (transferType === 'company') {
       const cid = parseInt(companyId, 10);
       if (!cid) return res.json({ success: false, message: 'اختر الشركة' });
-      await db.query(
-        `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, 'USD', $3)`,
-        [cid, amt, notes || 'تحويل معتمد']
-      );
-      await db.query(
-        `UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3`,
-        [amt, cid, req.session.userId]
-      );
+      const comp = (await db.query(
+        'SELECT id, name FROM transfer_companies WHERE id = $1 AND user_id = $2',
+        [cid, uid]
+      )).rows[0];
+      if (!comp) return res.json({ success: false, message: 'شركة غير موجودة' });
+
+      if (mode === 'payable') {
+        const epNote = `تحويل معتمد — ${accName}${noteUser ? ` — ${noteUser}` : ''}`;
+        await db.query(
+          `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
+           VALUES ($1, 'transfer_company', $2, $3, 'USD', $4, 'payable')`,
+          [uid, cid, amt, epNote]
+        );
+        const ledNote = `تحويل إلى معتمد ${accName} — دين علينا${noteUser ? ` — ${noteUser}` : ''}`;
+        await db.query(
+          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
+           VALUES ($1, $2, 'USD', $3, 'accreditation_entities', $4)`,
+          [cid, 0, ledNote, id]
+        );
+      } else if (mode === 'main_fund') {
+        const { mainFundId, usd: mainUsd } = await getMainFundUsdBalance(db, uid);
+        if (!mainFundId) return res.json({ success: false, message: 'لا يوجد صندوق رئيسي' });
+        if ((Number(mainUsd) || 0) < amt - 0.0001) {
+          return res.json({
+            success: false,
+            code: 'INSUFFICIENT_MAIN',
+            message: 'رصيد الصندوق الرئيسي غير كافٍ.',
+          });
+        }
+        await adjustFundBalance(
+          db,
+          mainFundId,
+          'USD',
+          -amt,
+          'accreditation_transfer_from_main',
+          `تحويل إلى معتمد ${accName} (شركة)${noteUser ? ` — ${noteUser}` : ''}`,
+          'accreditation_entities',
+          id
+        );
+        const ledNote = `تحويل إلى معتمد ${accName}${noteUser ? ` — ${noteUser}` : ''}`;
+        await db.query(
+          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id) VALUES ($1, $2, 'USD', $3, 'accreditation_entities', $4)`,
+          [cid, amt, ledNote, id]
+        );
+        await db.query(
+          `UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3`,
+          [amt, cid, uid]
+        );
+      } else {
+        await db.query(
+          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id) VALUES ($1, $2, 'USD', $3, 'accreditation_entities', $4)`,
+          [cid, amt, noteUser || 'تحويل معتمد', id]
+        );
+        await db.query(
+          `UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3`,
+          [amt, cid, uid]
+        );
+      }
     }
+
     let pay = Number(ent.balance_payable) || 0;
     let rec = Number(ent.balance_receivable) || 0;
     const buckets = applyTransferOut(pay, rec, amt);
@@ -572,7 +701,7 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
     await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, notes, meta_json)
        VALUES ($1, 'transfer', $2, 'USD', $3, $4)`,
-      [id, amt, notes || null, metaJson]
+      [id, amt, noteUser, metaJson]
     );
     await db.query(
       'UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3',

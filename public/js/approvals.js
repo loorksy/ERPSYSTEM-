@@ -969,7 +969,7 @@
       document.getElementById('accTransferPanel').classList.add('hidden');
       Promise.all([
         apiCall('/api/sub-agencies/cycles/list'),
-        apiCall('/api/funds/list'),
+        apiCall('/api/funds/list?forAccreditationTransfer=1'),
         apiCall('/api/transfer-companies/list'),
       ]).then(function(results) {
         var c = results[0];
@@ -1013,7 +1013,7 @@
   function accFillListModalSelects() {
     return Promise.all([
       apiCall('/api/sub-agencies/cycles/list'),
-      apiCall('/api/funds/list'),
+      apiCall('/api/funds/list?forAccreditationTransfer=1'),
       apiCall('/api/transfer-companies/list'),
     ]).then(function(results) {
       var c = results[0];
@@ -1136,6 +1136,12 @@
     if (cc) cc.classList.toggle('hidden', v !== 'company');
     var sh = document.getElementById('accListTfShipHint');
     if (sh) sh.classList.toggle('hidden', v !== 'shipping');
+    var mw = document.getElementById('accListTfModeWrap');
+    if (mw) mw.classList.toggle('hidden', v !== 'fund' && v !== 'company');
+    if (v === 'fund' || v === 'company') {
+      var mainR = document.getElementById('accListTfModeMainFund');
+      if (mainR) mainR.checked = true;
+    }
   };
 
   window.accListSubmitAmount = function() {
@@ -1173,8 +1179,16 @@
       fundId: document.getElementById('accListTfFund').value,
       companyId: document.getElementById('accListTfCompany').value,
     };
+    if (t === 'fund' || t === 'company') {
+      var rm = document.querySelector('input[name="accListTfMode"]:checked');
+      body.transferMode = rm ? rm.value : 'main_fund';
+    }
     apiCall('/api/accreditations/' + id + '/transfer', { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
-      toast(res.message || '', res.success ? 'success' : 'error');
+      var msg = res.message || '';
+      if (!res.success && res.code === 'INSUFFICIENT_MAIN') {
+        msg = msg || 'رصيد الصندوق الرئيسي غير كافٍ.';
+      }
+      toast(msg, res.success ? 'success' : 'error');
       if (res.success) {
         accCloseListTransferModal();
         accLoad();
@@ -1222,6 +1236,12 @@
     document.getElementById('accTfFund').classList.toggle('hidden', t !== 'fund');
     document.getElementById('accTfCompany').classList.toggle('hidden', t !== 'company');
     document.getElementById('accTfShipHint').classList.toggle('hidden', t !== 'shipping');
+    var mw = document.getElementById('accTfModeWrap');
+    if (mw) mw.classList.toggle('hidden', t !== 'fund' && t !== 'company');
+    if (t === 'fund' || t === 'company') {
+      var mainR = document.getElementById('accTfModeMainFund');
+      if (mainR) mainR.checked = true;
+    }
   };
 
   window.accSubmitAmount = function() {
@@ -1252,8 +1272,16 @@
       fundId: document.getElementById('accTfFund').value,
       companyId: document.getElementById('accTfCompany').value
     };
+    if (t === 'fund' || t === 'company') {
+      var rm = document.querySelector('input[name="accTfMode"]:checked');
+      body.transferMode = rm ? rm.value : 'main_fund';
+    }
     apiCall('/api/accreditations/' + currentId + '/transfer', { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
-      toast(res.message || '', res.success ? 'success' : 'error');
+      var msg = res.message || '';
+      if (!res.success && res.code === 'INSUFFICIENT_MAIN') {
+        msg = msg || 'رصيد الصندوق الرئيسي غير كافٍ.';
+      }
+      toast(msg, res.success ? 'success' : 'error');
       if (res.success) accReloadDetail();
     });
   };

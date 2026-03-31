@@ -284,6 +284,17 @@
       </div>
       <select id="accListTfFund" class="hidden w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"></select>
       <select id="accListTfCompany" class="hidden w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"></select>
+      <div id="accListTfModeWrap" class="hidden space-y-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+        <p class="text-[11px] font-semibold text-indigo-900">طريقة التحويل</p>
+        <label class="flex cursor-pointer items-start gap-2 rounded-lg border border-white/80 bg-white p-2.5 shadow-sm">
+          <input type="radio" name="accListTfMode" id="accListTfModePayable" value="payable" class="mt-0.5 h-4 w-4 shrink-0 text-indigo-600">
+          <span class="text-xs leading-relaxed text-slate-800"><strong class="text-slate-900">دين علينا</strong> — تسجيل التزام لصالح الكيان دون زيادة الرصيد النقدي.</span>
+        </label>
+        <label class="flex cursor-pointer items-start gap-2 rounded-lg border border-white/80 bg-white p-2.5 shadow-sm">
+          <input type="radio" name="accListTfMode" id="accListTfModeMainFund" value="main_fund" class="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" checked>
+          <span class="text-xs leading-relaxed text-slate-800"><strong class="text-slate-900">خصم من الصندوق الرئيسي</strong> — إيداع فعلي للصندوق/الشركة.</span>
+        </label>
+      </div>
       <p id="accListTfShipHint" class="hidden rounded-lg border border-amber-100 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">سجّل عملية الشحن من قسم الشحن ثم اربطها لاحقاً إن لزم.</p>
       <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-stretch sm:justify-start sm:gap-3">
         <button type="button" onclick="accListSubmitTransfer()" class="inline-flex min-h-[2.75rem] w-full shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 sm:min-w-[8.5rem] sm:w-auto">تنفيذ</button>

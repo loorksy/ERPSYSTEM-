@@ -48,6 +48,9 @@ const FUND_LEDGER_TYPE_LABELS = {
   accreditation_bulk: 'استيراد رصيد معتمد',
   accreditation_debt_payable: 'دين علينا — معتمد',
   accreditation_remainder: 'باقي بعد الوساطة',
+  accreditation_transfer_in: 'تحويل من معتمد (إيداع نقدي)',
+  accreditation_transfer_payable: 'تحويل معتمد — التزام (دين علينا، بلا إيداع نقدي)',
+  accreditation_transfer_from_main: 'تحويل من الصندوق الرئيسي (معتمد)',
 };
 
 function labelNetProfitSource(code) {

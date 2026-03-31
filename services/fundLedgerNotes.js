@@ -104,6 +104,15 @@ async function buildDisplayNote(db, userId, row, cache) {
     if (t === 'shipping_buy_cash' && amt < 0) {
       return base ? `خصم شراء شحن — ${base}` : `خصم شراء شحن ${absStr}`;
     }
+    if (t === 'accreditation_transfer_from_main' && amt < 0) {
+      return base || `خصم من الصندوق الرئيسي للمعتمد — ${absStr}`;
+    }
+    if (t === 'accreditation_transfer_payable' && Math.abs(amt) < 0.0001) {
+      return base || 'تسجيل التزام معتمد (دين علينا) — دون تغيير الرصيد النقدي للصندوق';
+    }
+    if (t === 'accreditation_transfer_in' && amt > 0 && rt === 'accreditation_entities' && rid) {
+      return base || `إيداع تحويل معتمد — ${absStr}`;
+    }
   } catch (_) {
     /* keep base */
   }

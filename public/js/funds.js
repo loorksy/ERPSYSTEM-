@@ -175,12 +175,33 @@
         payBox.textContent = '';
       }
     }
+    var ledger = res.ledger || [];
+    var isMainOrProfit =
+      Number(f.is_main) === 1 ||
+      String(f.name || '').trim() === 'صندوق الربح' ||
+      Number(f.exclude_from_dashboard) === 1;
+    var hasOpening = ledger.some(function(l) {
+      return String(l.type || '') === 'opening_reference';
+    });
+    var hasReturn = ledger.some(function(l) {
+      return /return_/.test(String(l.type || ''));
+    });
+    var hideCashBalance = isMainOrProfit && pay > 0.0001 && hasOpening && hasReturn;
     var balDebt = pay > 0.0001;
-    document.getElementById('fundDetailBalances').innerHTML = (res.balances || []).map(function(b) {
-      var cls = balDebt && (b.currency || '') === 'USD' ? 'bg-red-50 text-red-800 border border-red-100' : 'bg-slate-100 text-slate-800';
-      return '<span class="px-3 py-1 rounded-lg ' + cls + '">' +
-        (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '') + '</span>';
-    }).join(' ');
+    var balEl = document.getElementById('fundDetailBalances');
+    if (balEl) {
+      if (hideCashBalance) {
+        balEl.classList.add('hidden');
+        balEl.innerHTML = '';
+      } else {
+        balEl.classList.remove('hidden');
+        balEl.innerHTML = (res.balances || []).map(function(b) {
+          var cls = balDebt && (b.currency || '') === 'USD' ? 'bg-red-50 text-red-800 border border-red-100' : 'bg-slate-100 text-slate-800';
+          return '<span class="px-3 py-1 rounded-lg ' + cls + '">' +
+            (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '') + '</span>';
+        }).join(' ');
+      }
+    }
     document.getElementById('fundDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
       var cat = l.colorCategory || 'balance';
       var border = 'border-s-[3px] border-s-[#047857]';

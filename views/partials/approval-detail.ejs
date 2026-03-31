@@ -76,6 +76,17 @@
           </div>
           <select id="accTfFund" class="hidden w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"></select>
           <select id="accTfCompany" class="hidden w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"></select>
+          <div id="accTfModeWrap" class="hidden space-y-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+            <p class="text-[11px] font-semibold text-indigo-900">طريقة التحويل نحو الصندوق أو الشركة</p>
+            <label class="flex cursor-pointer items-start gap-2 rounded-lg border border-white/80 bg-white p-2.5 shadow-sm">
+              <input type="radio" name="accTfMode" id="accTfModePayable" value="payable" class="mt-0.5 h-4 w-4 shrink-0 text-indigo-600">
+              <span class="text-xs leading-relaxed text-slate-800"><strong class="text-slate-900">دين علينا</strong> — تسجيل التزام (مطلوب دفع) لصالح الكيان دون زيادة الرصيد النقدي لديه؛ يُعتبر المبلغ مصروفاً من جهتكم.</span>
+            </label>
+            <label class="flex cursor-pointer items-start gap-2 rounded-lg border border-white/80 bg-white p-2.5 shadow-sm">
+              <input type="radio" name="accTfMode" id="accTfModeMainFund" value="main_fund" class="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" checked>
+              <span class="text-xs leading-relaxed text-slate-800"><strong class="text-slate-900">خصم من الصندوق الرئيسي</strong> — يُخصم من الصندوق الرئيسي ويُودَع لرصيد الصندوق/الشركة المختارة (بدون تسجيل دين علينا لهذا المبلغ).</span>
+            </label>
+          </div>
           <p id="accTfShipHint" class="hidden rounded-lg border border-amber-100 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">سجّل عملية الشحن من قسم الشحن ثم اربطها لاحقاً إن لزم.</p>
           <button type="button" onclick="accSubmitTransfer()" class="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-indigo-700">تنفيذ</button>
         </div>

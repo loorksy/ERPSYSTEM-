@@ -188,7 +188,8 @@ router.get('/:id', requireAuth, async (req, res) => {
     try {
       types = row.transfer_types ? JSON.parse(row.transfer_types) : [];
     } catch (_) {}
-    res.json({ success: true, company: { ...row, transfer_types: types }, ledger: tx });
+    const openPayablesUsd = await sumOpenPayables(db, uid, 'transfer_company', id);
+    res.json({ success: true, company: { ...row, transfer_types: types }, ledger: tx, openPayablesUsd });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }

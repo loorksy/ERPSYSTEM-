@@ -123,7 +123,41 @@
       if (!res.success) return;
       var c = res.company;
       document.getElementById('tcDetailTitle').textContent = c.name || '';
-      document.getElementById('tcDetailBal').textContent = (c.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (c.balance_currency || 'USD');
+      var payTc = res.openPayablesUsd != null ? res.openPayablesUsd : 0;
+      var led = res.ledger || [];
+      var hasOpening = led.some(function(l) {
+        return /رصيد افتتاحي/.test(l.notes || '') || (l.labelAr && /رصيد افتتاحي/.test(l.labelAr));
+      });
+      var hasReturn = led.some(function(l) {
+        return /مرتجع|return/i.test(l.notes || '') || (l.labelAr && /مرتجع/.test(l.labelAr));
+      });
+      var hideBal = payTc > 0.0001 && hasOpening && hasReturn;
+      var payEl = document.getElementById('tcDetailPayables');
+      if (payEl) {
+        if (payTc > 0.0001) {
+          payEl.classList.remove('hidden');
+          payEl.textContent =
+            'دين علينا تجاه هذه الشركة: ' +
+            payTc.toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+            ' USD';
+        } else {
+          payEl.classList.add('hidden');
+          payEl.textContent = '';
+        }
+      }
+      var balEl = document.getElementById('tcDetailBal');
+      if (balEl) {
+        if (hideBal) {
+          balEl.classList.add('hidden');
+          balEl.textContent = '';
+        } else {
+          balEl.classList.remove('hidden');
+          balEl.textContent =
+            (c.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+            ' ' +
+            (c.balance_currency || 'USD');
+        }
+      }
       document.getElementById('tcDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
         var cat = l.colorCategory || 'balance';
         var border = 'border-s-[3px] border-s-[#047857]';
