@@ -8151,6 +8151,11 @@
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
+  .member-directory-page .sub-agencies-toolbar-row input#mdSearchInput.input-select {
+    min-height: 2.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
 }
 .dashboard-cards {
   display: grid;
