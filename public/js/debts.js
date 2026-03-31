@@ -61,7 +61,7 @@
         var sum = document.getElementById('debtsSummary');
         sum.innerHTML =
           statCard('fas fa-truck-fast', 'bg-sky-100 text-sky-700', 'شحن (بيع دين)', d.shippingDebt, 'text-sky-800') +
-          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'اعتمادات (دين لنا عليهم)', d.accreditationDebtTotal, 'text-violet-900') +
+          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'اعتمادات (دين لنا عليهم)', d.accreditationReceivableUsd != null ? d.accreditationReceivableUsd : d.accreditationDebtTotal, 'text-violet-900') +
           statCard('fas fa-pen-fancy', 'bg-slate-100 text-slate-700', 'مسجّل يدوياً (USD)', d.payablesSumUsd, 'text-slate-900') +
           statCard('fas fa-chart-line', 'bg-teal-100 text-teal-800', 'فرق تصريف', d.fxSpreadSumUsd, 'text-teal-900') +
           statCard('fas fa-building', 'bg-red-100 text-red-700', 'شركات (رصيد سالب)', d.companyDebtFromBalance, 'text-red-800') +

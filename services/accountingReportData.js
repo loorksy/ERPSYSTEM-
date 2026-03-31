@@ -91,6 +91,8 @@ async function getSummarySnapshot(db, userId, cycleId) {
   let debtBreakdown = {
     shippingDebt: 0,
     accreditationDebtTotal: 0,
+    accreditationPayableUsd: 0,
+    accreditationReceivableUsd: 0,
     payablesSumUsd: 0,
     companyDebtFromBalance: 0,
     fundDebtFromBalance: 0,
@@ -101,26 +103,31 @@ async function getSummarySnapshot(db, userId, cycleId) {
     debtBreakdown = await computeDebtBreakdown(db, userId);
   } catch (_) {
     try {
-      const accDebt = (
+      const accPay = (
         await db.query(
-          `SELECT COALESCE(SUM(-balance_amount), 0)::float AS t
-           FROM accreditation_entities WHERE user_id = $1 AND balance_amount < 0`,
+          `SELECT COALESCE(SUM(balance_payable), 0)::float AS t
+           FROM accreditation_entities WHERE user_id = $1 AND COALESCE(balance_payable, 0) > 0.0001`,
           [userId]
         )
       ).rows[0];
+      const ap = accPay?.t ?? 0;
       debtBreakdown = {
         shippingDebt,
-        accreditationDebtTotal: accDebt?.t ?? 0,
+        accreditationDebtTotal: ap,
+        accreditationPayableUsd: ap,
+        accreditationReceivableUsd: 0,
         payablesSumUsd: 0,
         companyDebtFromBalance: 0,
         fundDebtFromBalance: 0,
         fxSpreadSumUsd: 0,
-        totalDebts: shippingDebt + (accDebt?.t ?? 0),
+        totalDebts: shippingDebt + ap,
       };
     } catch (__) {
       debtBreakdown = {
         shippingDebt,
         accreditationDebtTotal: 0,
+        accreditationPayableUsd: 0,
+        accreditationReceivableUsd: 0,
         payablesSumUsd: 0,
         companyDebtFromBalance: 0,
         fundDebtFromBalance: 0,
@@ -172,6 +179,8 @@ async function getSummarySnapshot(db, userId, cycleId) {
     totalDebts,
     shippingDebt,
     accreditationDebtTotal,
+    accreditationPayableUsd: debtBreakdown.accreditationPayableUsd ?? debtBreakdown.accreditationDebtTotal,
+    accreditationReceivableUsd: debtBreakdown.accreditationReceivableUsd ?? 0,
     payablesSumUsd: debtBreakdown.payablesSumUsd,
     companyDebtFromBalance: debtBreakdown.companyDebtFromBalance,
     fundDebtFromBalance: debtBreakdown.fundDebtFromBalance,

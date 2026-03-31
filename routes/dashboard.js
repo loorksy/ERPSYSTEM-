@@ -113,17 +113,20 @@ router.get('/stats', requireAuth, async (req, res) => {
       debtBreakdown = await computeDebtBreakdown(db, userId);
     } catch (_) {
       try {
-        const accDebt = (await db.query(`
-          SELECT COALESCE(SUM(-balance_amount), 0)::float AS t
-          FROM accreditation_entities WHERE user_id = $1 AND balance_amount < 0
-        `, [userId])).rows[0];
-        accreditationDebtTotal = accDebt?.t ?? 0;
+        const accPay = (await db.query(
+          `SELECT COALESCE(SUM(balance_payable), 0)::float AS t
+           FROM accreditation_entities WHERE user_id = $1 AND COALESCE(balance_payable, 0) > 0.0001`,
+          [userId]
+        )).rows[0];
+        accreditationDebtTotal = accPay?.t ?? 0;
       } catch (__) {
         accreditationDebtTotal = 0;
       }
       debtBreakdown = {
         shippingDebt,
         accreditationDebtTotal,
+        accreditationPayableUsd: accreditationDebtTotal,
+        accreditationReceivableUsd: 0,
         payablesSumUsd: 0,
         companyDebtFromBalance: 0,
         fundDebtFromBalance: 0,
@@ -175,6 +178,8 @@ router.get('/stats', requireAuth, async (req, res) => {
       paymentDueTotal,
       shippingDebt,
       accreditationDebtTotal,
+      accreditationPayableUsd: debtBreakdown.accreditationPayableUsd ?? debtBreakdown.accreditationDebtTotal,
+      accreditationReceivableUsd: debtBreakdown.accreditationReceivableUsd ?? 0,
       payablesSumUsd: debtBreakdown.payablesSumUsd,
       companyDebtFromBalance: debtBreakdown.companyDebtFromBalance,
       fundDebtFromBalance: debtBreakdown.fundDebtFromBalance,

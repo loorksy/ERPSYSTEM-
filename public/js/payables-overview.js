@@ -77,7 +77,7 @@
           if (el) el.textContent = fmt(v);
         };
         set('payablesKpiShipping', b.shippingDebt);
-        set('payablesKpiAcc', b.accreditationDebtTotal);
+        set('payablesKpiAcc', b.accreditationPayableUsd != null ? b.accreditationPayableUsd : b.accreditationDebtTotal);
         set('payablesKpiManual', b.payablesSumUsd);
         set('payablesKpiCo', b.companyDebtFromBalance);
         set('payablesKpiFund', b.fundDebtFromBalance);

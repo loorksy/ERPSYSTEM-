@@ -27,6 +27,33 @@ const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const upload = multer({ dest: uploadsDir, limits: { fileSize: 15 * 1024 * 1024 } });
 
+/** صافي USD من قيود رصيد مرجعي ومرتجعات في سجل الصندوق — يُخصم من التزام «دين علينا» قبل تسجيل entity_payables */
+async function sumFundReferenceAndReturnUsdForFund(db, fundId) {
+  const r = (await db.query(
+    `SELECT COALESCE(SUM(amount), 0)::float AS t FROM fund_ledger
+     WHERE fund_id = $1 AND UPPER(COALESCE(currency,'USD')) = 'USD'
+       AND type IN ('opening_reference', 'return_in', 'return_out', 'return_recorded')`,
+    [fundId]
+  )).rows[0];
+  return Math.max(0, Number(r?.t) || 0);
+}
+
+/** تقدير من سجل شركة التحويل (لا يوجد عمود نوع — يُستثنى سطور تحويل معتمد) */
+async function sumCompanyReferenceReturnUsdHeuristic(db, companyId) {
+  const r = (await db.query(
+    `SELECT COALESCE(SUM(amount), 0)::float AS t FROM transfer_company_ledger
+     WHERE company_id = $1 AND UPPER(COALESCE(currency,'USD')) = 'USD'
+       AND amount > 0.0001
+       AND COALESCE(notes,'') NOT ILIKE '%تحويل إلى معتمد%'
+       AND (
+         COALESCE(notes,'') ILIKE '%افتتاحي%' OR COALESCE(notes,'') ILIKE '%مرتجع%'
+         OR COALESCE(notes,'') ILIKE '%return%'
+       )`,
+    [companyId]
+  )).rows[0];
+  return Math.max(0, Number(r?.t) || 0);
+}
+
 function parseUploadedRows(filePath, mimetype) {
   if (!filePath || !fs.existsSync(filePath)) return [];
   const ext = path.extname(filePath).toLowerCase();
@@ -558,8 +585,7 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
       mode = undefined;
     }
 
-    const meta = { transferType, fundId, companyId, transferMode: mode };
-    let metaJson = JSON.stringify(meta);
+    const meta = { transferType, fundId, companyId, transferMode: mode, accName };
 
     if (transferType === 'fund') {
       const fid = parseInt(fundId, 10);
@@ -571,13 +597,30 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
       if (!destFund) return res.json({ success: false, message: 'صندوق غير صالح' });
 
       if (mode === 'payable') {
-        const epNote = `تحويل معتمد — ${accName}${noteUser ? ` — ${noteUser}` : ''}`;
-        await db.query(
-          `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
-           VALUES ($1, 'fund', $2, $3, 'USD', $4, 'payable')`,
-          [uid, fid, amt, epNote]
-        );
-        const ledNote = `تحويل إلى معتمد ${accName} — دين علينا${noteUser ? ` — ${noteUser}` : ''}`;
+        const offsetUsd = await sumFundReferenceAndReturnUsdForFund(db, fid);
+        const appliedOffset = Math.min(amt, offsetUsd);
+        const payableInsert = Math.max(0, amt - appliedOffset);
+        meta.payableGrossUsd = amt;
+        meta.payableOffsetFromReferenceUsd = appliedOffset;
+        meta.payableRecordedUsd = payableInsert;
+        if (payableInsert > 0.0001) {
+          const epNote = `تحويل معتمد — ${accName}${
+            appliedOffset > 0.0001 ? ` — بعد خصم ${appliedOffset.toFixed(2)} USD من رصيد مرجعي/مرتجع` : ''
+          }${noteUser ? ` — ${noteUser}` : ''}`;
+          await db.query(
+            `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
+             VALUES ($1, 'fund', $2, $3, 'USD', $4, 'payable')`,
+            [uid, fid, payableInsert, epNote]
+          );
+        }
+        const ledNote =
+          payableInsert > 0.0001
+            ? `تحويل إلى معتمد ${accName} — دين علينا (${payableInsert.toFixed(2)} USD)${
+                appliedOffset > 0.0001 ? ` — خصم من مرجعي/مرتجع ${appliedOffset.toFixed(2)} USD` : ''
+              }${noteUser ? ` — ${noteUser}` : ''}`
+            : `تحويل إلى معتمد ${accName} — تسوية كاملة من رصيد مرجعي/مرتجع (${amt.toFixed(2)} USD)${
+                noteUser ? ` — ${noteUser}` : ''
+              }`;
         await adjustFundBalance(
           db,
           fid,
@@ -640,13 +683,30 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
       if (!comp) return res.json({ success: false, message: 'شركة غير موجودة' });
 
       if (mode === 'payable') {
-        const epNote = `تحويل معتمد — ${accName}${noteUser ? ` — ${noteUser}` : ''}`;
-        await db.query(
-          `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
-           VALUES ($1, 'transfer_company', $2, $3, 'USD', $4, 'payable')`,
-          [uid, cid, amt, epNote]
-        );
-        const ledNote = `تحويل إلى معتمد ${accName} — دين علينا${noteUser ? ` — ${noteUser}` : ''}`;
+        const offsetUsd = await sumCompanyReferenceReturnUsdHeuristic(db, cid);
+        const appliedOffset = Math.min(amt, offsetUsd);
+        const payableInsert = Math.max(0, amt - appliedOffset);
+        meta.payableGrossUsd = amt;
+        meta.payableOffsetFromReferenceUsd = appliedOffset;
+        meta.payableRecordedUsd = payableInsert;
+        if (payableInsert > 0.0001) {
+          const epNote = `تحويل معتمد — ${accName}${
+            appliedOffset > 0.0001 ? ` — بعد خصم ${appliedOffset.toFixed(2)} USD من رصيد افتتاحي/مرتجع` : ''
+          }${noteUser ? ` — ${noteUser}` : ''}`;
+          await db.query(
+            `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
+             VALUES ($1, 'transfer_company', $2, $3, 'USD', $4, 'payable')`,
+            [uid, cid, payableInsert, epNote]
+          );
+        }
+        const ledNote =
+          payableInsert > 0.0001
+            ? `تحويل إلى معتمد ${accName} — دين علينا (${payableInsert.toFixed(2)} USD)${
+                appliedOffset > 0.0001 ? ` — خصم من افتتاحي/مرتجع ${appliedOffset.toFixed(2)} USD` : ''
+              }${noteUser ? ` — ${noteUser}` : ''}`
+            : `تحويل إلى معتمد ${accName} — تسوية كاملة من رصيد افتتاحي/مرتجع (${amt.toFixed(2)} USD)${
+                noteUser ? ` — ${noteUser}` : ''
+              }`;
         await db.query(
           `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
            VALUES ($1, $2, 'USD', $3, 'accreditation_entities', $4)`,
@@ -698,6 +758,7 @@ router.post('/:id/transfer', requireAuth, async (req, res) => {
     const buckets = applyTransferOut(pay, rec, amt);
     pay = buckets.pay;
     rec = buckets.rec;
+    const metaJson = JSON.stringify(meta);
     await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, notes, meta_json)
        VALUES ($1, 'transfer', $2, 'USD', $3, $4)`,

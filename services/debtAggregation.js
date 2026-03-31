@@ -8,11 +8,21 @@ async function computeDebtBreakdown(db, userId) {
   `)).rows[0];
   const shippingDebt = sellAgg?.debt_sell ?? 0;
 
-  const accDebt = (await db.query(`
-    SELECT COALESCE(SUM(-balance_amount), 0)::float AS t
-    FROM accreditation_entities WHERE user_id = $1 AND balance_amount < 0
-  `, [userId])).rows[0];
-  const accreditationDebtTotal = accDebt?.t ?? 0;
+  /** مطلوب دفع للمعتمد (علينا تجاه المعتمد) — يُحسب من balance_payable فقط */
+  const accPayable = (await db.query(
+    `SELECT COALESCE(SUM(balance_payable), 0)::float AS t
+     FROM accreditation_entities WHERE user_id = $1 AND COALESCE(balance_payable, 0) > 0.0001`,
+    [userId]
+  )).rows[0];
+  const accreditationPayableUsd = accPayable?.t ?? 0;
+
+  /** دين لنا على المعتمد (رصيد سالب net = لصالحنا) — لا يُضاف إلى إجمالي التزاماتنا */
+  const accRecv = (await db.query(
+    `SELECT COALESCE(SUM(-balance_amount), 0)::float AS t
+     FROM accreditation_entities WHERE user_id = $1 AND balance_amount < -0.0001`,
+    [userId]
+  )).rows[0];
+  const accreditationReceivableUsd = accRecv?.t ?? 0;
 
   let payablesSumUsd = 0;
   try {
@@ -52,14 +62,17 @@ async function computeDebtBreakdown(db, userId) {
 
   const totalDebts =
     shippingDebt +
-    accreditationDebtTotal +
+    accreditationPayableUsd +
     payablesSumUsd +
     companyDebtFromBalance +
     fundDebtFromBalance;
 
   return {
     shippingDebt,
-    accreditationDebtTotal,
+    /** @deprecated استخدم accreditationPayableUsd أو accreditationReceivableUsd حسب السياق */
+    accreditationDebtTotal: accreditationPayableUsd,
+    accreditationPayableUsd,
+    accreditationReceivableUsd,
     payablesSumUsd,
     companyDebtFromBalance,
     fundDebtFromBalance,
