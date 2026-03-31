@@ -8151,7 +8151,27 @@
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
-  .member-directory-page .sub-agencies-toolbar-row input#mdSearchInput.input-select {
+}
+.md-toolbar-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (min-width: 768px) {
+  .md-toolbar-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    -moz-column-gap: 1rem;
+         column-gap: 1rem;
+    row-gap: 0.5rem;
+  }
+  .md-toolbar-row .erp-toolbar-actions {
+    justify-content: flex-start;
+  }
+  .member-directory-page .md-toolbar-row input#mdSearchInput.input-select {
     min-height: 2.5rem;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
