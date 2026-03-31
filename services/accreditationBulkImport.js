@@ -243,6 +243,8 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     const remainder = bal - brokerageAmount;
     if (salaryDirection === 'to_us') {
       pay += bal;
+    } else if (rec > 0.0001) {
+      pay += bal;
     } else {
       const br = applySalaryToThem(pay, rec, bal);
       pay = br.pay;

@@ -135,6 +135,7 @@
       transfer: 'تحويل / تسليم',
       delivery: 'تسليم — تصفير علينا',
       deferred_reserve_sync: 'مزامنة احتياطي مؤجل',
+      receivable_settlement: 'تسوية بين دين لنا وعلينا',
     };
     return m[t] || t || '';
   }
@@ -175,6 +176,13 @@
         return '<span class="font-bold tabular-nums ' + pos + '">+' + absFmt + '</span>';
       }
       return '<span class="font-semibold tabular-nums text-slate-700">' + absFmt + '</span>';
+    }
+    if (t === 'receivable_settlement') {
+      return (
+        '<span class="font-bold tabular-nums text-indigo-700">' +
+        escHtml(accFmtMoney(amt)) +
+        '</span> <span class="text-[10px] text-slate-500">(يُنقص لنا وعلينا)</span>'
+      );
     }
     return '<span class="font-semibold tabular-nums text-slate-800">' + escHtml(accFmtMoney(amt)) + '</span>';
   }
@@ -559,6 +567,10 @@
         var pinHtml = a.pinned
           ? '<span class="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-700 shadow-sm" title="مثبت"><i class="fas fa-thumbtack text-xs"></i></span>'
           : '';
+        var settleHint =
+          (Number(a.balance_payable) || 0) > 0.0001 && (Number(a.balance_receivable) || 0) > 0.0001
+            ? '<span class="absolute left-2 top-2 z-10 max-w-[calc(100%-5rem)] truncate rounded-lg border border-amber-300 bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900 shadow-sm" title="يوجد دين لنا ودين علينا — يحتاج تسوية من ملف المعتمد">تسوية</span>'
+            : '';
         return (
           '<div class="acc-list-card group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" onclick="accOpen(' +
           a.id +
@@ -568,6 +580,7 @@
           ' h-1 w-full"></div>' +
           '<div class="p-4">' +
           pinHtml +
+          settleHint +
           '<div class="flex items-start justify-between gap-2">' +
           '<h5 class="min-w-0 flex-1 text-base font-bold leading-snug text-slate-900 sm:text-[1.05rem]">' +
           escHtml(a.name || '') +
@@ -963,6 +976,35 @@
             : 'border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200');
       }
       accSyncCurrencyUi();
+      var sp = document.getElementById('accSettlementPanel');
+      if (sp) {
+        if (res.settlementPending && (Number(res.maxSettlement) || 0) > 0.0001) {
+          sp.classList.remove('hidden');
+          var payV = Number(e.balance_payable) || 0;
+          var recV = Number(e.balance_receivable) || 0;
+          var mx = Number(res.maxSettlement) || 0;
+          var ex = document.getElementById('accSettlementExplain');
+          if (ex) {
+            ex.textContent =
+              'دين لنا على المعتمد: ' +
+              accFmtMoney(recV) +
+              ' — علينا له: ' +
+              accFmtMoney(payV) +
+              '. أُضيف مبلغ إلى «علينا» دون خصم تلقائي من «دين لنا»؛ حدّد هنا مبلغ التسوية (حتى ' +
+              accFmtMoney(mx) +
+              ').';
+          }
+          var maxEl = document.getElementById('accSettlementMax');
+          if (maxEl) maxEl.textContent = accFmtMoney(mx);
+          var sAmt = document.getElementById('accSettlementAmt');
+          if (sAmt) {
+            sAmt.setAttribute('max', String(mx));
+            sAmt.value = '';
+          }
+        } else {
+          sp.classList.add('hidden');
+        }
+      }
       document.getElementById('accLedger').innerHTML = (res.ledger || []).map(accLedgerRowHtml).join('') ||
         '<p class="py-6 text-center text-sm text-slate-400">لا توجد حركات</p>';
       document.getElementById('accAddAmountPanel').classList.add('hidden');
@@ -1242,6 +1284,27 @@
       var mainR = document.getElementById('accTfModeMainFund');
       if (mainR) mainR.checked = true;
     }
+  };
+
+  window.accSubmitSettlement = function() {
+    if (!currentId) return;
+    var inp = document.getElementById('accSettlementAmt');
+    var amt = parseFloat(inp && inp.value);
+    if (!inp || isNaN(amt) || amt <= 0) {
+      toast('أدخل مبلغ تسوية صالحاً', 'error');
+      return;
+    }
+    var cyc = document.getElementById('accCycle');
+    apiCall('/api/accreditations/' + currentId + '/settle-receivable-payable', {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: amt,
+        cycleId: cyc && cyc.value ? cyc.value : null,
+      }),
+    }).then(function(r) {
+      toast(r.message || '', r.success ? 'success' : 'error');
+      if (r.success) accReloadDetail();
+    });
   };
 
   window.accSubmitAmount = function() {

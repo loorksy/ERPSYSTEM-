@@ -62,6 +62,9 @@ function undoAccreditationLedgerRow(row, pay, rec) {
   if (type === 'payable_discount_profit') {
     return { pay, rec };
   }
+  if (type === 'receivable_settlement') {
+    return { pay: pay + amt, rec: rec + amt };
+  }
   if (type === 'salary') {
     if (row.direction === 'to_us') {
       return { pay: pay - amt, rec };

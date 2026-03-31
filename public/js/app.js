@@ -44,11 +44,68 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(() => {});
 });
 
+function homeDownloadPdfBlob(blob, filename) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'report.pdf';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 window.homeDownloadReportPdf = function() {
   var typeEl = document.getElementById('homeReportType');
   var cycleSel = document.getElementById('homeCycleSelect');
   var t = typeEl ? typeEl.value : 'comprehensive';
   var cid = cycleSel && cycleSel.value ? cycleSel.value : '';
+
+  if (t === 'cycle-unified') {
+    if (!cid) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('اختر دورة مالية أولاً — التقرير الموحّد مربوط بدورة.', 'error');
+      } else {
+        alert('اختر دورة مالية أولاً');
+      }
+      return;
+    }
+    fetch('/api/reports/cycle-unified', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cycleId: parseInt(cid, 10) }),
+    })
+      .then(function (r) {
+        var ct = (r.headers.get('Content-Type') || '').toLowerCase();
+        if (!r.ok) {
+          return r.text().then(function (text) {
+            var j = null;
+            try {
+              j = JSON.parse(text);
+            } catch (e) {}
+            throw new Error((j && j.message) || 'فشل إنشاء التقرير (' + r.status + ')');
+          });
+        }
+        if (ct.indexOf('application/pdf') === -1) {
+          throw new Error('استجابة غير متوقعة من الخادم');
+        }
+        return r.blob();
+      })
+      .then(function (blob) {
+        homeDownloadPdfBlob(blob, 'تقرير-موحد-دورة.pdf');
+      })
+      .catch(function (e) {
+        if (typeof window.showToast === 'function') {
+          window.showToast(e.message || 'فشل', 'error');
+        } else {
+          alert(e.message || 'فشل');
+        }
+      });
+    return;
+  }
+
   var path = '/api/reports/pdf/';
   if (t === 'transfer-companies') {
     path += 'transfer-companies';
@@ -58,11 +115,20 @@ window.homeDownloadReportPdf = function() {
     path += 'accreditations';
   } else if (t === 'movements') {
     path += 'movements';
+  } else if (t === 'reconciliation') {
+    path += 'reconciliation';
+  } else if (t === 'all-sub-agencies') {
+    path += 'all-sub-agencies';
+  } else if (t === 'all-funds') {
+    path += 'all-funds';
+  } else if (t === 'accreditations-net') {
+    path += 'accreditations-net';
   } else {
     path += 'comprehensive';
   }
+
   var q = [];
-  if (cid && t !== 'transfer-companies') {
+  if (cid && t !== 'transfer-companies' && t !== 'all-funds') {
     q.push('cycleId=' + encodeURIComponent(cid));
   }
   window.open(path + (q.length ? '?' + q.join('&') : ''), '_blank');

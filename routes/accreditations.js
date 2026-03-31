@@ -315,6 +315,10 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
 
     if (dir === 'to_us') {
       pay += amt;
+    } else if (rec > 0.0001) {
+      /** وجود «دين لنا» على المعتمد: لا تطبيق applySalaryToThem (كان يضيف المتبقي إلى لنا).
+       *  يُسجَّل المبلغ كاملًا في «علينا» حتى تُحدَّد التسوية يدويًا من شاشة التسوية. */
+      pay += amt;
     } else {
       const br = applySalaryToThem(pay, rec, amt);
       pay = br.pay;
@@ -380,6 +384,78 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     res.json({
       success: true,
       message: 'تم التسجيل',
+      newBalance: out.balance_amount,
+      balance_payable: out.balance_payable,
+      balance_receivable: out.balance_receivable,
+    });
+  } catch (e) {
+    res.json({ success: false, message: e.message || 'فشل' });
+  }
+});
+
+/**
+ * تسوية يدوية بين «دين لنا» و«دين علينا» عند وجودهما معًا (يُخفّض balance_payable و balance_receivable بنفس المبلغ).
+ * لا يمر عبر الصندوق — مجرد تصفية بين طرفي حساب المعتمد.
+ */
+router.post('/:id/settle-receivable-payable', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { amount, cycleId, notes } = req.body || {};
+    const amt = parseFloat(amount);
+    if (!id || isNaN(amt) || amt <= 0) {
+      return res.json({ success: false, message: 'مبلغ غير صالح' });
+    }
+    const db = getDb();
+    const ent = (await db.query(
+      'SELECT id, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1 AND user_id = $2',
+      [id, req.session.userId]
+    )).rows[0];
+    if (!ent) return res.json({ success: false, message: 'غير موجود' });
+    let pay = Number(ent.balance_payable) || 0;
+    let rec = Number(ent.balance_receivable) || 0;
+    const maxSettle = Math.min(pay, rec);
+    if (maxSettle <= 0.0001) {
+      return res.json({
+        success: false,
+        message: 'لا يوجد دين لنا ودين علينا معًا للتسوية.',
+      });
+    }
+    if (amt > maxSettle + 1e-6) {
+      return res.json({
+        success: false,
+        message: `المبلغ يتجاوز الحد الأقصى للتسوية (${maxSettle.toFixed(2)}).`,
+      });
+    }
+    const settled = Math.round(amt * 100) / 100;
+    pay = Math.round((pay - settled) * 100) / 100;
+    rec = Math.round((rec - settled) * 100) / 100;
+    const cid = cycleId ? parseInt(cycleId, 10) : null;
+    const note =
+      (notes && String(notes).trim()) ||
+      `تسوية يدوية: ${settled.toFixed(2)} USD من دين لنا ومن علينا`;
+    await db.query(
+      `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, cycle_id, notes, meta_json)
+       VALUES ($1, 'receivable_settlement', $2, 'USD', 'to_us', $3, $4, $5)`,
+      [
+        id,
+        settled,
+        cid,
+        note,
+        JSON.stringify({ settledUsd: settled, balancePayableAfter: pay, balanceReceivableAfter: rec }),
+      ]
+    );
+    await db.query(
+      'UPDATE accreditation_entities SET balance_payable = $1, balance_receivable = $2 WHERE id = $3',
+      [pay, rec, id]
+    );
+    await syncNetBalance(db, id);
+    const out = (await db.query(
+      'SELECT balance_amount, balance_payable, balance_receivable FROM accreditation_entities WHERE id = $1',
+      [id]
+    )).rows[0];
+    res.json({
+      success: true,
+      message: 'تمت التسوية',
       newBalance: out.balance_amount,
       balance_payable: out.balance_payable,
       balance_receivable: out.balance_receivable,
@@ -800,7 +876,17 @@ router.get('/:id', requireAuth, async (req, res) => {
       [id]
     )).rows;
     const ledger = computeLedgerWithBalanceAfter(row, ledgerRaw);
-    res.json({ success: true, entity: row, ledger });
+    const payN = Number(row.balance_payable) || 0;
+    const recN = Number(row.balance_receivable) || 0;
+    const settlementPending = payN > 0.0001 && recN > 0.0001;
+    const maxSettlement = settlementPending ? Math.min(payN, recN) : 0;
+    res.json({
+      success: true,
+      entity: row,
+      ledger,
+      settlementPending,
+      maxSettlement,
+    });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }
