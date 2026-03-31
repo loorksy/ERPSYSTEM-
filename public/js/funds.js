@@ -194,8 +194,13 @@
     var titleEl = document.getElementById('fundDetailTitle');
     if (titleEl) titleEl.textContent = f.name || '';
     document.getElementById('fundDetailMeta').innerHTML =
-      '<p><strong>الرقم:</strong> ' + (f.fund_number || '-') + '</p>' +
-      '<p><strong>الدولة:</strong> ' + (f.country || '-') + ' ' + (f.region_syria || '') + '</p>';
+      '<div class="grid gap-2 sm:grid-cols-2">' +
+      '<div class="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">' +
+      '<p class="text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">رقم الصندوق</p>' +
+      '<p class="mt-0.5 font-bold text-slate-900">' + (f.fund_number || '—') + '</p></div>' +
+      '<div class="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">' +
+      '<p class="text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">الموقع</p>' +
+      '<p class="mt-0.5 font-semibold text-slate-800">' + [f.country || '—', f.region_syria || ''].filter(Boolean).join(' · ') + '</p></div></div>';
     var payBox = document.getElementById('fundDetailPayables');
     var pay = res.openPayablesUsd != null ? res.openPayablesUsd : 0;
     if (payBox) {
@@ -228,8 +233,10 @@
       } else {
         balEl.classList.remove('hidden');
         balEl.innerHTML = (res.balances || []).map(function(b) {
-          var cls = balDebt && (b.currency || '') === 'USD' ? 'bg-red-50 text-red-800 border border-red-100' : 'bg-slate-100 text-slate-800';
-          return '<span class="px-3 py-1 rounded-lg ' + cls + '">' +
+          var cls = balDebt && (b.currency || '') === 'USD'
+            ? 'border border-red-100 bg-red-50 text-red-800 ring-1 ring-red-100/80'
+            : 'border border-slate-100 bg-white text-slate-800 shadow-sm';
+          return '<span class="inline-flex items-center rounded-xl px-3 py-1.5 text-sm font-semibold tabular-nums ' + cls + '">' +
             (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '') + '</span>';
         }).join(' ');
       }
@@ -244,13 +251,13 @@
         ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
         : '—';
       var noteLine = (l.displayNotes || l.notes || '');
-      return '<div class="py-2.5 px-2 -mx-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 border-b border-slate-50 ' + border + '">' +
-        '<div class="min-w-0"><span class="text-sm font-medium text-slate-800">' + (l.labelAr || l.type || '') + '</span>' +
-        '<span class="block text-[0.7rem] text-slate-500 truncate">' + noteLine + '</span></div>' +
-        '<div class="text-left shrink-0"><span class="font-semibold tabular-nums">' +
+      return '<div class="flex flex-col gap-1 border-b border-slate-100 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between ' + border + '">' +
+        '<div class="min-w-0 pr-1"><span class="text-sm font-semibold text-slate-800">' + (l.labelAr || l.type || '') + '</span>' +
+        (noteLine ? '<span class="mt-0.5 block text-[0.7rem] leading-snug text-slate-500">' + noteLine + '</span>' : '') + '</div>' +
+        '<div class="shrink-0 text-left sm:min-w-[9rem]"><span class="font-bold tabular-nums text-slate-900">' +
         (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (l.currency || '') + '</span>' +
-        '<span class="block text-[0.65rem] text-slate-500">الرصيد بعد: ' + after + '</span></div></div>';
-    }).join('') || '<p class="text-slate-400">لا سجل</p>';
+        '<span class="mt-0.5 block text-[0.65rem] text-slate-500">بعد: ' + after + '</span></div></div>';
+    }).join('') || '<p class="py-10 text-center text-sm text-slate-400">لا سجل حركات بعد</p>';
     apiCall('/api/funds/list').then(function(r2) {
       var sel = document.getElementById('fundTransferTo');
       if (!sel) return;
@@ -302,9 +309,14 @@
   function fundsToggleReturnTarget() {
     var d = document.getElementById('fundReturnDisposition');
     var rts = document.getElementById('fundReturnTarget');
+    var wrap = document.getElementById('fundReturnTargetWrap');
     if (!d || !rts) return;
-    if (d.value === 'transfer_to_fund') rts.classList.remove('hidden');
-    else rts.classList.add('hidden');
+    var show = d.value === 'transfer_to_fund';
+    if (wrap) {
+      wrap.classList.toggle('hidden', !show);
+    } else {
+      rts.classList.toggle('hidden', !show);
+    }
   }
   document.getElementById('fundReturnDisposition')?.addEventListener('change', fundsToggleReturnTarget);
 
