@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
-const { getDb } = require('../db/database');
+const { getDb, runTransaction } = require('../db/database');
 const { adjustFundBalance, getMainFundId, getMainFundUsdBalance } = require('../services/fundService');
 const { settleOpenPayablesFifo, sumOpenPayables } = require('../services/entityPayablesService');
 
@@ -126,7 +126,7 @@ router.post('/:id/payout-from-main', requireAuth, async (req, res) => {
   }
 });
 
-/** إضافة رصيد «دين لنا» لدى شركة التحويل */
+/** إضافة رصيد «دين لنا» لدى شركة التحويل — يُخصم أولاً من «دين علينا» لنفس العملة ثم يُضاف المتبقّي للرصيد */
 router.post('/:id/add-receivable', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -142,15 +142,35 @@ router.post('/:id/add-receivable', requireAuth, async (req, res) => {
     )).rows[0];
     if (!company) return res.json({ success: false, message: 'شركة غير موجودة' });
     const noteText = (notes && String(notes).trim()) ? String(notes).trim() : 'إضافة دين لنا';
-    await db.query(
-      `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, $3, $4)`,
-      [id, amt, cur, noteText]
-    );
-    await db.query(
-      `UPDATE transfer_companies SET balance_amount = balance_amount + $1, balance_currency = $2 WHERE id = $3 AND user_id = $4`,
-      [amt, cur, id, uid]
-    );
-    res.json({ success: true, message: 'تم تسجيل دين لنا' });
+    let payablesSettled = 0;
+    let cashPortion = 0;
+    await runTransaction(async (client) => {
+      const open = await sumOpenPayables(client, uid, 'transfer_company', id, cur);
+      const settleBudget = Math.min(amt, open);
+      if (settleBudget > 0) {
+        const r = await settleOpenPayablesFifo(client, uid, 'transfer_company', id, settleBudget, cur);
+        payablesSettled = r.settled;
+      }
+      cashPortion = Math.max(0, amt - payablesSettled);
+      if (cashPortion > 0) {
+        const noteSuffix = payablesSettled > 0 ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} ${cur})` : '';
+        await client.query(
+          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes) VALUES ($1, $2, $3, $4)`,
+          [id, cashPortion, cur, noteText + noteSuffix]
+        );
+        await client.query(
+          `UPDATE transfer_companies SET balance_amount = balance_amount + $1, balance_currency = $2 WHERE id = $3 AND user_id = $4`,
+          [cashPortion, cur, id, uid]
+        );
+      }
+    });
+    let message = 'تم تسجيل دين لنا';
+    if (payablesSettled > 0 && cashPortion > 0) {
+      message = `تم تسجيل دين لنا: تسوية دين علينا ${payablesSettled.toFixed(2)} ${cur}، وإضافة ${cashPortion.toFixed(2)} ${cur} لرصيد الشركة`;
+    } else if (payablesSettled > 0 && cashPortion === 0) {
+      message = `تم تسوية دين علينا بقيمة ${payablesSettled.toFixed(2)} ${cur} من المبلغ المُدخل`;
+    }
+    res.json({ success: true, message, payablesSettled, cashToBalance: cashPortion });
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });
   }

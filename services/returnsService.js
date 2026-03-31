@@ -1,7 +1,9 @@
 const { runTransaction } = require('../db/database');
+const { settleOpenPayablesFifo, sumOpenPayables } = require('./entityPayablesService');
 
 /**
  * تسجيل مرتجع مالي وربطه بالسجلات عند الترحيل لصندوق.
+ * يُخصم أولاً من «دين علينا» (entity_payables) لنفس الكيان والعملة، ثم يُطبَّق المتبقّي على الرصيد/الصندوق.
  * @param {import('../db/database').getDb} db
  * @param {number} userId
  * @param {object} body
@@ -51,6 +53,8 @@ async function createReturn(db, userId, body) {
   }
 
   let returnId;
+  let payablesSettled = 0;
+  let netAmount = 0;
 
   await runTransaction(async (client) => {
     const ins = await client.query(
@@ -74,21 +78,90 @@ async function createReturn(db, userId, body) {
     returnId = ins.rows[0].id;
     const noteLine = notes || `مرتجع #${returnId}`;
 
+    const et = entityType === 'fund' ? 'fund' : 'transfer_company';
+    const open = await sumOpenPayables(client, userId, et, entityId, currency);
+    const settleBudget = Math.min(amount, open);
+    if (settleBudget > 0) {
+      const r = await settleOpenPayablesFifo(client, userId, et, entityId, settleBudget, currency);
+      payablesSettled = r.settled;
+    }
+    netAmount = Math.max(0, amount - payablesSettled);
+    const netNote = payablesSettled > 0
+      ? ` (بعد تسوية دين ${payablesSettled.toFixed(2)} ${currency})`
+      : '';
+
     if (entityType === 'transfer_company') {
       if (disposition === 'transfer_to_fund') {
+        if (netAmount > 0) {
+          await client.query(
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [entityId, -netAmount, currency, `مرتجع إلى صندوق${netNote} — ${noteLine}`, 'financial_returns', returnId]
+          );
+          await client.query(
+            'UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3',
+            [-netAmount, entityId, userId]
+          );
+          await client.query(
+            `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
+             ON CONFLICT (fund_id, currency) DO UPDATE SET amount = fund_balances.amount + $3`,
+            [targetFundId, currency, netAmount]
+          );
+          await client.query(
+            `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+              targetFundId,
+              'return_in',
+              netAmount,
+              currency,
+              `مرتجع من شركة تحويل${netNote} — ${noteLine}`,
+              'financial_returns',
+              returnId,
+            ]
+          );
+        } else if (payablesSettled > 0) {
+          await client.query(
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [entityId, 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+          );
+        }
+      } else {
+        if (netAmount > 0) {
+          await client.query(
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [entityId, netAmount, currency, `مرتجع يبقى لدى الشركة (دين لنا)${netNote} — إجمالي ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+          );
+          await client.query(
+            'UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3',
+            [netAmount, entityId, userId]
+          );
+        } else if (payablesSettled > 0) {
+          await client.query(
+            `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [entityId, 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+          );
+        }
+      }
+    } else if (disposition === 'transfer_to_fund') {
+      if (netAmount > 0) {
         await client.query(
-          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [entityId, -amount, currency, `مرتجع إلى صندوق — ${noteLine}`, 'financial_returns', returnId]
+          `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
+           ON CONFLICT (fund_id, currency) DO UPDATE SET amount = fund_balances.amount + $3`,
+          [entityId, currency, -netAmount]
         );
         await client.query(
-          'UPDATE transfer_companies SET balance_amount = balance_amount + $1 WHERE id = $2 AND user_id = $3',
-          [-amount, entityId, userId]
+          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [entityId, 'return_out', -netAmount, currency, `مرتجع صادر إلى صندوق آخر${netNote} — ${noteLine}`, 'financial_returns', returnId]
         );
         await client.query(
           `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
            ON CONFLICT (fund_id, currency) DO UPDATE SET amount = fund_balances.amount + $3`,
-          [targetFundId, currency, amount]
+          [targetFundId, currency, netAmount]
         );
         await client.query(
           `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
@@ -96,62 +169,41 @@ async function createReturn(db, userId, body) {
           [
             targetFundId,
             'return_in',
-            amount,
+            netAmount,
             currency,
-            `مرتجع من شركة تحويل — ${noteLine}`,
+            `مرتجع وارد من صندوق${netNote} — ${noteLine}`,
             'financial_returns',
             returnId,
           ]
         );
-      } else {
+      } else if (payablesSettled > 0) {
         await client.query(
-          `INSERT INTO transfer_company_ledger (company_id, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [entityId, 0, currency, `تعريف مرتجع (يبقى لدى الشركة) — ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [entityId, 'return_recorded', 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
         );
       }
-    } else {
-      /* صندوق مصدر */
-      if (disposition === 'transfer_to_fund') {
-        await client.query(
-          `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
-           ON CONFLICT (fund_id, currency) DO UPDATE SET amount = fund_balances.amount + $3`,
-          [entityId, currency, -amount]
-        );
-        await client.query(
-          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [entityId, 'return_out', -amount, currency, `مرتجع صادر إلى صندوق آخر — ${noteLine}`, 'financial_returns', returnId]
-        );
-        await client.query(
-          `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
-           ON CONFLICT (fund_id, currency) DO UPDATE SET amount = fund_balances.amount + $3`,
-          [targetFundId, currency, amount]
-        );
-        await client.query(
-          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            targetFundId,
-            'return_in',
-            amount,
-            currency,
-            `مرتجع وارد من صندوق — ${noteLine}`,
-            'financial_returns',
-            returnId,
-          ]
-        );
-      } else {
-        await client.query(
-          `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [entityId, 'return_recorded', 0, currency, `تعريف مرتجع (يبقى بالصندوق) — ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId]
-        );
-      }
+    } else if (netAmount > 0) {
+      await client.query(
+        `INSERT INTO fund_balances (fund_id, currency, amount) VALUES ($1, $2, $3)
+         ON CONFLICT (fund_id, currency) DO UPDATE SET amount = fund_balances.amount + $3`,
+        [entityId, currency, netAmount]
+      );
+      await client.query(
+        `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [entityId, 'return_recorded', netAmount, currency, `مرتجع يبقى بالصندوق (دين لنا)${netNote} — إجمالي ${amount} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+      );
+    } else if (payablesSettled > 0) {
+      await client.query(
+        `INSERT INTO fund_ledger (fund_id, type, amount, currency, notes, ref_table, ref_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [entityId, 'return_recorded', 0, currency, `تسوية دين من مرتجع #${returnId} — ${payablesSettled.toFixed(2)} ${currency} — ${noteLine}`, 'financial_returns', returnId]
+      );
     }
   });
 
-  return { id: returnId };
+  return { id: returnId, payablesSettled, netAmount, currency };
 }
 
 async function listReturnsForEntity(db, userId, entityType, entityId) {
