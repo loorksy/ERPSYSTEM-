@@ -229,12 +229,32 @@
       } else {
         balEl.classList.remove('hidden');
         balEl.innerHTML = (res.balances || []).map(function(b) {
-          var cls = balDebt && (b.currency || '') === 'USD'
-            ? 'border border-red-100 bg-red-50 text-red-800 ring-1 ring-red-100/80'
-            : 'border border-slate-100 bg-white text-slate-800 shadow-sm';
-          return '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold tabular-nums ' + cls + '">' +
-            (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + (b.currency || '') + '</span>';
-        }).join(' ');
+          var amt = (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+          var cur = b.currency || '';
+          var isDebtUsd = balDebt && cur === 'USD';
+          var box =
+            'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 shadow-sm tabular-nums ';
+          if (isDebtUsd) {
+            box +=
+              'border-red-200 bg-gradient-to-l from-red-50 to-white text-red-900 ring-1 ring-red-100/60';
+          } else {
+            box +=
+              'border-indigo-200/90 bg-gradient-to-l from-indigo-50/95 to-white text-slate-900 ring-1 ring-indigo-100/50';
+          }
+          return (
+            '<div class="' +
+            box +
+            '">' +
+            '<span class="text-[10px] font-bold uppercase tracking-wide ' +
+            (isDebtUsd ? 'text-red-700' : 'text-indigo-700') +
+            '">' +
+            cur +
+            '</span>' +
+            '<span class="text-sm font-bold leading-none">' +
+            amt +
+            '</span></div>'
+          );
+        }).join('');
       }
     }
     document.getElementById('fundDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
