@@ -10,6 +10,10 @@
   var accReceivableOffsetPending = null;
   var accReceivableOffsetSelectedMode = 'defer';
 
+  function accDeferSettlementStorageKey(entityId) {
+    return 'accDeferSettlement_' + (entityId != null ? String(entityId) : '');
+  }
+
   function escHtml(s) {
     if (s == null) return '';
     return String(s)
@@ -113,6 +117,13 @@
           body.receivableOffsetUsd = raw;
         }
         apiCall(p.url, { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
+          if (res && res.success && p.entityId != null) {
+            try {
+              var dk = accDeferSettlementStorageKey(p.entityId);
+              if (mode === 'defer') sessionStorage.setItem(dk, '1');
+              else sessionStorage.removeItem(dk);
+            } catch (e) {}
+          }
           accCloseReceivableOffsetModal();
           if (typeof p.onDone === 'function') p.onDone(res);
         });
@@ -712,8 +723,14 @@
         var pinHtml = a.pinned
           ? '<span class="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-700 shadow-sm" title="مثبت"><i class="fas fa-thumbtack text-xs"></i></span>'
           : '';
+        var settleHide = false;
+        try {
+          settleHide = sessionStorage.getItem(accDeferSettlementStorageKey(a.id)) === '1';
+        } catch (e) {}
         var settleHint =
-          (Number(a.balance_payable) || 0) > 0.0001 && (Number(a.balance_receivable) || 0) > 0.0001
+          !settleHide &&
+          (Number(a.balance_payable) || 0) > 0.0001 &&
+          (Number(a.balance_receivable) || 0) > 0.0001
             ? '<span class="absolute left-2 top-2 z-10 max-w-[calc(100%-5rem)] truncate rounded-lg border border-amber-300 bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900 shadow-sm" title="يوجد دين لنا ودين علينا — يحتاج تسوية من ملف المعتمد">تسوية</span>'
             : '';
         return (
@@ -1123,8 +1140,15 @@
       }
       accSyncCurrencyUi();
       var sp = document.getElementById('accSettlementPanel');
+      var hideSettleAfterDefer = false;
+      try {
+        hideSettleAfterDefer = sessionStorage.getItem(accDeferSettlementStorageKey(id)) === '1';
+      } catch (e) {}
       if (sp) {
-        if (res.settlementPending && (Number(res.maxSettlement) || 0) > 0.0001) {
+        if (hideSettleAfterDefer) {
+          sp.classList.add('hidden');
+          sp.removeAttribute('data-max-settlement');
+        } else if (res.settlementPending && (Number(res.maxSettlement) || 0) > 0.0001) {
           sp.classList.remove('hidden');
           var payV = Number(e.balance_payable) || 0;
           var recV = Number(e.balance_receivable) || 0;
@@ -1355,6 +1379,7 @@
         amount: parseFloat(String(body.amount).replace(/,/g, '')),
         baseBody: body,
         url: '/api/accreditations/' + id + '/add-amount',
+        entityId: id,
         onDone: function(res) {
           toast(res.message || '', res.success ? 'success' : 'error');
           if (res.success) {
@@ -1477,7 +1502,12 @@
       }),
     }).then(function(r) {
       toast(r.message || '', r.success ? 'success' : 'error');
-      if (r.success) accReloadDetail();
+      if (r.success) {
+        try {
+          if (currentId) sessionStorage.removeItem(accDeferSettlementStorageKey(currentId));
+        } catch (e) {}
+        accReloadDetail();
+      }
     });
   };
 
@@ -1498,6 +1528,7 @@
         amount: parseFloat(String(body.amount).replace(/,/g, '')),
         baseBody: body,
         url: '/api/accreditations/' + currentId + '/add-amount',
+        entityId: currentId,
         onDone: function(res) {
           toast(res.message || '', res.success ? 'success' : 'error');
           if (res.success) accReloadDetail();

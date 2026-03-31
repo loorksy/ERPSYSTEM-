@@ -39,10 +39,15 @@ function splitDebtPayableWithDiscount(grossAmount, discountPctRaw) {
 function parseReceivableOffsetFromBody(body, recBefore, grossCredit, opts = {}) {
   const rec0 = roundMoney(recBefore);
   const gross = roundMoney(grossCredit);
-  const mode = body && body.receivableOffsetMode;
+  const rawMode = body && body.receivableOffsetMode;
+  const mode =
+    rawMode == null || rawMode === ''
+      ? ''
+      : String(rawMode).trim().toLowerCase();
   const rawCustom = body && body.receivableOffsetUsd;
 
   if (rec0 <= 0.0001) return { s: 0, mode: 'defer' };
+  /* فراغ أو تأجيل أو أي قيمة غير full/custom = بدون خصم من دين لنا */
   if (!mode || mode === 'defer') return { s: 0, mode: 'defer' };
 
   let maxCap = roundMoney(Math.min(rec0, gross));

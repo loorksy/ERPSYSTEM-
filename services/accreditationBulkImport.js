@@ -78,7 +78,8 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
   const cid = cycleId ? parseInt(cycleId, 10) : null;
 
   for (let i = 0; i < items.length; i++) {
-    const it = items[i];
+    /* استيراد جماعي: دائماً تأجيل خصم «دين لنا» على الخادم (لا نثق بقيمة العميل) */
+    const it = { ...items[i], receivableOffsetMode: 'defer' };
     const code = it.code != null ? String(it.code).trim() : '';
     const name = it.name != null ? String(it.name).trim() : '';
     const bal = parseFloat(String(it.amount != null ? it.amount : '').replace(/,/g, ''));

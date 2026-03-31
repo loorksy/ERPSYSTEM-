@@ -31,6 +31,11 @@ const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const upload = multer({ dest: uploadsDir, limits: { fileSize: 15 * 1024 * 1024 } });
 
+function isReceivableOffsetChoiceMissing(body) {
+  const m = body && body.receivableOffsetMode;
+  return m == null || String(m).trim() === '';
+}
+
 /** صافي USD من قيود رصيد مرجعي ومرتجعات في سجل الصندوق — يُخصم من التزام «دين علينا» قبل تسجيل entity_payables */
 async function sumFundReferenceAndReturnUsdForFund(db, fundId) {
   const r = (await db.query(
@@ -185,7 +190,7 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       }
       const rec0 = roundMoney(rec);
       const gross = roundMoney(amt);
-      if (rec0 > 0.0001 && (req.body.receivableOffsetMode == null || req.body.receivableOffsetMode === '')) {
+      if (rec0 > 0.0001 && (isReceivableOffsetChoiceMissing(req.body))) {
         return res.status(400).json({
           success: false,
           code: 'RECEIVABLE_OFFSET_REQUIRED',
@@ -325,7 +330,7 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     if (kind === 'debt_payable_no_fund') {
       const rec0 = roundMoney(rec);
       const gross = roundMoney(amt);
-      if (rec0 > 0.0001 && (req.body.receivableOffsetMode == null || req.body.receivableOffsetMode === '')) {
+      if (rec0 > 0.0001 && (isReceivableOffsetChoiceMissing(req.body))) {
         return res.status(400).json({
           success: false,
           code: 'RECEIVABLE_OFFSET_REQUIRED',
@@ -455,7 +460,7 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
 
     let offsetUsd = 0;
     if (dir === 'to_us') {
-      if (rec0 > 0.0001 && (req.body.receivableOffsetMode == null || req.body.receivableOffsetMode === '')) {
+      if (rec0 > 0.0001 && (isReceivableOffsetChoiceMissing(req.body))) {
         return res.status(400).json({
           success: false,
           code: 'RECEIVABLE_OFFSET_REQUIRED',
