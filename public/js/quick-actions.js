@@ -294,7 +294,7 @@
       }).join('');
       showCascade(
         '<div class="flex justify-between items-center mb-3"><h3 class="font-bold">وارد — اعتماد</h3><button type="button" class="text-slate-400" id="qaBack"><i class="fas fa-arrow-right"></i></button></div>' +
-        '<p class="text-xs text-slate-500 mb-2">إضافة مبلغ باتجاه إلينا: يزيد رصيد الصندوق الرئيسي (بعد الوساطة) ويخفض دين المعتمد إن كان مديناً.</p>' +
+        '<p class="text-xs text-slate-500 mb-2">إضافة مبلغ باتجاه إلينا: يزيد رصيد الصندوق الرئيسي (بعد الوساطة). إن وُجد «دين لنا» على المعتمد يُسجّل المبلغ من <strong>ملف المعتمد</strong> بعد اختيار خصم الدين أو التأجيل.</p>' +
         '<label class="block text-sm font-medium mb-1">المعتمد</label><select id="qaAcId" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200"><option value="">— اختر —</option>' + opts + '</select>' +
         '<label class="block text-sm font-medium mb-1">المبلغ</label><input type="number" id="qaAcAmt" step="0.01" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200">' +
         '<label class="block text-sm font-medium mb-1">نسبة الوساطة %</label><input type="number" id="qaAcBr" step="0.1" value="0" class="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200">' +
@@ -306,19 +306,29 @@
         var id = document.getElementById('qaAcId').value;
         var amt = parseFloat(document.getElementById('qaAcAmt').value);
         if (!id || isNaN(amt) || amt <= 0) { toast('بيانات غير صالحة', 'error'); return; }
-        apiCall('/api/accreditations/' + id + '/add-amount', {
-          method: 'POST',
-          body: JSON.stringify({
-            amountKind: 'salary',
-            salaryDirection: 'to_us',
-            receivableOffsetMode: 'defer',
-            amount: amt,
-            brokeragePct: document.getElementById('qaAcBr').value,
-            notes: document.getElementById('qaAcNotes').value
-          })
-        }).then(function (r) {
-          toast(r.message || '', r.success ? 'success' : 'error');
-          if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
+        apiCall('/api/accreditations/' + id).then(function (entRes) {
+          if (!entRes || !entRes.success || !entRes.entity) {
+            toast((entRes && entRes.message) || 'تعذر جلب بيانات المعتمد', 'error');
+            return;
+          }
+          var rec = parseFloat(entRes.entity.balance_receivable);
+          if (!isNaN(rec) && rec > 0.0001) {
+            toast('يوجد دين لنا على المعتمد. افتح «الموافقات» ثم ملف المعتمد وأضِف المبلغ من «إضافة مبلغ» لاختيار خصم الدين أو التأجيل.', 'error');
+            return;
+          }
+          apiCall('/api/accreditations/' + id + '/add-amount', {
+            method: 'POST',
+            body: JSON.stringify({
+              amountKind: 'salary',
+              salaryDirection: 'to_us',
+              amount: amt,
+              brokeragePct: document.getElementById('qaAcBr').value,
+              notes: document.getElementById('qaAcNotes').value
+            })
+          }).then(function (r) {
+            toast(r.message || '', r.success ? 'success' : 'error');
+            if (r.success) { hideCascade(); if (typeof homeLoadStats === 'function') homeLoadStats(); }
+          });
         });
       });
     });

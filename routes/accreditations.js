@@ -31,9 +31,14 @@ const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const upload = multer({ dest: uploadsDir, limits: { fileSize: 15 * 1024 * 1024 } });
 
+/** عند وجود «دين لنا»: لا يُقبل أي وضع (حتى defer) دون إقرار صريح من نافذة الاختيار — يمنع إرسال defer افتراضياً من عميل نصي. */
 function isReceivableOffsetChoiceMissing(body) {
   const m = body && body.receivableOffsetMode;
-  return m == null || String(m).trim() === '';
+  if (m == null || String(m).trim() === '') return true;
+  const mode = String(m).trim().toLowerCase();
+  if (!['defer', 'full', 'custom'].includes(mode)) return true;
+  if (body.receivableOffsetAcknowledged !== true) return true;
+  return false;
 }
 
 /** صافي USD من قيود رصيد مرجعي ومرتجعات في سجل الصندوق — يُخصم من التزام «دين علينا» قبل تسجيل entity_payables */

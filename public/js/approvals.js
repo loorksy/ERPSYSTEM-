@@ -94,6 +94,7 @@
         var mode = accReceivableOffsetSelectedMode;
         var body = Object.assign({}, p.baseBody);
         body.receivableOffsetMode = mode;
+        body.receivableOffsetAcknowledged = true;
         if (mode === 'custom') {
           var inp = document.getElementById('accReceivableOffsetCustomInput');
           var raw = inp && inp.value !== '' ? parseFloat(inp.value) : NaN;
@@ -136,7 +137,18 @@
     var modal = document.getElementById('accReceivableOffsetModal');
     if (!modal) {
       if (opts && typeof opts.onDone === 'function') {
-        var body = Object.assign({}, opts.baseBody, { receivableOffsetMode: 'defer' });
+        if ((Number(opts.rec) || 0) > 0.0001) {
+          opts.onDone({
+            success: false,
+            message: 'نافذة اختيار خصم الدين غير متاحة. حدّث الصفحة أو أعد فتح المعتمد.',
+            code: 'RECEIVABLE_OFFSET_REQUIRED',
+          });
+          return;
+        }
+        var body = Object.assign({}, opts.baseBody, {
+          receivableOffsetMode: 'defer',
+          receivableOffsetAcknowledged: true,
+        });
         apiCall(opts.url, { method: 'POST', body: JSON.stringify(body) }).then(opts.onDone);
       }
       return;
@@ -618,7 +630,6 @@
       if (!skipDisc && r.discountPct !== '' && r.discountPct != null && String(r.discountPct).trim() !== '') {
         it.discountPct = r.discountPct;
       }
-      it.receivableOffsetMode = 'defer';
       return it;
     });
     apiCall('/api/accreditations/bulk-balance-commit', {

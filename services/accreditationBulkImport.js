@@ -1,7 +1,7 @@
 const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('./ledgerService');
 const { syncNetBalance, applySalaryToThem } = require('./accreditationBalance');
-const { splitDebtPayableWithDiscount, roundMoney, parseReceivableOffsetFromBody } = require('./accreditationDebtAmounts');
+const { splitDebtPayableWithDiscount, roundMoney } = require('./accreditationDebtAmounts');
 
 /**
  * استيراد أرصدة معتمدين من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
@@ -78,8 +78,7 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
   const cid = cycleId ? parseInt(cycleId, 10) : null;
 
   for (let i = 0; i < items.length; i++) {
-    /* استيراد جماعي: دائماً تأجيل خصم «دين لنا» على الخادم (لا نثق بقيمة العميل) */
-    const it = { ...items[i], receivableOffsetMode: 'defer' };
+    const it = items[i];
     const code = it.code != null ? String(it.code).trim() : '';
     const name = it.name != null ? String(it.name).trim() : '';
     const bal = parseFloat(String(it.amount != null ? it.amount : '').replace(/,/g, ''));
@@ -134,17 +133,13 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     if (amountKind === 'debt_payable') {
       const rec0 = roundMoney(rec);
       const gross = roundMoney(bal);
-      const offsetBody = {
-        receivableOffsetMode: it.receivableOffsetMode || 'defer',
-        receivableOffsetUsd: it.receivableOffsetUsd,
-      };
-      let offsetUsd = 0;
-      try {
-        offsetUsd = parseReceivableOffsetFromBody(offsetBody, rec0, gross).s;
-      } catch (e) {
-        errs.push(`صف ${i + 1}: ${e.message || 'offset'}`);
+      if (rec0 > 0.0001) {
+        errs.push(
+          `صف ${i + 1}: يوجد دين لنا — لا يُستورد «علينا» من الاستيراد الجماعي. أضِف المبلغ من ملف المعتمد بعد اختيار خصم الدين أو التأجيل من «إضافة مبلغ».`
+        );
         continue;
       }
+      const offsetUsd = 0;
       const remainingGross = roundMoney(gross - offsetUsd);
       if (remainingGross < 0) {
         errs.push(`صف ${i + 1}: المبلغ بعد خصم الدين غير صالح`);
@@ -257,17 +252,13 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     if (amountKind === 'debt_payable_no_fund') {
       const rec0 = roundMoney(rec);
       const gross = roundMoney(bal);
-      const offsetBody = {
-        receivableOffsetMode: it.receivableOffsetMode || 'defer',
-        receivableOffsetUsd: it.receivableOffsetUsd,
-      };
-      let offsetUsd = 0;
-      try {
-        offsetUsd = parseReceivableOffsetFromBody(offsetBody, rec0, gross).s;
-      } catch (e) {
-        errs.push(`صف ${i + 1}: ${e.message || 'offset'}`);
+      if (rec0 > 0.0001) {
+        errs.push(
+          `صف ${i + 1}: يوجد دين لنا — لا يُستورد «لهم» من الاستيراد الجماعي. أضِف المبلغ من ملف المعتمد بعد اختيار خصم الدين أو التأجيل من «إضافة مبلغ».`
+        );
         continue;
       }
+      const offsetUsd = 0;
       const remainingGross = roundMoney(gross - offsetUsd);
       if (remainingGross < 0) {
         errs.push(`صف ${i + 1}: المبلغ بعد خصم الدين غير صالح`);
@@ -360,19 +351,14 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     const brokerageAmount = pct > 0 ? roundMoney(bal * (pct / 100)) : 0;
     const remainder = roundMoney(bal - brokerageAmount);
     let offsetUsd = 0;
-    const offsetBody = {
-      receivableOffsetMode: it.receivableOffsetMode || 'defer',
-      receivableOffsetUsd: it.receivableOffsetUsd,
-    };
     if (salaryDirection === 'to_us') {
-      try {
-        offsetUsd = parseReceivableOffsetFromBody(offsetBody, rec0, bal, {
-          salaryRemainderAfterBrokerage: remainder,
-        }).s;
-      } catch (e) {
-        errs.push(`صف ${i + 1}: ${e.message || 'offset'}`);
+      if (rec0 > 0.0001) {
+        errs.push(
+          `صف ${i + 1}: يوجد دين لنا — لا تُستورد دفعة «لنا» من الاستيراد الجماعي. أضِف المبلغ من ملف المعتمد بعد اختيار خصم الدين أو التأجيل من «إضافة مبلغ».`
+        );
         continue;
       }
+      offsetUsd = 0;
       pay = roundMoney(pay + bal - offsetUsd);
       rec = roundMoney(rec0 - offsetUsd);
     } else if (rec0 > 0.0001) {
