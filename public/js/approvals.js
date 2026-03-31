@@ -982,7 +982,8 @@
           sp.classList.remove('hidden');
           var payV = Number(e.balance_payable) || 0;
           var recV = Number(e.balance_receivable) || 0;
-          var mx = Number(res.maxSettlement) || 0;
+          var mx = Math.round((Number(res.maxSettlement) || 0) * 100) / 100;
+          sp.setAttribute('data-max-settlement', String(mx));
           var ex = document.getElementById('accSettlementExplain');
           if (ex) {
             ex.textContent =
@@ -1003,6 +1004,7 @@
           }
         } else {
           sp.classList.add('hidden');
+          sp.removeAttribute('data-max-settlement');
         }
       }
       document.getElementById('accLedger').innerHTML = (res.ledger || []).map(accLedgerRowHtml).join('') ||
@@ -1289,9 +1291,17 @@
   window.accSubmitSettlement = function() {
     if (!currentId) return;
     var inp = document.getElementById('accSettlementAmt');
-    var amt = parseFloat(inp && inp.value);
+    var sp = document.getElementById('accSettlementPanel');
+    var raw = inp && inp.value !== '' ? parseFloat(inp.value) : NaN;
+    var amt = Math.round(raw * 100) / 100;
+    var mxAttr = sp && sp.getAttribute('data-max-settlement');
+    var mx = mxAttr != null && mxAttr !== '' ? parseFloat(mxAttr) : NaN;
     if (!inp || isNaN(amt) || amt <= 0) {
-      toast('أدخل مبلغ تسوية صالحاً', 'error');
+      toast('أدخل مبلغ تسوية صالحاً (رقمين عشريين كحد أقصى).', 'error');
+      return;
+    }
+    if (!isNaN(mx) && amt > mx + 0.001) {
+      toast('المبلغ يتجاوز الحد الأقصى للتسوية (' + accFmtMoney(mx) + ').', 'error');
       return;
     }
     var cyc = document.getElementById('accCycle');

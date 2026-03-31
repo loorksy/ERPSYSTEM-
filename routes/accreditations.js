@@ -21,7 +21,7 @@ const {
   applyTransferOut,
   computeLedgerWithBalanceAfter,
 } = require('../services/accreditationBalance');
-const { splitDebtPayableWithDiscount } = require('../services/accreditationDebtAmounts');
+const { splitDebtPayableWithDiscount, roundMoney } = require('../services/accreditationDebtAmounts');
 
 const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -309,8 +309,8 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       return res.json({ success: false, message: 'عيّن صندوقاً رئيسياً من قسم الصناديق قبل إضافة مبالغ.' });
     }
     const pct = parseFloat(brokeragePct);
-    const brokerageAmount = !isNaN(pct) && pct > 0 ? amt * (pct / 100) : 0;
-    const remainder = amt - brokerageAmount;
+    const brokerageAmount = !isNaN(pct) && pct > 0 ? roundMoney(amt * (pct / 100)) : 0;
+    const remainder = roundMoney(amt - brokerageAmount);
     const dir = salaryDirection === 'to_us' ? 'to_us' : 'to_them';
 
     if (dir === 'to_us') {
@@ -325,6 +325,9 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       rec = br.rec;
     }
 
+    pay = roundMoney(pay);
+    rec = roundMoney(rec);
+
     const led = await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes)
        VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7) RETURNING id`,
@@ -338,10 +341,11 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     );
     await syncNetBalance(db, id);
 
-    // خصم اختياري من «لنا» عند إضافة مبلغ يزيد رصيد «علينا» (راتب لنا)
-    if (dir === 'to_us' && !isNaN(discountPct) && discountPct > 0 && rec > 0) {
-      const cut = Math.min(rec, amt * (discountPct / 100));
-      rec -= cut;
+    /** لا خصم تلقائي من «دين لنا» عند وجود الطرفين معًا — التسوية من لوحة التسوية اليدوية فقط. */
+    const mixedBuckets = roundMoney(pay) > 0.0001 && roundMoney(rec) > 0.0001;
+    if (dir === 'to_us' && !isNaN(discountPct) && discountPct > 0 && rec > 0 && !mixedBuckets) {
+      const cut = roundMoney(Math.min(rec, amt * (discountPct / 100)));
+      rec = roundMoney(rec - cut);
       await db.query(
         'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
         [rec, id]
@@ -401,8 +405,8 @@ router.post('/:id/settle-receivable-payable', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { amount, cycleId, notes } = req.body || {};
-    const amt = parseFloat(amount);
-    if (!id || isNaN(amt) || amt <= 0) {
+    const amtRaw = parseFloat(amount);
+    if (!id || isNaN(amtRaw) || amtRaw <= 0) {
       return res.json({ success: false, message: 'مبلغ غير صالح' });
     }
     const db = getDb();
@@ -411,24 +415,27 @@ router.post('/:id/settle-receivable-payable', requireAuth, async (req, res) => {
       [id, req.session.userId]
     )).rows[0];
     if (!ent) return res.json({ success: false, message: 'غير موجود' });
-    let pay = Number(ent.balance_payable) || 0;
-    let rec = Number(ent.balance_receivable) || 0;
-    const maxSettle = Math.min(pay, rec);
+    let pay = roundMoney(ent.balance_payable);
+    let rec = roundMoney(ent.balance_receivable);
+    const maxSettle = roundMoney(Math.min(pay, rec));
     if (maxSettle <= 0.0001) {
       return res.json({
         success: false,
         message: 'لا يوجد دين لنا ودين علينا معًا للتسوية.',
       });
     }
-    if (amt > maxSettle + 1e-6) {
+    const settled = roundMoney(amtRaw);
+    if (settled <= 0) {
+      return res.json({ success: false, message: 'المبلغ بعد التقريب غير صالح' });
+    }
+    if (settled > maxSettle + 0.001) {
       return res.json({
         success: false,
-        message: `المبلغ يتجاوز الحد الأقصى للتسوية (${maxSettle.toFixed(2)}).`,
+        message: `المبلغ يتجاوز الحد الأقصى للتسوية (${maxSettle.toFixed(2)} USD). أدخل قيمة ≤ ${maxSettle.toFixed(2)}.`,
       });
     }
-    const settled = Math.round(amt * 100) / 100;
-    pay = Math.round((pay - settled) * 100) / 100;
-    rec = Math.round((rec - settled) * 100) / 100;
+    pay = roundMoney(pay - settled);
+    rec = roundMoney(rec - settled);
     const cid = cycleId ? parseInt(cycleId, 10) : null;
     const note =
       (notes && String(notes).trim()) ||
@@ -876,10 +883,10 @@ router.get('/:id', requireAuth, async (req, res) => {
       [id]
     )).rows;
     const ledger = computeLedgerWithBalanceAfter(row, ledgerRaw);
-    const payN = Number(row.balance_payable) || 0;
-    const recN = Number(row.balance_receivable) || 0;
+    const payN = roundMoney(row.balance_payable);
+    const recN = roundMoney(row.balance_receivable);
     const settlementPending = payN > 0.0001 && recN > 0.0001;
-    const maxSettlement = settlementPending ? Math.min(payN, recN) : 0;
+    const maxSettlement = settlementPending ? roundMoney(Math.min(payN, recN)) : 0;
     res.json({
       success: true,
       entity: row,

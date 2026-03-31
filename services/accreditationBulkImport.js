@@ -1,7 +1,7 @@
 const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('./ledgerService');
 const { syncNetBalance, applySalaryToThem } = require('./accreditationBalance');
-const { splitDebtPayableWithDiscount } = require('./accreditationDebtAmounts');
+const { splitDebtPayableWithDiscount, roundMoney } = require('./accreditationDebtAmounts');
 
 /**
  * استيراد أرصدة معتمدين من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
@@ -250,6 +250,8 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
       pay = br.pay;
       rec = br.rec;
     }
+    pay = roundMoney(pay);
+    rec = roundMoney(rec);
     const led = await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes)
        VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7) RETURNING id`,
@@ -271,9 +273,10 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     );
     await syncNetBalance(db, ent.id);
 
-    if (salaryDirection === 'to_us' && !isNaN(discRaw) && discRaw > 0 && rec > 0) {
-      const cut = Math.min(rec, bal * (discRaw / 100));
-      rec -= cut;
+    const mixedBuckets = roundMoney(pay) > 0.0001 && roundMoney(rec) > 0.0001;
+    if (salaryDirection === 'to_us' && !isNaN(discRaw) && discRaw > 0 && rec > 0 && !mixedBuckets) {
+      const cut = roundMoney(Math.min(rec, bal * (discRaw / 100)));
+      rec = roundMoney(rec - cut);
       await db.query(
         'UPDATE accreditation_entities SET balance_receivable = $1 WHERE id = $2',
         [rec, ent.id]
