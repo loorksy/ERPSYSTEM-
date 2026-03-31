@@ -311,15 +311,6 @@
   window.fundsCloseDetail = function() {
     window.location.href = '/funds';
   };
-  window.fundsSetMain = function() {
-    if (!currentFundId) return;
-    apiCall('/api/funds/' + currentFundId + '/set-main', { method: 'POST', body: '{}' }).then(function(res) {
-      toast(res.message || '', res.success ? 'success' : 'error');
-      if (document.getElementById('fundsCards')) fundsLoadList();
-      fundsReloadDetail();
-      if (typeof window.homeLoadStats === 'function') window.homeLoadStats();
-    });
-  };
   function fundsToggleReturnTarget() {
     var d = document.getElementById('fundReturnDisposition');
     var rts = document.getElementById('fundReturnTarget');
