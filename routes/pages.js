@@ -124,6 +124,17 @@ router.get('/approvals/:id', requireAuth, (req, res) => {
   });
 });
 
+router.get('/transfer-companies/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.redirect('/transfer-companies');
+  res.render('dashboard', {
+    title: 'ملف شركة تحويل',
+    page: 'transfer-company-detail',
+    transferCompanyId: id,
+    user: req.session.user,
+  });
+});
+
 /** إزالة صفحة «ملف الشركة» — إعادة توجيه الروابط القديمة */
 router.get('/main-agency', requireAuth, (req, res) => {
   res.redirect(301, '/dashboard');

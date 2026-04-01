@@ -40,6 +40,10 @@
   var defaults = [];
   var tcCurrentId = null;
 
+  function isTcDetailPage() {
+    return !!document.getElementById('tcDetailPage');
+  }
+
   function tcGetSavedCardOrderIds() {
     try {
       var raw = localStorage.getItem(TC_CARD_ORDER_STORAGE_KEY);
@@ -127,6 +131,11 @@
     );
   }
 
+  window.tcGoToCompany = function(id) {
+    if (!id) return;
+    window.location.href = '/transfer-companies/' + encodeURIComponent(id);
+  };
+
   function tcCardHtml(c, idx) {
     var bal = Number(c.balance_amount) || 0;
     var cur = c.balance_currency || 'USD';
@@ -145,7 +154,7 @@
       '">' +
       '<div class="tc-card-drag-handle flex w-9 shrink-0 cursor-grab select-none items-center justify-center border-l border-slate-100 bg-slate-50/90 text-slate-400 hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing" draggable="true" title="اسحب لترتيب البطاقات" aria-label="ترتيب البطاقات" role="button" tabindex="0" onclick="event.stopPropagation();">' +
       '<i class="fas fa-grip-vertical pointer-events-none text-sm" aria-hidden="true"></i></div>' +
-      '<div class="min-w-0 flex-1 cursor-pointer" onclick="tcOpen(' +
+      '<div class="min-w-0 flex-1 cursor-pointer" onclick="tcGoToCompany(' +
       c.id +
       ')">' +
       '<div class="' +
@@ -290,7 +299,7 @@
     window.open('/api/reports/pdf/transfer-company-ledger?companyId=' + encodeURIComponent(id), '_blank');
   };
 
-  function load() {
+  function loadList() {
     var box = document.getElementById('tcCards');
     if (!box) return;
     wireTcCardsSearch();
@@ -333,6 +342,7 @@
     document.getElementById('tcAddModal').classList.add('hidden');
     document.getElementById('tcAddModal').classList.remove('flex');
   };
+
   function tcFillReturnFunds() {
     var sel = document.getElementById('tcReturnFundId');
     if (!sel) return;
@@ -354,8 +364,141 @@
       sel.classList.add('hidden');
     }
   }
-  var tcRetDisp = document.getElementById('tcReturnDisposition');
-  if (tcRetDisp) tcRetDisp.addEventListener('change', tcToggleReturnFund);
+
+  function tcSetHeaderTitle(name) {
+    var t = name || 'ملف شركة تحويل';
+    try {
+      document.title = 'LorkERP — ' + t;
+    } catch (e) {}
+    var mh = document.getElementById('mobileHeaderTitle');
+    if (mh) mh.textContent = t;
+  }
+
+  function applyTcDetailResponse(res) {
+    if (!res.success) {
+      toast(res.message || 'فشل التحميل', 'error');
+      return;
+    }
+    var c = res.company;
+    tcSetHeaderTitle(c.name || 'شركة تحويل');
+    var titleEl = document.getElementById('tcDetailTitle');
+    if (titleEl) titleEl.textContent = c.name || '—';
+
+    var loc = c.country || '—';
+    if (c.region_syria && String(c.country || '').indexOf('سوريا') !== -1) {
+      loc = (c.country || '') + (c.region_syria ? ' · ' + c.region_syria : '');
+    }
+    var metaLoc = document.getElementById('tcDetailMetaLocation');
+    if (metaLoc) metaLoc.textContent = loc || '—';
+
+    var typesEl = document.getElementById('tcDetailTypes');
+    if (typesEl) {
+      var types = c.transfer_types || [];
+      if (types.length) {
+        typesEl.innerHTML = types
+          .map(function(t) {
+            return (
+              '<span class="inline-flex items-center rounded-lg border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-900">' +
+              escHtml(t) +
+              '</span>'
+            );
+          })
+          .join('');
+      } else {
+        typesEl.innerHTML = '<span class="text-sm text-slate-500">—</span>';
+      }
+    }
+
+    var payTc = res.openPayablesUsd != null ? res.openPayablesUsd : 0;
+    var led = res.ledger || [];
+    var hasOpening = led.some(function(l) {
+      return /رصيد افتتاحي/.test(l.notes || '') || (l.labelAr && /رصيد افتتاحي/.test(l.labelAr));
+    });
+    var hasReturn = led.some(function(l) {
+      return /مرتجع|return/i.test(l.notes || '') || (l.labelAr && /مرتجع/.test(l.labelAr));
+    });
+    var hideBal = payTc > 0.0001 && hasOpening && hasReturn;
+    var payEl = document.getElementById('tcDetailPayables');
+    if (payEl) {
+      if (payTc > 0.0001) {
+        payEl.classList.remove('hidden');
+        payEl.textContent =
+          'دين علينا تجاه هذه الشركة: ' +
+          payTc.toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+          ' USD';
+      } else {
+        payEl.classList.add('hidden');
+        payEl.textContent = '';
+      }
+    }
+    var shell = document.getElementById('tcDetailBalanceShell');
+    var balEl = document.getElementById('tcDetailBal');
+    if (balEl) {
+      if (hideBal) {
+        if (shell) shell.classList.add('hidden');
+        balEl.textContent = '';
+      } else {
+        if (shell) shell.classList.remove('hidden');
+        balEl.textContent =
+          (c.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+          ' ' +
+          (c.balance_currency || 'USD');
+        balEl.style.color = tcBalanceTextColor(c.balance_amount);
+      }
+    }
+    tcLedgerById = {};
+    (res.ledger || []).forEach(function(l) {
+      if (l.id != null) tcLedgerById[l.id] = l;
+    });
+    var ledgerBox = document.getElementById('tcDetailLedger');
+    if (ledgerBox) {
+      ledgerBox.innerHTML =
+        (res.ledger || [])
+          .map(function(l) {
+            var cat = l.colorCategory || 'balance';
+            var border = 'border-s-[3px] border-s-[#047857]';
+            if (cat === 'payout') border = 'border-s-[3px] border-s-[#9a3412]';
+            var after = l.balanceAfterUsd != null && !isNaN(l.balanceAfterUsd)
+              ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
+              : '—';
+            var rowClick = l.id ? ' role="button" tabindex="0" onclick="tcOpenLedgerRow(' + l.id + ')"' : '';
+            var rowHover = l.id ? ' cursor-pointer hover:bg-white' : '';
+            return (
+              '<div class="mb-2 last:mb-0 rounded-xl border border-slate-100 bg-white py-2.5 ps-2 pe-3 shadow-sm ' +
+              border +
+              rowHover +
+              '"' +
+              rowClick +
+              '>' +
+              '<div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">' +
+              '<div class="min-w-0"><span class="text-sm font-medium text-slate-800">' +
+              escHtml(l.labelAr || '') +
+              '</span>' +
+              '<span class="mt-0.5 block truncate text-[0.7rem] text-slate-500">' +
+              escHtml(l.notes || '') +
+              '</span></div>' +
+              '<div class="shrink-0 text-left sm:min-w-[7rem]"><span class="font-semibold tabular-nums">' +
+              (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+              ' ' +
+              escHtml(l.currency || '') +
+              '</span>' +
+              '<span class="mt-0.5 block text-[0.65rem] text-slate-500">بعد: ' +
+              after +
+              '</span></div></div></div>'
+            );
+          })
+          .join('') ||
+        '<p class="py-8 text-center text-slate-400">لا سجل</p>';
+    }
+    var hid = document.getElementById('tcReturnCompanyId');
+    if (hid && tcCurrentId) hid.value = String(tcCurrentId);
+    tcToggleReturnFund();
+  }
+
+  window.tcLoadDetail = function() {
+    if (!tcCurrentId) return;
+    apiCall('/api/transfer-companies/' + tcCurrentId).then(applyTcDetailResponse);
+  };
 
   window.tcSubmitReturn = function() {
     var cid = document.getElementById('tcReturnCompanyId');
@@ -388,81 +531,8 @@
       toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
       if (res.success) {
         document.getElementById('tcReturnAmt').value = '';
-        tcOpen(parseInt(cid.value, 10));
+        tcLoadDetail();
       }
-    });
-  };
-
-  window.tcOpen = function(id) {
-    if (typeof window.closeSidebar === 'function') window.closeSidebar();
-    tcCurrentId = id;
-    apiCall('/api/transfer-companies/' + id).then(function(res) {
-      if (!res.success) return;
-      var c = res.company;
-      document.getElementById('tcDetailTitle').textContent = c.name || '';
-      var payTc = res.openPayablesUsd != null ? res.openPayablesUsd : 0;
-      var led = res.ledger || [];
-      var hasOpening = led.some(function(l) {
-        return /رصيد افتتاحي/.test(l.notes || '') || (l.labelAr && /رصيد افتتاحي/.test(l.labelAr));
-      });
-      var hasReturn = led.some(function(l) {
-        return /مرتجع|return/i.test(l.notes || '') || (l.labelAr && /مرتجع/.test(l.labelAr));
-      });
-      var hideBal = payTc > 0.0001 && hasOpening && hasReturn;
-      var payEl = document.getElementById('tcDetailPayables');
-      if (payEl) {
-        if (payTc > 0.0001) {
-          payEl.classList.remove('hidden');
-          payEl.textContent =
-            'دين علينا تجاه هذه الشركة: ' +
-            payTc.toLocaleString('en-US', { minimumFractionDigits: 2 }) +
-            ' USD';
-        } else {
-          payEl.classList.add('hidden');
-          payEl.textContent = '';
-        }
-      }
-      var shell = document.getElementById('tcDetailBalanceShell');
-      var balEl = document.getElementById('tcDetailBal');
-      if (balEl) {
-        if (hideBal) {
-          if (shell) shell.classList.add('hidden');
-          balEl.textContent = '';
-        } else {
-          if (shell) shell.classList.remove('hidden');
-          balEl.textContent =
-            (c.balance_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
-            ' ' +
-            (c.balance_currency || 'USD');
-          balEl.style.color = tcBalanceTextColor(c.balance_amount);
-        }
-      }
-      tcLedgerById = {};
-      (res.ledger || []).forEach(function(l) {
-        if (l.id != null) tcLedgerById[l.id] = l;
-      });
-      document.getElementById('tcDetailLedger').innerHTML = (res.ledger || []).map(function(l) {
-        var cat = l.colorCategory || 'balance';
-        var border = 'border-s-[3px] border-s-[#047857]';
-        if (cat === 'payout') border = 'border-s-[3px] border-s-[#9a3412]';
-        var after = l.balanceAfterUsd != null && !isNaN(l.balanceAfterUsd)
-          ? l.balanceAfterUsd.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD'
-          : '—';
-        var rowClick = l.id ? ' role="button" tabindex="0" onclick="tcOpenLedgerRow(' + l.id + ')"' : '';
-        var rowHover = l.id ? ' cursor-pointer hover:bg-slate-100/80' : '';
-        return '<div class="rounded-xl border border-slate-100 bg-white py-2.5 ps-2 pe-3 shadow-sm ' + border + rowHover + '"' + rowClick + '>' +
-          '<div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">' +
-          '<div class="min-w-0"><span class="text-sm font-medium text-slate-800">' + escHtml(l.labelAr || '') + '</span>' +
-          '<span class="mt-0.5 block truncate text-[0.7rem] text-slate-500">' + escHtml(l.notes || '') + '</span></div>' +
-          '<div class="shrink-0 text-left sm:min-w-[7rem]"><span class="font-semibold tabular-nums">' +
-          (l.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' ' + escHtml(l.currency || '') + '</span>' +
-          '<span class="mt-0.5 block text-[0.65rem] text-slate-500">بعد: ' + after + '</span></div></div></div>';
-      }).join('') || '<p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center text-slate-400">لا سجل</p>';
-      var hid = document.getElementById('tcReturnCompanyId');
-      if (hid) hid.value = id;
-      tcToggleReturnFund();
-      document.getElementById('tcDetailModal').classList.remove('hidden');
-      document.getElementById('tcDetailModal').classList.add('flex');
     });
   };
 
@@ -516,8 +586,8 @@
       toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
       if (res.success) {
         tcCloseLedgerModal();
-        tcOpen(tcCurrentId);
-        load();
+        tcLoadDetail();
+        if (document.getElementById('tcCards')) loadList();
       }
     });
   };
@@ -543,14 +613,10 @@
       if (res.success) {
         document.getElementById('tcRecvAmt').value = '';
         document.getElementById('tcRecvNotes').value = '';
-        tcOpen(tcCurrentId);
-        load();
+        tcLoadDetail();
+        if (document.getElementById('tcCards')) loadList();
       }
     });
-  };
-  window.tcCloseDetail = function() {
-    document.getElementById('tcDetailModal').classList.add('hidden');
-    document.getElementById('tcDetailModal').classList.remove('flex');
   };
 
   var tcAddForm = document.getElementById('tcAddForm');
@@ -558,7 +624,9 @@
     tcAddForm.addEventListener('submit', function(e) {
       e.preventDefault();
       var types = [];
-      document.querySelectorAll('.tcTypeCb:checked').forEach(function(cb) { types.push(cb.value); });
+      document.querySelectorAll('.tcTypeCb:checked').forEach(function(cb) {
+        types.push(cb.value);
+      });
       apiCall('/api/transfer-companies/add', {
         method: 'POST',
         body: JSON.stringify({
@@ -566,13 +634,13 @@
           country: document.getElementById('tcCountry').value,
           balanceAmount: document.getElementById('tcBal').value,
           balanceCurrency: document.getElementById('tcBalCur').value,
-          transferTypes: types
-        })
+          transferTypes: types,
+        }),
       }).then(function(res) {
         toast(res.message || '', res.success ? 'success' : 'error');
         if (res.success) {
           tcCloseAdd();
-          load();
+          loadList();
         }
       });
     });
@@ -589,13 +657,25 @@
       u.searchParams.delete('fab');
       window.history.replaceState({}, '', u.pathname + (u.search || '') + u.hash);
     } catch (_) {}
-    toast('افتح شركة من القائمة، ثم سجّل المرتجع من أسفل نافذة التفاصيل. للصناديق: من القائمة «الصناديق» ثم افتح الصندوق.', 'success');
+    toast('افتح ملف شركة من القائمة، ثم سجّل المرتجع من أسفل الصفحة. للصناديق: «الصناديق» ثم افتح الصندوق.', 'success');
     var el = document.getElementById('tcCards');
     if (el) setTimeout(function() { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    load();
+    var detailPage = document.getElementById('tcDetailPage');
+    if (detailPage && detailPage.dataset.transferCompanyId) {
+      tcCurrentId = parseInt(detailPage.dataset.transferCompanyId, 10);
+      if (isNaN(tcCurrentId)) {
+        window.location.href = '/transfer-companies';
+        return;
+      }
+      var tcRetDisp = document.getElementById('tcReturnDisposition');
+      if (tcRetDisp) tcRetDisp.addEventListener('change', tcToggleReturnFund);
+      tcLoadDetail();
+      return;
+    }
+    loadList();
     applyFabDeepLink();
   });
 })();

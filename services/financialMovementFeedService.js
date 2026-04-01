@@ -367,7 +367,7 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         r.notes || `إجمالي ${r.amount} — تسوية دين علينا: ${r.payables_settled || 0} — صافٍ: ${net}`,
         'تسجيل مرتجع مالي مع خصم دين علينا إن وُجد.',
         'جدول financial_returns + قيود الدفتر المرتبطة.',
-        r.entity_type === 'fund' ? `/funds/${r.entity_id}` : `/transfer-companies`,
+        r.entity_type === 'fund' ? `/funds/${r.entity_id}` : `/transfer-companies/${r.entity_id}`,
         r
       )
     );

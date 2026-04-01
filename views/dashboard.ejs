@@ -99,6 +99,8 @@
         <%- include('partials/sub-agency-detail') %>
       <% } else if (page === 'transfer-companies') { %>
         <%- include('partials/transfer-companies') %>
+      <% } else if (page === 'transfer-company-detail') { %>
+        <%- include('partials/transfer-company-detail') %>
       <% } else if (page === 'funds') { %>
         <%- include('partials/funds') %>
       <% } else if (page === 'fund-detail') { %>
@@ -212,7 +214,7 @@
   <% if (page === 'funds' || page === 'fund-detail') { %>
     <script src="/js/funds.js"></script>
   <% } %>
-  <% if (page === 'transfer-companies') { %>
+  <% if (page === 'transfer-companies' || page === 'transfer-company-detail') { %>
     <script src="/js/transfer-companies.js"></script>
   <% } %>
   <% if (page === 'approvals' || page === 'approval-detail') { %>
