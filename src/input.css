@@ -549,7 +549,8 @@
     #accListTransferModal,
     #accReceivableOffsetModal,
     #tcAddModal,
-    #tcDetailModal,
+    #tcReceivableModal,
+    #tcReturnModal,
     #tcLedgerMoveModal {
       top: calc(60px + env(safe-area-inset-top, 0px));
       right: 0;
@@ -604,12 +605,14 @@
       -webkit-overflow-scrolling: touch;
     }
     #tcAddModal,
-    #tcDetailModal {
+    #tcReceivableModal,
+    #tcReturnModal {
       align-items: stretch !important;
       justify-content: flex-start !important;
     }
     #tcAddModal .tc-modal-shell,
-    #tcDetailModal .tc-modal-shell {
+    #tcReceivableModal .tc-modal-shell,
+    #tcReturnModal .tc-modal-shell {
       width: 100%;
       max-width: 100% !important;
       margin-left: 0 !important;

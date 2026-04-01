@@ -13,8 +13,17 @@ router.get('/list', requireAuth, async (req, res) => {
   try {
     const db = getDb();
     const rows = (await db.query(
-      `SELECT id, name, country, region_syria, balance_amount, balance_currency, transfer_types, created_at
-       FROM transfer_companies WHERE user_id = $1 ORDER BY name`,
+      `SELECT tc.id, tc.name, tc.country, tc.region_syria, tc.balance_amount, tc.balance_currency, tc.transfer_types, tc.created_at,
+              COALESCE(p.open_sum, 0)::float AS open_payables_usd
+       FROM transfer_companies tc
+       LEFT JOIN (
+         SELECT entity_id, SUM(amount) AS open_sum
+         FROM entity_payables
+         WHERE user_id = $1 AND entity_type = 'transfer_company' AND amount > 0.0001
+         GROUP BY entity_id
+       ) p ON p.entity_id = tc.id
+       WHERE tc.user_id = $1
+       ORDER BY tc.name`,
       [req.session.userId]
     )).rows;
     const list = rows.map((r) => ({

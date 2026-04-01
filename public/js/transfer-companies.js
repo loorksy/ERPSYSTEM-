@@ -107,6 +107,11 @@
     return '#64748b';
   }
 
+  function tcFmtAmount(n) {
+    var v = Number(n) || 0;
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   function tcEmptyStateHtml(kind, msg) {
     if (kind === 'loading') {
       return (
@@ -136,10 +141,19 @@
     window.location.href = '/transfer-companies/' + encodeURIComponent(id);
   };
 
+  /** من بطاقة القائمة: فتح الملف مع نافذة جاهزة */
+  window.tcGoToCompanyShortcut = function(id, action) {
+    if (!id) return;
+    var q = action === 'receivable' || action === 'return' ? '?open=' + encodeURIComponent(action === 'receivable' ? 'receivable' : 'return') : '';
+    window.location.href = '/transfer-companies/' + encodeURIComponent(id) + q;
+  };
+
   function tcCardHtml(c, idx) {
     var bal = Number(c.balance_amount) || 0;
     var cur = c.balance_currency || 'USD';
-    var balStr = bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + cur;
+    var balStr = tcFmtAmount(bal) + ' ' + cur;
+    var payOpen = Number(c.open_payables_usd) || 0;
+    var recvForUs = Math.max(0, bal);
     var textColor = tcBalanceTextColor(bal);
     var bar = tcCardBarColors[idx % tcCardBarColors.length];
     var types = (c.transfer_types || []).join('، ');
@@ -178,13 +192,30 @@
       '<span class="font-semibold text-slate-600">أنواع التحويل</span>' +
       '</div>' +
       '<p class="break-words text-[11px] leading-relaxed text-slate-600">' + escHtml(types) + '</p>' +
-      '<div class="flex items-end justify-between border-t border-slate-200/80 pt-2">' +
-      '<span class="text-xs font-semibold text-slate-500">الرصيد</span>' +
+      '<div class="border-t border-slate-200/80 pt-2">' +
+      '<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs">' +
+      '<span class="font-semibold text-emerald-700">لنا <span class="tabular-nums font-bold">' +
+      escHtml(tcFmtAmount(recvForUs) + ' ' + cur) +
+      '</span></span>' +
+      '<span class="font-semibold text-rose-600">علينا <span class="tabular-nums font-bold">' +
+      escHtml(tcFmtAmount(payOpen) + ' USD') +
+      '</span></span>' +
+      '</div>' +
+      '<div class="mt-2 flex items-end justify-between gap-2 border-t border-slate-200/80 pt-2">' +
+      '<span class="text-xs font-semibold text-slate-500">رصيد الشركة</span>' +
       '<span class="text-lg font-bold tabular-nums" style="color:' +
       textColor +
       '">' +
       escHtml(balStr) +
-      '</span></div></div></div></div></div>'
+      '</span></div></div></div>' +
+      '<div class="tc-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
+      '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-2 py-2 text-[11px] font-bold text-white shadow-md shadow-violet-600/20 transition hover:bg-violet-700 active:scale-[0.99] sm:text-xs" onclick="tcGoToCompanyShortcut(' +
+      c.id +
+      ',\'receivable\')"><i class="fas fa-hand-holding-dollar text-[0.7rem] shrink-0"></i>دين لنا</button>' +
+      '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-2 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] sm:text-xs" onclick="tcGoToCompanyShortcut(' +
+      c.id +
+      ',\'return\')"><i class="fas fa-rotate-left text-[0.7rem] shrink-0"></i>مرتجع</button>' +
+      '</div></div></div></div>'
     );
   }
 
@@ -355,14 +386,56 @@
   }
   function tcToggleReturnFund() {
     var d = document.getElementById('tcReturnDisposition');
+    var wrap = document.getElementById('tcReturnFundWrap');
     var sel = document.getElementById('tcReturnFundId');
     if (!d || !sel) return;
     if (d.value === 'transfer_to_fund') {
-      sel.classList.remove('hidden');
+      if (wrap) wrap.classList.remove('hidden');
       tcFillReturnFunds();
     } else {
-      sel.classList.add('hidden');
+      if (wrap) wrap.classList.add('hidden');
     }
+  }
+
+  function tcModalShow(el) {
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+    if (typeof window.closeSidebar === 'function') window.closeSidebar();
+  }
+  function tcModalHide(el) {
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+  }
+
+  window.tcOpenReceivableModal = function() {
+    tcModalShow(document.getElementById('tcReceivableModal'));
+  };
+  window.tcCloseReceivableModal = function() {
+    tcModalHide(document.getElementById('tcReceivableModal'));
+  };
+  window.tcOpenReturnModal = function() {
+    tcToggleReturnFund();
+    tcModalShow(document.getElementById('tcReturnModal'));
+  };
+  window.tcCloseReturnModal = function() {
+    tcModalHide(document.getElementById('tcReturnModal'));
+  };
+
+  function tryOpenTcModalFromQuery() {
+    if (!isTcDetailPage()) return;
+    try {
+      var u = new URL(window.location.href);
+      var q = u.searchParams.get('open');
+      if (q === 'receivable' || q === 'return') {
+        if (q === 'receivable') tcOpenReceivableModal();
+        else tcOpenReturnModal();
+        u.searchParams.delete('open');
+        var qs = u.searchParams.toString();
+        window.history.replaceState({}, '', u.pathname + (qs ? '?' + qs : '') + u.hash);
+      }
+    } catch (e) {}
   }
 
   function tcSetHeaderTitle(name) {
@@ -497,7 +570,10 @@
 
   window.tcLoadDetail = function() {
     if (!tcCurrentId) return;
-    apiCall('/api/transfer-companies/' + tcCurrentId).then(applyTcDetailResponse);
+    apiCall('/api/transfer-companies/' + tcCurrentId).then(function(res) {
+      applyTcDetailResponse(res);
+      tryOpenTcModalFromQuery();
+    });
   };
 
   window.tcSubmitReturn = function() {
@@ -531,6 +607,7 @@
       toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
       if (res.success) {
         document.getElementById('tcReturnAmt').value = '';
+        tcCloseReturnModal();
         tcLoadDetail();
       }
     });
@@ -539,6 +616,8 @@
   window.tcOpenLedgerRow = function(id) {
     var l = tcLedgerById[id];
     if (!l) return;
+    tcCloseReceivableModal();
+    tcCloseReturnModal();
     tcLedgerModalRow = l;
     var titleEl = document.getElementById('tcLedgerMoveModalTitle');
     var bodyEl = document.getElementById('tcLedgerMoveModalBody');
@@ -613,6 +692,7 @@
       if (res.success) {
         document.getElementById('tcRecvAmt').value = '';
         document.getElementById('tcRecvNotes').value = '';
+        tcCloseReceivableModal();
         tcLoadDetail();
         if (document.getElementById('tcCards')) loadList();
       }
@@ -657,7 +737,7 @@
       u.searchParams.delete('fab');
       window.history.replaceState({}, '', u.pathname + (u.search || '') + u.hash);
     } catch (_) {}
-    toast('افتح ملف شركة من القائمة، ثم سجّل المرتجع من أسفل الصفحة. للصناديق: «الصناديق» ثم افتح الصندوق.', 'success');
+    toast('افتح ملف شركة من القائمة، ثم استخدم «تسجيل مرتجع» من الأزرار العلوية أو من بطاقة الشركة. للصناديق: «الصناديق» ثم افتح الصندوق.', 'success');
     var el = document.getElementById('tcCards');
     if (el) setTimeout(function() { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
   }

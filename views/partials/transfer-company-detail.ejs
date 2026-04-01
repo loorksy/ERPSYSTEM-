@@ -16,19 +16,26 @@
       </div>
     </div>
 
-    <!-- إجراءات علوية — صف واحد، أزرار بعرض مريح على الموبايل -->
-    <div class="border-b border-slate-100 bg-white px-3 py-2.5 sm:px-4">
-      <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch sm:justify-end sm:gap-2">
-        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-          <button type="button" onclick="tcDownloadLedgerPdf()" class="inline-flex min-h-[2.35rem] w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto sm:min-w-[7rem]">
-            <i class="fas fa-file-pdf text-red-500" aria-hidden="true"></i>
-            تنزيل PDF
-          </button>
-          <button type="button" onclick="tcLoadDetail()" class="inline-flex min-h-[2.35rem] w-full items-center justify-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm transition hover:bg-violet-100 sm:w-auto sm:min-w-[7rem]">
-            <i class="fas fa-rotate" aria-hidden="true"></i>
-            تحديث
-          </button>
-        </div>
+    <!-- إجراءات رئيسية: دين لنا + مرتجع + PDF + تحديث — شبكة 2×2 على الموبايل -->
+    <div class="border-b border-slate-100 bg-white px-3 py-3 sm:px-4">
+      <p class="mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">إجراءات سريعة</p>
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2 lg:max-w-4xl lg:ms-auto">
+        <button type="button" onclick="tcOpenReceivableModal()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-2 py-2 text-[11px] font-bold text-white shadow-md shadow-violet-600/25 transition hover:bg-violet-700 active:scale-[0.99] sm:min-h-[2.35rem] sm:text-xs">
+          <i class="fas fa-hand-holding-dollar shrink-0 text-[0.75rem]" aria-hidden="true"></i>
+          <span class="text-center leading-tight">إضافة دين لنا</span>
+        </button>
+        <button type="button" onclick="tcOpenReturnModal()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-2 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] sm:min-h-[2.35rem] sm:text-xs">
+          <i class="fas fa-rotate-left shrink-0 text-[0.75rem]" aria-hidden="true"></i>
+          <span class="text-center leading-tight">تسجيل مرتجع</span>
+        </button>
+        <button type="button" onclick="tcDownloadLedgerPdf()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.99] sm:min-h-[2.35rem] sm:text-xs">
+          <i class="fas fa-file-pdf text-red-500 shrink-0" aria-hidden="true"></i>
+          <span>PDF</span>
+        </button>
+        <button type="button" onclick="tcLoadDetail()" class="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-2 py-2 text-[11px] font-semibold text-violet-900 shadow-sm transition hover:bg-violet-100 active:scale-[0.99] sm:min-h-[2.35rem] sm:text-xs">
+          <i class="fas fa-rotate shrink-0" aria-hidden="true"></i>
+          <span>تحديث</span>
+        </button>
       </div>
     </div>
 
@@ -51,59 +58,102 @@
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50">
-        <div class="border-b border-slate-100 bg-white/80 px-4 py-3">
-          <h2 class="text-sm font-bold text-slate-900">إضافة دين لنا</h2>
-          <p class="mt-0.5 text-[11px] text-slate-500">يُسجّل لدى شركة التحويل ويُحدّث الرصيد</p>
-        </div>
-        <div class="flex flex-col gap-3 p-4 sm:flex-row sm:flex-wrap sm:items-end">
-          <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:items-end sm:gap-2">
-            <input type="number" id="tcRecvAmt" step="0.01" min="0" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm tabular-nums focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15 sm:max-w-[160px]" placeholder="المبلغ" dir="ltr">
-            <select id="tcRecvCur" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15 sm:w-28">
-              <option value="USD">USD</option>
-              <option value="TRY">TRY</option>
-              <option value="SYP">SYP</option>
-            </select>
-            <input type="text" id="tcRecvNotes" class="col-span-2 min-h-11 w-full flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15 sm:col-span-1 sm:min-w-[12rem]" placeholder="ملاحظات (اختياري)">
-            <button type="button" onclick="tcSubmitReceivable()" class="col-span-2 h-11 w-full rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-violet-700 sm:col-span-1 sm:w-auto sm:min-w-[6.5rem]">تسجيل</button>
-          </div>
-        </div>
-      </div>
-
+      <!-- السجل في الأسفل -->
       <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="border-b border-slate-100 px-3 py-2.5 sm:px-4">
+        <div class="border-b border-slate-100 bg-slate-50/50 px-3 py-2.5 sm:px-4">
           <h2 class="text-sm font-bold text-slate-900">سجل الحركات</h2>
-          <p class="text-[10px] text-slate-500">المبالغ والرصيد بعد كل حركة — اضغط على سطر لعرض التفاصيل أو إلغاء التحويل</p>
+          <p class="text-[10px] text-slate-500">المبالغ والرصيد بعد كل حركة — اضغط على سطر للتفاصيل أو الإلغاء</p>
         </div>
-        <div id="tcDetailLedger" class="mx-3 mb-3 max-h-[min(22rem,48vh)] overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm sm:mx-4 sm:mb-4 sm:max-h-[min(26rem,52vh)] sm:p-4"></div>
+        <div id="tcDetailLedger" class="mx-3 mb-3 max-h-[min(28rem,55vh)] overflow-y-auto overscroll-contain rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm [-webkit-overflow-scrolling:touch] sm:mx-4 sm:mb-4 sm:max-h-[min(30rem,58vh)] sm:p-4"></div>
       </section>
+    </div>
+  </section>
 
-      <div class="overflow-hidden rounded-xl border border-emerald-200/80 bg-emerald-50/30">
-        <div class="border-b border-emerald-100 bg-emerald-50/50 px-4 py-3">
-          <h2 class="text-sm font-bold text-emerald-900">تسجيل مرتجع</h2>
-          <p class="mt-0.5 text-[11px] text-emerald-800/80">يبقى لدى الشركة أو يُرحّل لصندوق</p>
+  <!-- نموذج: إضافة دين لنا -->
+  <div id="tcReceivableModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm" dir="rtl" onclick="if(event.target===this)tcCloseReceivableModal()">
+    <div class="tc-modal-shell relative flex max-h-[min(88vh,640px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5" onclick="event.stopPropagation()">
+      <div class="flex shrink-0 items-center justify-between gap-3 border-b border-violet-100 bg-gradient-to-l from-violet-50/90 to-white px-4 py-3 sm:px-5">
+        <div class="min-w-0">
+          <h3 class="text-base font-bold text-slate-900">إضافة دين لنا</h3>
+          <p class="text-[11px] text-slate-500">يُسجّل لدى شركة التحويل ويُحدّث الرصيد</p>
         </div>
-        <div class="space-y-3 p-4">
-          <input type="hidden" id="tcReturnCompanyId" value="<%= transferCompanyId %>">
-          <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
-            <input type="number" id="tcReturnAmt" step="0.01" min="0" placeholder="المبلغ" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm tabular-nums focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15 sm:max-w-[140px]" dir="ltr">
-            <select id="tcReturnCur" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15 sm:w-28">
+        <button type="button" onclick="tcCloseReceivableModal()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="إغلاق"><i class="fas fa-times text-lg"></i></button>
+      </div>
+      <div class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4 sm:p-5">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="col-span-2 sm:col-span-1">
+            <label class="mb-1 block text-xs font-medium text-slate-600">المبلغ</label>
+            <input type="number" id="tcRecvAmt" step="0.01" min="0" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm tabular-nums focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20" placeholder="0.00" dir="ltr">
+          </div>
+          <div class="col-span-2 sm:col-span-1">
+            <label class="mb-1 block text-xs font-medium text-slate-600">العملة</label>
+            <select id="tcRecvCur" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
               <option value="USD">USD</option>
               <option value="TRY">TRY</option>
               <option value="SYP">SYP</option>
             </select>
-            <select id="tcReturnDisposition" class="col-span-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15 sm:col-span-1 sm:min-w-[12rem]">
-              <option value="remain_at_entity">يبقى لدى الشركة</option>
-              <option value="transfer_to_fund">ترحيل لصندوق</option>
-            </select>
-            <select id="tcReturnFundId" class="col-span-2 hidden h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15 sm:col-span-1 sm:min-w-[12rem]"></select>
           </div>
-          <input type="text" id="tcReturnNotes" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" placeholder="ملاحظات (اختياري)">
-          <button type="button" onclick="tcSubmitReturn()" class="inline-flex h-11 w-full items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto sm:min-w-[10rem]">تسجيل المرتجع</button>
+          <div class="col-span-2">
+            <label class="mb-1 block text-xs font-medium text-slate-600">ملاحظات <span class="font-normal text-slate-400">(اختياري)</span></label>
+            <input type="text" id="tcRecvNotes" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20" placeholder="">
+          </div>
+        </div>
+        <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          <button type="button" onclick="tcCloseReceivableModal()" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto">إلغاء</button>
+          <button type="button" onclick="tcSubmitReceivable()" class="h-11 w-full rounded-xl bg-violet-600 px-5 text-sm font-bold text-white shadow-md hover:bg-violet-700 sm:w-auto sm:min-w-[8rem]">تسجيل</button>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+
+  <!-- نموذج: مرتجع -->
+  <div id="tcReturnModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm" dir="rtl" onclick="if(event.target===this)tcCloseReturnModal()">
+    <div class="tc-modal-shell relative flex max-h-[min(90vh,720px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5" onclick="event.stopPropagation()">
+      <div class="flex shrink-0 items-center justify-between gap-3 border-b border-emerald-100 bg-gradient-to-l from-emerald-50/90 to-white px-4 py-3 sm:px-5">
+        <div class="min-w-0">
+          <h3 class="text-base font-bold text-emerald-950">تسجيل مرتجع</h3>
+          <p class="text-[11px] text-emerald-800/80">يبقى لدى الشركة أو يُرحّل لصندوق</p>
+        </div>
+        <button type="button" onclick="tcCloseReturnModal()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="إغلاق"><i class="fas fa-times text-lg"></i></button>
+      </div>
+      <div class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4 sm:p-5">
+        <input type="hidden" id="tcReturnCompanyId" value="<%= transferCompanyId %>">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="col-span-2 sm:col-span-1">
+            <label class="mb-1 block text-xs font-medium text-slate-600">المبلغ</label>
+            <input type="number" id="tcReturnAmt" step="0.01" min="0" placeholder="0" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm tabular-nums focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" dir="ltr">
+          </div>
+          <div class="col-span-2 sm:col-span-1">
+            <label class="mb-1 block text-xs font-medium text-slate-600">العملة</label>
+            <select id="tcReturnCur" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15">
+              <option value="USD">USD</option>
+              <option value="TRY">TRY</option>
+              <option value="SYP">SYP</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="mb-1 block text-xs font-medium text-slate-600">التصرف</label>
+            <select id="tcReturnDisposition" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15">
+              <option value="remain_at_entity">يبقى لدى الشركة</option>
+              <option value="transfer_to_fund">ترحيل لصندوق</option>
+            </select>
+          </div>
+          <div id="tcReturnFundWrap" class="col-span-2 hidden">
+            <label class="mb-1 block text-xs font-medium text-slate-600">الصندوق</label>
+            <select id="tcReturnFundId" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15"></select>
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">ملاحظات <span class="font-normal text-slate-400">(اختياري)</span></label>
+          <input type="text" id="tcReturnNotes" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" placeholder="">
+        </div>
+        <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          <button type="button" onclick="tcCloseReturnModal()" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto">إلغاء</button>
+          <button type="button" onclick="tcSubmitReturn()" class="h-11 w-full rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 sm:w-auto sm:min-w-[8rem]">تسجيل المرتجع</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="tcLedgerMoveModal" class="fixed inset-0 z-[10060] hidden items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm" dir="rtl" onclick="if(event.target===this)tcCloseLedgerModal()">
     <div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xl ring-1 ring-slate-900/5" onclick="event.stopPropagation()">
