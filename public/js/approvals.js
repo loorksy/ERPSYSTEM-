@@ -823,10 +823,11 @@
         return;
       }
       box.innerHTML = list.map(function(a, idx) {
-        var net = Number(a.balance_amount) || 0;
+        var payCard = Number(a.balance_payable) || 0;
+        var recCard = Number(a.balance_receivable) || 0;
+        /** الصافي في الواجهة = «علينا» فقط — يطابق مبلغ التسليم */
         var textColor = '#64748b';
-        if (net > 0.0001) textColor = '#047857';
-        else if (net < -0.0001) textColor = '#b91c1c';
+        if (payCard > 0.0001) textColor = '#be123c';
         var bar = accCardBarColors[idx % accCardBarColors.length];
         var pinHtml = a.pinned
           ? '<span class="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-700 shadow-sm" title="مثبت"><i class="fas fa-thumbtack text-xs"></i></span>'
@@ -851,8 +852,6 @@
             a.id +
             ')">قرار معلّق — اضغط لمتابعة خصم الدين</button></div>'
           : '';
-        var payCard = Number(a.balance_payable) || 0;
-        var recCard = Number(a.balance_receivable) || 0;
         return (
           '<div class="acc-list-card group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" onclick="accOpen(' +
           a.id +
@@ -881,11 +880,11 @@
           '</span></span>' +
           '</div>' +
           '<div class="flex items-end justify-between border-t border-slate-200/80 pt-2">' +
-          '<span class="text-xs font-semibold text-slate-500">الصافي</span>' +
+          '<span class="text-xs font-semibold text-slate-500">الصافي (علينا)</span>' +
           '<span class="text-lg font-bold tabular-nums" style="color:' +
           textColor +
           '">' +
-          escHtml(accFmtMoney(net)) +
+          escHtml(accFmtMoney(payCard)) +
           '</span></div></div>' +
           pendingRecvHtml +
           '<div class="acc-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
@@ -937,8 +936,7 @@
     var code = escHtml(a.code || '');
     var pay = Number(a.balance_payable) || 0;
     var rec = Number(a.balance_receivable) || 0;
-    var net = Number(a.balance_amount) || 0;
-    var netColor = net > 0.0001 ? 'text-emerald-700' : net < -0.0001 ? 'text-rose-700' : 'text-slate-700';
+    var netColor = pay > 0.0001 ? 'text-rose-700' : 'text-slate-600';
     return (
       '<label class="acc-del-row flex flex-col gap-2 p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm text-right">' +
       '<div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">' +
@@ -959,8 +957,8 @@
       '</span></span>' +
       '<span class="font-bold tabular-nums ' +
       netColor +
-      '">صافي ' +
-      escHtml(accFmtMoney(net)) +
+      '">صافي (علينا) ' +
+      escHtml(accFmtMoney(pay)) +
       '</span></div></div></label>'
     );
   }
@@ -1279,7 +1277,6 @@
       accDetailBalanceReceivable = Number(e.balance_receivable) || 0;
       var payV = Number(e.balance_payable) || 0;
       var recV = Number(e.balance_receivable) || 0;
-      var netV = Number(e.balance_amount) || 0;
       var elRec = document.getElementById('accDetailRec');
       var elPay = document.getElementById('accDetailPay');
       var elNet = document.getElementById('accDetailNet');
@@ -1292,8 +1289,9 @@
         elPay.className = 'mt-1 text-base font-bold tabular-nums text-rose-700';
       }
       if (elNet) {
-        elNet.textContent = accFmtMoney(netV);
-        elNet.className = 'mt-1 text-base font-bold tabular-nums ' + accNetBalanceClass(netV);
+        elNet.textContent = accFmtMoney(payV);
+        elNet.className =
+          'mt-1 text-base font-bold tabular-nums ' + (payV > 0.0001 ? 'text-rose-700' : 'text-slate-600');
       }
       accUpdatePendingBanner(id);
       var titleEl = document.getElementById('accDetailTitle');
