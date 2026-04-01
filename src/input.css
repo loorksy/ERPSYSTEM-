@@ -1110,30 +1110,35 @@
   }
 }
 
-/* صفحة بيانات المستخدمين: أزرار بخلفية صلبة ومتناسقة عبر المتصفحات */
+/* صفحة بيانات المستخدمين: أزرار وروابط بخلفية صلبة ومتناسقة عبر المتصفحات */
 .member-directory-page button.md-toolbar-btn,
+.member-directory-page a.md-toolbar-btn,
 .member-directory-page button.md-pager-btn {
   box-sizing: border-box;
   -webkit-appearance: none;
   appearance: none;
 }
 .member-directory-page button.md-toolbar-btn--primary,
+.member-directory-page a.md-toolbar-btn--primary,
 .member-directory-page button.md-pager-btn--primary {
   background-color: #4f46e5;
   border-color: #4338ca;
   color: #fff;
 }
 .member-directory-page button.md-toolbar-btn--primary:hover:not(:disabled),
+.member-directory-page a.md-toolbar-btn--primary:hover,
 .member-directory-page button.md-pager-btn--primary:hover:not(:disabled) {
   background-color: #4338ca;
   border-color: #3730a3;
 }
-.member-directory-page button.md-toolbar-btn--neutral {
+.member-directory-page button.md-toolbar-btn--neutral,
+.member-directory-page a.md-toolbar-btn--neutral {
   background-color: #334155;
   border-color: #475569;
   color: #fff;
 }
-.member-directory-page button.md-toolbar-btn--neutral:hover:not(:disabled) {
+.member-directory-page button.md-toolbar-btn--neutral:hover:not(:disabled),
+.member-directory-page a.md-toolbar-btn--neutral:hover {
   background-color: #1e293b;
   border-color: #334155;
 }

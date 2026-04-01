@@ -36,26 +36,26 @@
   function summaryCard(label, valueHtml, hint, accent) {
     var border =
       accent === 'name'
-        ? 'border-l-indigo-500 from-white to-indigo-50/40'
+        ? 'border-l-indigo-500'
         : accent === 'salary'
-          ? 'border-l-amber-400 from-white to-amber-50/35'
+          ? 'border-l-amber-400'
           : accent === 'deferred'
-            ? 'border-l-sky-500 from-white to-sky-50/35'
+            ? 'border-l-sky-500'
             : accent === 'debt'
-              ? 'border-l-rose-500 from-white to-rose-50/35'
-              : 'border-l-slate-300 from-white to-slate-50/50';
+              ? 'border-l-rose-500'
+              : 'border-l-slate-300';
     return (
-      '<div class="rounded-2xl border border-slate-200/80 border-l-4 bg-gradient-to-br ' +
+      '<div class="min-w-0 border-l-4 ' +
       border +
-      ' p-3.5 shadow-sm transition hover:border-slate-300/90 sm:p-4">' +
+      ' bg-transparent py-3 pl-4 sm:py-4">' +
       '<div class="text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">' +
       esc(label) +
       '</div>' +
-      '<div class="mt-2 font-mono text-base font-bold tabular-nums leading-tight sm:text-lg">' +
+      '<div class="mt-1.5 font-mono text-base font-bold tabular-nums leading-tight sm:text-lg">' +
       valueHtml +
       '</div>' +
       (hint
-        ? '<div class="mt-2 text-[0.65rem] leading-snug text-slate-400">' + esc(hint) + '</div>'
+        ? '<div class="mt-1.5 text-[0.65rem] leading-snug text-slate-400">' + esc(hint) + '</div>'
         : '') +
       '</div>'
     );
@@ -97,7 +97,7 @@
     const data = await res.json();
     if (!data.success) {
       summary.innerHTML =
-        '<div class="rounded-xl border border-red-100 bg-red-50/90 px-4 py-3 text-sm text-red-800">' +
+        '<div class="border-b border-red-200 bg-red-50 px-4 py-4 text-sm font-medium leading-relaxed text-red-800" role="alert">' +
         esc(data.message || 'فشل التحميل') +
         '</div>';
       wireMdNav();
@@ -134,45 +134,45 @@
         '</div>';
     } else {
       summary.innerHTML =
-        '<div class="rounded-2xl border border-dashed border-slate-200/90 bg-white px-4 py-10 text-center text-sm leading-relaxed text-slate-600 shadow-sm">لا يوجد ملف بعد — سيُنشأ عند أول تدقيق أو تعديل.</div>';
+        '<div class="border-b border-dashed border-slate-200 py-10 text-center text-sm leading-relaxed text-slate-600">لا يوجد ملف بعد — سيُنشأ عند أول تدقيق أو تعديل.</div>';
     }
 
     const dh = data.deferredHistory || [];
     deferredBlock.innerHTML = dh.length
-      ? '<ul class="space-y-2.5">' +
+      ? '<ul class="divide-y divide-slate-200">' +
         dh
           .map((r) => {
             const bal = Number(r.balance_d || 0);
             const tone = bal < 0 ? 'text-red-600' : 'text-sky-700';
             return (
-              '<li class="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:flex-row sm:items-center sm:justify-between">' +
+              '<li class="flex flex-col gap-2 py-3.5 sm:flex-row sm:items-center sm:justify-between">' +
               '<span class="text-sm text-slate-700"><span class="font-semibold text-slate-900">دورة ' +
               esc(r.cycle_id) +
               '</span>' +
               (r.cycle_name ? ' · ' + esc(r.cycle_name) : '') +
               '</span>' +
-              '<span class="inline-flex min-w-[6.5rem] items-center justify-center rounded-lg bg-slate-50 px-3 py-1.5 font-mono text-sm font-bold tabular-nums ring-1 ring-slate-200/80 ' +
+              '<span class="inline-flex min-w-[6.5rem] items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 font-mono text-sm font-bold tabular-nums ' +
               tone +
-              '">' +
+              '" dir="ltr">' +
               esc(bal.toFixed(2)) +
               ' USD</span></li>'
             );
           })
           .join('') +
         '</ul>'
-      : '<p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-10 text-center text-sm text-slate-500">لا سجلات مؤجل.</p>';
+      : '<p class="border-b border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">لا سجلات مؤجل.</p>';
 
     const ar = data.auditRows || [];
     auditBlock.innerHTML = ar.length
-      ? '<div class="-mx-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-50/30">' +
-        '<table class="min-w-[640px] w-full text-right text-sm">' +
-        '<thead><tr class="border-b border-slate-200 bg-slate-50/95 text-slate-600">' +
-        '<th class="whitespace-nowrap px-3 py-2.5 text-xs font-bold">الدورة</th>' +
-        '<th class="whitespace-nowrap px-3 py-2.5 text-xs font-bold">راتب بعد الخصم</th>' +
-        '<th class="whitespace-nowrap px-3 py-2.5 text-xs font-bold">قبل الخصم</th>' +
-        '<th class="px-3 py-2.5 text-xs font-bold">الحالة</th>' +
-        '<th class="px-3 py-2.5 text-xs font-bold">المصدر</th>' +
-        '<th class="whitespace-nowrap px-3 py-2.5 text-xs font-bold">تاريخ</th>' +
+      ? '<div class="overflow-x-auto [-webkit-overflow-scrolling:touch]">' +
+        '<table class="min-w-[640px] w-full border-collapse text-right text-sm">' +
+        '<thead><tr class="border-b-2 border-slate-200/90 text-[11px] font-bold uppercase tracking-wide text-slate-500">' +
+        '<th class="whitespace-nowrap px-2 py-2.5 sm:px-3">الدورة</th>' +
+        '<th class="whitespace-nowrap px-2 py-2.5 sm:px-3">راتب بعد الخصم</th>' +
+        '<th class="whitespace-nowrap px-2 py-2.5 sm:px-3">قبل الخصم</th>' +
+        '<th class="px-2 py-2.5 sm:px-3">الحالة</th>' +
+        '<th class="px-2 py-2.5 sm:px-3">المصدر</th>' +
+        '<th class="whitespace-nowrap px-2 py-2.5 sm:px-3">تاريخ</th>' +
         '</tr></thead><tbody class="divide-y divide-slate-100">' +
         ar
           .map((r) => {
@@ -186,39 +186,40 @@
                 : '—';
             const cname = r.cycle_name ? esc(r.cycle_name) + ' — ' : '';
             return (
-              '<tr class="hover:bg-slate-50/80">' +
-              '<td class="whitespace-nowrap px-3 py-2.5 text-slate-800">' +
+              '<tr class="transition-colors hover:bg-indigo-50/40">' +
+              '<td class="whitespace-nowrap px-2 py-2.5 text-slate-800 sm:px-3">' +
               cname +
               '#' +
               esc(r.cycle_id) +
               '</td>' +
-              '<td class="px-3 py-2.5 font-mono tabular-nums text-slate-900">' +
+              '<td class="px-2 py-2.5 font-mono tabular-nums text-slate-900 sm:px-3" dir="ltr">' +
               esc(sal) +
               '</td>' +
-              '<td class="px-3 py-2.5 font-mono tabular-nums text-slate-600">' +
+              '<td class="px-2 py-2.5 font-mono tabular-nums text-slate-600 sm:px-3" dir="ltr">' +
               esc(before) +
               '</td>' +
-              '<td class="px-3 py-2.5">' +
+              '<td class="px-2 py-2.5 sm:px-3">' +
               esc(r.audit_status) +
               '</td>' +
-              '<td class="px-3 py-2.5 text-slate-600">' +
+              '<td class="px-2 py-2.5 text-slate-600 sm:px-3">' +
               esc(r.audit_source || '') +
               '</td>' +
-              '<td class="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500">' +
+              '<td class="whitespace-nowrap px-2 py-2.5 text-xs text-slate-500 sm:px-3">' +
               esc(r.updated_at ? new Date(r.updated_at).toLocaleString('ar') : '') +
               '</td></tr>'
             );
           })
           .join('') +
         '</tbody></table></div>'
-      : '<p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500">لا سجلات تدقيق لهذا الرقم — تأكد من التدقيق من الرواتب أو البحث.</p>';
+      : '<p class="border-b border-dashed border-slate-200 py-10 text-center text-sm leading-relaxed text-slate-500">لا سجلات تدقيق لهذا الرقم — تأكد من التدقيق من الرواتب أو البحث.</p>';
 
     const ev = data.events || [];
     eventsBlock.innerHTML = ev.length
-      ? ev
+      ? '<div class="divide-y divide-slate-200">' +
+        ev
           .map(
             (e) =>
-              '<div class="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm ring-1 ring-slate-900/[0.03]">' +
+              '<div class="py-4">' +
               '<div class="flex flex-wrap items-baseline justify-between gap-2">' +
               '<span class="font-semibold text-slate-900">' +
               esc(e.event_type) +
@@ -230,20 +231,22 @@
               esc(e.notes || '') +
               '</p></div>'
           )
-          .join('')
-      : '<p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center text-sm text-slate-500">لا أحداث مسجّلة.</p>';
+          .join('') +
+        '</div>'
+      : '<p class="border-b border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">لا أحداث مسجّلة.</p>';
 
     const adj = data.adjustments || [];
     adjBlock.innerHTML = adj.length
-      ? adj
+      ? '<div class="divide-y divide-slate-200">' +
+        adj
           .map(
             (a) =>
-              '<div class="rounded-xl border border-amber-200/70 bg-gradient-to-br from-amber-50/40 to-white px-4 py-3 shadow-sm ring-1 ring-amber-900/[0.04]">' +
+              '<div class="py-4">' +
               '<div class="flex flex-wrap items-center gap-2">' +
-              '<span class="rounded-md bg-amber-100/90 px-2 py-0.5 text-xs font-bold text-amber-950">' +
+              '<span class="rounded-md border border-amber-200 bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-950">' +
               esc(a.kind) +
               '</span>' +
-              '<span class="font-mono text-sm font-bold tabular-nums text-slate-900">' +
+              '<span class="font-mono text-sm font-bold tabular-nums text-slate-900" dir="ltr">' +
               esc(Number(a.amount || 0).toFixed(2)) +
               '</span>' +
               '<span class="text-xs text-slate-500">' +
@@ -253,53 +256,54 @@
               esc(a.notes || '') +
               '</p></div>'
           )
-          .join('')
-      : '<p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center text-sm text-slate-500">لا تعديلات بعد.</p>';
+          .join('') +
+        '</div>'
+      : '<p class="border-b border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">لا تعديلات بعد.</p>';
 
     const ship = data.shippingTransactions || [];
     if (shippingBlock) {
       shippingBlock.innerHTML = ship.length
-        ? '<div class="-mx-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-50/30">' +
-          '<table class="min-w-[560px] w-full text-right text-sm">' +
-          '<thead><tr class="border-b border-slate-200 bg-slate-50/95 text-slate-600">' +
-          '<th class="px-3 py-2.5 text-xs font-bold">#</th>' +
-          '<th class="px-3 py-2.5 text-xs font-bold">الصنف</th>' +
-          '<th class="px-3 py-2.5 text-xs font-bold">الكمية</th>' +
-          '<th class="px-3 py-2.5 text-xs font-bold">الإجمالي</th>' +
-          '<th class="px-3 py-2.5 text-xs font-bold">الربح</th>' +
-          '<th class="px-3 py-2.5 text-xs font-bold">الحالة</th>' +
+        ? '<div class="overflow-x-auto [-webkit-overflow-scrolling:touch]">' +
+          '<table class="min-w-[560px] w-full border-collapse text-right text-sm">' +
+          '<thead><tr class="border-b-2 border-slate-200/90 text-[11px] font-bold uppercase tracking-wide text-slate-500">' +
+          '<th class="px-2 py-2.5 sm:px-3">#</th>' +
+          '<th class="px-2 py-2.5 sm:px-3">الصنف</th>' +
+          '<th class="px-2 py-2.5 sm:px-3">الكمية</th>' +
+          '<th class="px-2 py-2.5 sm:px-3">الإجمالي</th>' +
+          '<th class="px-2 py-2.5 sm:px-3">الربح</th>' +
+          '<th class="px-2 py-2.5 sm:px-3">الحالة</th>' +
           '</tr></thead><tbody class="divide-y divide-slate-100">' +
           ship
             .map((s) => {
               const prof = s.profit_amount != null ? Number(s.profit_amount).toFixed(2) : '—';
               const pCls = s.profit_amount != null ? profitTone(s.profit_amount) : 'text-slate-500';
               return (
-                '<tr class="hover:bg-slate-50/80">' +
-                '<td class="px-3 py-2 font-mono text-xs text-slate-500">' +
+                '<tr class="transition-colors hover:bg-indigo-50/40">' +
+                '<td class="px-2 py-2.5 font-mono text-xs text-slate-500 sm:px-3">' +
                 esc(s.id) +
                 '</td>' +
-                '<td class="px-3 py-2 text-slate-800">' +
+                '<td class="px-2 py-2.5 text-slate-800 sm:px-3">' +
                 esc(s.item_type) +
                 '</td>' +
-                '<td class="px-3 py-2 font-mono tabular-nums">' +
+                '<td class="px-2 py-2.5 font-mono tabular-nums sm:px-3" dir="ltr">' +
                 esc(s.quantity) +
                 '</td>' +
-                '<td class="px-3 py-2 font-mono tabular-nums">' +
+                '<td class="px-2 py-2.5 font-mono tabular-nums sm:px-3" dir="ltr">' +
                 esc(Number(s.total || 0).toFixed(2)) +
                 '</td>' +
-                '<td class="px-3 py-2 font-mono tabular-nums font-semibold ' +
+                '<td class="px-2 py-2.5 font-mono tabular-nums font-semibold sm:px-3 ' +
                 pCls +
-                '">' +
+                '" dir="ltr">' +
                 esc(prof) +
                 '</td>' +
-                '<td class="px-3 py-2 text-slate-600">' +
+                '<td class="px-2 py-2.5 text-slate-600 sm:px-3">' +
                 esc(s.status || '') +
                 '</td></tr>'
               );
             })
             .join('') +
           '</tbody></table></div>'
-        : '<p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500">لا مبيعات شحن مسجّلة لهذا الرقم كمستخدم.</p>';
+        : '<p class="border-b border-dashed border-slate-200 py-10 text-center text-sm leading-relaxed text-slate-500">لا مبيعات شحن مسجّلة لهذا الرقم كمستخدم.</p>';
     }
     wireMdNav();
   }
