@@ -16,6 +16,15 @@
       .replace(/'/g, '&#39;');
   }
 
+  /** عرض اسم العملة للواجهة فقط (القيم المرسلة للخادم تبقى كما هي في النموذج) */
+  function currencyAr(c) {
+    var x = String(c == null ? '' : c).toUpperCase();
+    if (x === 'USD') return 'دولار';
+    if (x === 'TRY') return 'ليرة تركية';
+    if (x === 'SYP') return 'ليرة سورية';
+    return c ? esc(c) : '';
+  }
+
   function statCard(iconClass, iconBg, label, value, valueClass) {
     return (
       '<div class="group relative rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-white to-slate-50/90 shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:border-indigo-200/70 hover:shadow-md min-w-0">' +
@@ -65,17 +74,17 @@
         var fxV = d.fxSpreadSumUsd != null ? d.fxSpreadSumUsd : 0;
         var fxCard =
           fxV > 0.0001
-            ? statCard('fas fa-chart-line', 'bg-teal-100 text-teal-800', 'فرق تصريف', fxV, 'text-teal-900')
+            ? statCard('fas fa-chart-line', 'bg-teal-100 text-teal-800', 'فرق التصريف', fxV, 'text-teal-900')
             : '';
         sum.innerHTML =
-          statCard('fas fa-truck-fast', 'bg-sky-100 text-sky-700', 'شحن (بيع دين)', d.shippingDebt, 'text-sky-800') +
-          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'معتمدون (مطلوب دفع)', accPay, 'text-violet-900') +
-          statCard('fas fa-database', 'bg-slate-100 text-slate-700', 'entity_payables (إجمالي USD)', d.payablesSumUsd, 'text-slate-900') +
-          statCard('fas fa-stamp', 'bg-violet-50 text-violet-900', 'من تحويل معتمد (payable)', epAcc, 'text-violet-950') +
-          statCard('fas fa-ellipsis-h', 'bg-slate-50 text-slate-600', 'entity_payables — أخرى', epOther, 'text-slate-800') +
+          statCard('fas fa-truck-fast', 'bg-sky-100 text-sky-700', 'الشحن (بيع دين)', d.shippingDebt, 'text-sky-800') +
+          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'المعتمدون — مطلوب دفع', accPay, 'text-violet-900') +
+          statCard('fas fa-database', 'bg-slate-100 text-slate-700', 'ديون مسجّلة — إجمالي بالدولار', d.payablesSumUsd, 'text-slate-900') +
+          statCard('fas fa-stamp', 'bg-violet-50 text-violet-900', 'من تحويل معتمد (دين علينا)', epAcc, 'text-violet-950') +
+          statCard('fas fa-ellipsis-h', 'bg-slate-50 text-slate-600', 'ديون مسجّلة — أخرى (يدوي، شحن، …)', epOther, 'text-slate-800') +
           fxCard +
-          statCard('fas fa-building', 'bg-red-100 text-red-700', 'شركات (رصيد سالب)', d.companyDebtFromBalance, 'text-red-800') +
-          statCard('fas fa-piggy-bank', 'bg-amber-100 text-amber-800', 'صناديق (رصيد سالب)', d.fundDebtFromBalance, 'text-amber-900');
+          statCard('fas fa-building', 'bg-red-100 text-red-700', 'شركات التحويل (رصيد سالب)', d.companyDebtFromBalance, 'text-red-800') +
+          statCard('fas fa-piggy-bank', 'bg-amber-100 text-amber-800', 'الصناديق (رصيد سالب)', d.fundDebtFromBalance, 'text-amber-900');
 
         var comp = document.getElementById('debtsCompanies');
         if (comp) {
@@ -98,7 +107,7 @@
                     '<span class="font-mono text-sm font-bold tabular-nums text-rose-700">' +
                     fmt(c.balance_amount) +
                     ' ' +
-                    esc(c.balance_currency || 'USD') +
+                    currencyAr(c.balance_currency || 'USD') +
                     '</span>' +
                     '<span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-400 transition group-hover:bg-red-100 group-hover:text-red-600"><i class="fas fa-chevron-left text-xs"></i></span>' +
                     '</div></a>'
@@ -128,7 +137,7 @@
                     '<span class="font-mono text-sm font-bold tabular-nums text-amber-800">' +
                     fmt(f.amount) +
                     ' ' +
-                    esc(f.currency || '') +
+                    currencyAr(f.currency || '') +
                     '</span>' +
                     '<span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-400 transition group-hover:bg-amber-100 group-hover:text-amber-700"><i class="fas fa-chevron-left text-xs"></i></span>' +
                     '</div></a>'
@@ -161,7 +170,7 @@
                     '<span class="inline-flex items-center rounded-xl border border-violet-200/80 bg-violet-50 px-3 py-2 font-mono text-sm font-bold tabular-nums text-violet-900">' +
                     fmt(p.amount) +
                     ' ' +
-                    esc(p.currency || '') +
+                    currencyAr(p.currency || '') +
                     '</span>' +
                     '</div></div>'
                   );
@@ -184,7 +193,7 @@
     if (!typeSel || !idSel) return;
     function refill() {
       var t = typeSel.value;
-      idSel.innerHTML = '<option value="">— اختر —</option>';
+      idSel.innerHTML = '<option value="">— اختر الكيان —</option>';
       var url = t === 'fund' ? '/api/funds/list' : '/api/transfer-companies/list';
       fetch(url, { credentials: 'same-origin' })
         .then(function(r) {
@@ -274,7 +283,7 @@
         '<p class="font-mono text-3xl font-bold tabular-nums text-indigo-700">' +
         fmt(c.balance_amount) +
         ' ' +
-        esc(c.balance_currency || 'USD') +
+        currencyAr(c.balance_currency || 'USD') +
         '</p></div>';
 
       html +=
@@ -290,7 +299,7 @@
           '<span class="font-mono text-sm font-semibold tabular-nums text-slate-900 shrink-0">' +
           fmt(l.amount) +
           ' ' +
-          esc(l.currency || '') +
+          currencyAr(l.currency || '') +
           '</span></div>';
       });
       if (!(res.ledger || []).length) {
@@ -309,7 +318,7 @@
             '<span class="font-mono font-semibold">' +
             fmt(rw.amount) +
             ' ' +
-            esc(rw.currency || '') +
+            currencyAr(rw.currency || '') +
             '</span>' +
             ' <span class="text-slate-600">' +
             esc(rw.disposition || '') +
@@ -362,7 +371,7 @@
           '<span class="inline-flex items-center rounded-xl border border-indigo-200 bg-white px-4 py-2 font-mono text-sm font-semibold tabular-nums text-indigo-900 shadow-sm">' +
           fmt(b.amount) +
           ' ' +
-          esc(b.currency || '') +
+          currencyAr(b.currency || '') +
           '</span>';
       });
       html +=
@@ -378,7 +387,7 @@
           '<span class="font-mono text-sm font-semibold tabular-nums">' +
           fmt(l.amount) +
           ' ' +
-          esc(l.currency || '') +
+          currencyAr(l.currency || '') +
           '</span></div>';
       });
       if (!(res.ledger || []).length) {

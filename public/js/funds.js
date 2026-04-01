@@ -199,15 +199,19 @@
     var locDisp = document.getElementById('fundDetailLocationDisplay');
     if (numDisp) numDisp.textContent = f.fund_number || '—';
     if (locDisp) locDisp.textContent = [f.country || '—', f.region_syria || ''].filter(Boolean).join(' · ');
+    var payShell = document.getElementById('fundDetailPayablesShell');
     var payBox = document.getElementById('fundDetailPayables');
     var pay = res.openPayablesUsd != null ? res.openPayablesUsd : 0;
-    if (payBox) {
+    var balShell = document.getElementById('fundDetailBalanceShell');
+    if (payShell && payBox) {
       if (pay > 0.0001) {
-        payBox.classList.remove('hidden');
-        payBox.textContent = 'دين علينا تجاه هذا الصندوق: ' + pay.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD';
+        payShell.classList.remove('hidden');
+        payBox.textContent = pay.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' USD';
+        if (balShell) balShell.classList.remove('sm:col-span-2');
       } else {
-        payBox.classList.add('hidden');
+        payShell.classList.add('hidden');
         payBox.textContent = '';
+        if (balShell) balShell.classList.add('sm:col-span-2');
       }
     }
     var ledger = res.ledger || [];
@@ -225,11 +229,14 @@
     var balDebt = pay > 0.0001;
     var balSection = document.getElementById('fundDetailBalancesSection');
     var balEl = document.getElementById('fundDetailBalances');
+    var balOuter = document.getElementById('fundDetailBalanceShell');
     if (balEl) {
       if (hideCashBalance) {
+        if (balOuter) balOuter.classList.add('hidden');
         if (balSection) balSection.classList.add('hidden');
         balEl.innerHTML = '';
       } else {
+        if (balOuter) balOuter.classList.remove('hidden');
         if (balSection) balSection.classList.remove('hidden');
         var rows = (res.balances || []).map(function(b) {
           var amt = (b.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
@@ -256,6 +263,9 @@
             ? rows.join('')
             : '<p class="py-1 text-center text-sm text-slate-500 sm:text-start">—</p>';
       }
+    }
+    if (payShell && pay > 0.0001) {
+      payShell.classList.toggle('sm:col-span-2', !!hideCashBalance);
     }
     fundLedgerById = {};
     (res.ledger || []).forEach(function(l) {
@@ -390,7 +400,45 @@
       rts.classList.toggle('hidden', !show);
     }
   }
-  document.getElementById('fundReturnDisposition')?.addEventListener('change', fundsToggleReturnTarget);
+  function fundsWireReturnDisposition() {
+    var d = document.getElementById('fundReturnDisposition');
+    if (d && !d.dataset.fundDispBound) {
+      d.dataset.fundDispBound = '1';
+      d.addEventListener('change', fundsToggleReturnTarget);
+    }
+  }
+
+  window.fundsOpenTransferModal = function() {
+    fundsWireReturnDisposition();
+    var m = document.getElementById('fundTransferModal');
+    if (m) {
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+  };
+  window.fundsCloseTransferModal = function() {
+    var m = document.getElementById('fundTransferModal');
+    if (m) {
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+  };
+  window.fundsOpenReturnModal = function() {
+    fundsWireReturnDisposition();
+    fundsToggleReturnTarget();
+    var m = document.getElementById('fundReturnModal');
+    if (m) {
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+  };
+  window.fundsCloseReturnModal = function() {
+    var m = document.getElementById('fundReturnModal');
+    if (m) {
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+  };
 
   window.fundsSubmitReturn = function() {
     if (!currentFundId) return;
@@ -410,10 +458,11 @@
       if (!tid) return toast('اختر صندوق المقصد', 'error');
       body.targetFundId = tid;
     }
-    apiCall('/api/returns', { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
+    apiCall('/api/returns', { method: 'POST', body: JSON.stringify(body)     }).then(function(res) {
       toast(res.message || (res.success ? 'تم' : 'فشل'), res.success ? 'success' : 'error');
       if (res.success) {
         document.getElementById('fundReturnAmt').value = '';
+        fundsCloseReturnModal();
         fundsReloadDetail();
       }
     });
@@ -429,9 +478,14 @@
       body: JSON.stringify({ toFundId: to, amount: amt, currency: 'USD' })
     }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
-      if (res.success) fundsReloadDetail();
+      if (res.success) {
+        fundsCloseTransferModal();
+        fundsReloadDetail();
+      }
     });
   };
+
+  window.fundsLoadDetail = fundsReloadDetail;
 
   document.getElementById('fundAddForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -506,7 +560,7 @@
       u.searchParams.delete('fab');
       window.history.replaceState({}, '', u.pathname + (u.search || '') + u.hash);
     } catch (_) {}
-    toast('افتح ملف صندوق من قائمة الصناديق، ثم استخدم قسم «تسجيل المرتجع».', 'success');
+    toast('افتح ملف صندوق من قائمة الصناديق، ثم زر «مرتجع» من الأعلى.', 'success');
     var el = document.getElementById('fundsCards');
     if (el) setTimeout(function() { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
   }
@@ -515,6 +569,7 @@
     var fp = document.getElementById('fundDetailPage');
     if (fp && fp.dataset.fundId) {
       currentFundId = parseInt(fp.dataset.fundId, 10);
+      fundsWireReturnDisposition();
       apiCall('/api/funds/' + currentFundId).then(fundsApplyDetailResponse);
       return;
     }

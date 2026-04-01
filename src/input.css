@@ -547,11 +547,17 @@
     /* معتمد: إضافة مبلغ / تحويل من القائمة + نافذة خصم من دين لنا */
     #accListAddAmountModal,
     #accListTransferModal,
+    #accDetailAddAmountModal,
+    #accDetailTransferModal,
     #accReceivableOffsetModal,
     #tcAddModal,
     #tcReceivableModal,
     #tcReturnModal,
-    #tcLedgerMoveModal {
+    #tcLedgerMoveModal,
+    #fundTransferModal,
+    #fundReturnModal,
+    #fmModal,
+    #fundLedgerMoveModal {
       top: calc(60px + env(safe-area-inset-top, 0px));
       right: 0;
       bottom: calc(65px + env(safe-area-inset-bottom, 0px));
@@ -593,12 +599,16 @@
     }
     #accListAddAmountModal,
     #accListTransferModal,
+    #accDetailAddAmountModal,
+    #accDetailTransferModal,
     #accReceivableOffsetModal {
       align-items: center !important;
       justify-content: center !important;
     }
     #accListAddAmountModal > div,
     #accListTransferModal > div,
+    #accDetailAddAmountModal > div,
+    #accDetailTransferModal > div,
     #accReceivableOffsetModal > div {
       max-height: 100%;
       overflow-y: auto;
@@ -606,13 +616,17 @@
     }
     #tcAddModal,
     #tcReceivableModal,
-    #tcReturnModal {
+    #tcReturnModal,
+    #fundTransferModal,
+    #fundReturnModal {
       align-items: stretch !important;
       justify-content: flex-start !important;
     }
     #tcAddModal .tc-modal-shell,
     #tcReceivableModal .tc-modal-shell,
-    #tcReturnModal .tc-modal-shell {
+    #tcReturnModal .tc-modal-shell,
+    #fundTransferModal .tc-modal-shell,
+    #fundReturnModal .tc-modal-shell {
       width: 100%;
       max-width: 100% !important;
       margin-left: 0 !important;
@@ -622,11 +636,15 @@
       flex: 1 1 auto;
       border-radius: 1rem;
     }
-    #tcLedgerMoveModal {
+    #tcLedgerMoveModal,
+    #fundLedgerMoveModal,
+    #fmModal {
       align-items: center !important;
       justify-content: center !important;
     }
-    #tcLedgerMoveModal > div {
+    #tcLedgerMoveModal > div,
+    #fundLedgerMoveModal > div,
+    #fmModal > div {
       max-height: 100%;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;

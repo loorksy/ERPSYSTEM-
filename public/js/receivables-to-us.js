@@ -2,8 +2,9 @@
   'use strict';
 
   function fmt(n) {
-    if (typeof window.formatMoney === 'function') return window.formatMoney(n);
-    return (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' $';
+    var v = parseFloat(n) || 0;
+    var num = v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return num + ' دولار';
   }
 
   function esc(s) {
@@ -14,10 +15,23 @@
       .replace(/"/g, '&quot;');
   }
 
+  function sumArr(arr, key) {
+    var t = 0;
+    (arr || []).forEach(function(x) {
+      t += Number(x[key]) || 0;
+    });
+    return t;
+  }
+
+  function setKpi(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = fmt(val);
+  }
+
   function listEmpty(msg) {
     return (
-      '<div class="flex flex-col items-center justify-center py-10 px-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60">' +
-      '<i class="fas fa-inbox text-2xl text-slate-300 mb-2"></i>' +
+      '<div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-10 text-center">' +
+      '<i class="fas fa-inbox mb-2 text-2xl text-slate-300"></i>' +
       '<p class="text-sm text-slate-500">' +
       esc(msg) +
       '</p></div>'
@@ -37,25 +51,37 @@
           totalEl.textContent = '—';
           var err = d.message || 'فشل التحميل';
           var ag = document.getElementById('recvAgencies');
-          if (ag) ag.innerHTML = '<p class="text-red-600 text-sm p-4">' + esc(err) + '</p>';
+          if (ag) ag.innerHTML = '<p class="p-4 text-sm text-red-600">' + esc(err) + '</p>';
           return;
         }
         totalEl.textContent = fmt(d.totalUsd);
 
+        var sub = d.subAgencies || [];
+        var acc = d.accreditations || [];
+        var mem = d.members || [];
+        var tco = d.transferCompanies || [];
+        var rp = d.returnsPendingUsd != null ? d.returnsPendingUsd : 0;
+
+        setKpi('recvKpiSubAgency', sumArr(sub, 'amountOwedToUs'));
+        setKpi('recvKpiAccred', sumArr(acc, 'amountOwedToUs'));
+        setKpi('recvKpiMembers', sumArr(mem, 'amountOwedToUs'));
+        setKpi('recvKpiReturns', rp);
+        setKpi('recvKpiCompanies', sumArr(tco, 'amountOwedToUs'));
+
         var ag = document.getElementById('recvAgencies');
         if (ag) {
-          if (!d.subAgencies || !d.subAgencies.length) {
+          if (!sub.length) {
             ag.innerHTML = listEmpty('لا يوجد دين لنا مسجّل من الوكالات (لا رصيد سالب للوكالة)');
           } else {
-            ag.innerHTML = d.subAgencies
+            ag.innerHTML = sub
               .map(function(x) {
                 var amt = x.amountOwedToUs != null ? x.amountOwedToUs : Math.abs(parseFloat(x.balanceRaw) || 0);
                 return (
                   '<div class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50/90 to-white px-4 py-3.5 transition hover:border-emerald-200 hover:shadow-sm">' +
-                  '<span class="text-sm font-medium text-slate-800 min-w-0 truncate">' +
+                  '<span class="min-w-0 truncate text-sm font-medium text-slate-800">' +
                   esc(x.name) +
                   '</span>' +
-                  '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-emerald-700">' +
+                  '<span class="shrink-0 font-mono text-sm font-bold tabular-nums text-emerald-700">' +
                   fmt(amt) +
                   '</span></div>'
                 );
@@ -66,16 +92,15 @@
 
         var ac = document.getElementById('recvAccred');
         if (ac) {
-          var alist = d.accreditations || [];
-          ac.innerHTML = alist.length
-            ? alist
+          ac.innerHTML = acc.length
+            ? acc
                 .map(function(x) {
                   return (
                     '<div class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50/90 to-white px-4 py-3.5 transition hover:border-violet-200 hover:shadow-sm">' +
-                    '<span class="text-sm font-medium text-slate-800 min-w-0 truncate">' +
+                    '<span class="min-w-0 truncate text-sm font-medium text-slate-800">' +
                     esc(x.name) +
                     '</span>' +
-                    '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-emerald-700">' +
+                    '<span class="shrink-0 font-mono text-sm font-bold tabular-nums text-emerald-700">' +
                     fmt(x.amountOwedToUs) +
                     '</span></div>'
                   );
@@ -86,41 +111,38 @@
 
         var mb = document.getElementById('recvMembers');
         if (mb) {
-          var mlist = d.members || [];
-          mb.innerHTML = mlist.length
-            ? mlist
+          mb.innerHTML = mem.length
+            ? mem
                 .map(function(x) {
                   return (
                     '<div class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50/90 to-white px-4 py-3.5 transition hover:border-indigo-200 hover:shadow-sm">' +
                     '<span class="font-mono text-sm text-slate-700">' +
                     esc(x.memberUserId) +
                     '</span>' +
-                    '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-emerald-700">' +
+                    '<span class="shrink-0 font-mono text-sm font-bold tabular-nums text-emerald-700">' +
                     fmt(x.amountOwedToUs) +
                     '</span></div>'
                   );
                 })
                 .join('')
-            : listEmpty('لا ديون مستخدمين على العضو');
+            : listEmpty('لا ديون مسجّلة على المستخدمين');
         }
 
         var rt = document.getElementById('recvReturns');
         if (rt) {
-          var rp = d.returnsPendingUsd != null ? d.returnsPendingUsd : 0;
           if (rp > 0.0001) {
             rt.innerHTML =
-              '<span class="inline-flex items-center gap-2 rounded-xl bg-orange-50 border border-orange-100 px-4 py-3 font-mono font-bold text-orange-900 tabular-nums">' +
+              '<span class="inline-flex items-center gap-2 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 font-mono font-bold tabular-nums text-orange-900">' +
               fmt(rp) +
-              '</span><span class="block mt-3 text-xs text-slate-500">مرتجعات «يبقى بالصندوق» (صافي بعد تسوية دين علينا إن وُجد) — USD — لا تشمل الترحيل لصندوق آخر ولا تُكرَّر أرصدة شركات التحويل</span>';
+              '</span><span class="mt-3 block text-xs leading-relaxed text-slate-500">مرتجعات «يبقى بالصندوق» — صافٍ بعد تسوية دين علينا إن وُجد — بالدولار — لا تشمل الترحيل لصندوق آخر ولا تُكرَّر أرصدة شركات التحويل</span>';
           } else {
             rt.innerHTML =
-              '<span class="text-slate-500"><i class="fas fa-check-circle text-emerald-500 ml-1"></i> لا مرتجعات معلّقة مسجّلة.</span>';
+              '<span class="text-slate-500"><i class="fas fa-check-circle ml-1 text-emerald-500"></i> لا مرتجعات معلّقة مسجّلة.</span>';
           }
         }
 
         var rc = document.getElementById('recvCompanies');
         if (rc) {
-          var tco = d.transferCompanies || [];
           if (!tco.length) {
             rc.innerHTML = listEmpty('لا أرصدة موجبة لشركات تحويل (لنا لدى الشركة) مسجّلة حالياً');
           } else {
@@ -130,10 +152,10 @@
                   '<a href="/debts/company/' +
                   esc(x.id) +
                   '" class="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-gradient-to-l from-cyan-50/80 to-white px-4 py-3.5 transition hover:border-cyan-200 hover:shadow-sm">' +
-                  '<span class="text-sm font-medium text-slate-800 min-w-0 truncate">' +
+                  '<span class="min-w-0 truncate text-sm font-medium text-slate-800">' +
                   esc(x.name) +
                   '</span>' +
-                  '<span class="font-mono text-sm font-bold tabular-nums shrink-0 text-cyan-800">' +
+                  '<span class="shrink-0 font-mono text-sm font-bold tabular-nums text-cyan-800">' +
                   fmt(x.amountOwedToUs != null ? x.amountOwedToUs : 0) +
                   '</span></a>'
                 );

@@ -19,6 +19,14 @@
     return 'شركة تحويل';
   }
 
+  function currencyAr(c) {
+    var x = String(c == null ? '' : c).toUpperCase();
+    if (x === 'USD') return 'دولار';
+    if (x === 'TRY') return 'ليرة تركية';
+    if (x === 'SYP') return 'ليرة سورية';
+    return c ? esc(c) : '';
+  }
+
   function rowCompany(c) {
     return (
       '<a href="/debts/company/' +
@@ -112,7 +120,7 @@
         var rows = (res.payables || []).slice(0, 50);
         if (!rows.length) {
           tb.innerHTML =
-            '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">لا توجد سجلات في entity_payables</td></tr>';
+            '<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">لا توجد سجلات ديون مسجّلة</td></tr>';
           return;
         }
         tb.innerHTML = rows
@@ -128,7 +136,7 @@
               '<td class="px-4 py-3 text-left font-mono font-semibold tabular-nums text-slate-900" dir="ltr">' +
               fmt(p.amount) +
               ' ' +
-              esc(p.currency || '') +
+              currencyAr(p.currency || '') +
               '</td>' +
               '<td class="px-4 py-3 text-slate-500 hidden sm:table-cell max-w-xs truncate">' +
               esc(p.notes || '—') +

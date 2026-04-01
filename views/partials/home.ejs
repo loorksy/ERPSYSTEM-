@@ -85,7 +85,7 @@ var homeDashMetric = 'mt-auto font-mono font-bold tabular-nums tracking-tight tr
           <p class="<%= homeDashMetric %> text-slate-900" id="totalExpenses">0.00</p>
         </a>
 
-        <a href="/debts" class="<%= homeDashCardA %>" id="homeCardDebt" title="مجموع التزامات (شحن + معتمد مطلوب دفع + entity_payables + أرصدة سالبة…) — نفس حاسبة صفحة الديون">
+        <a href="/debts" class="<%= homeDashCardA %>" id="homeCardDebt" title="مجموع التزامات: شحن، مطلوب دفع معتمدين، ديون مسجّلة، وأرصدة سالبة — نفس حاسبة صفحة الديون">
           <span class="<%= homeDashLine %>" aria-hidden="true"></span>
           <div class="<%= homeDashIcon %> bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white">
             <i class="fas fa-file-invoice-dollar text-base sm:text-lg"></i>
@@ -94,12 +94,12 @@ var homeDashMetric = 'mt-auto font-mono font-bold tabular-nums tracking-tight tr
           <p class="<%= homeDashMetric %> text-slate-900" id="totalDebts">0.00</p>
         </a>
 
-        <a href="/receivables-to-us" class="<%= homeDashCardA %>" title="ديين لنا">
+        <a href="/receivables-to-us" class="<%= homeDashCardA %>" title="دين لنا">
           <span class="<%= homeDashLine %>" aria-hidden="true"></span>
           <div class="<%= homeDashIcon %> bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white">
             <i class="fas fa-hand-holding-heart text-base sm:text-lg"></i>
           </div>
-          <p class="<%= homeDashLabel %>">ديين لنا</p>
+          <p class="<%= homeDashLabel %>">دين لنا</p>
           <p class="<%= homeDashMetric %> text-slate-900" id="receivablesToUsHome">—</p>
         </a>
       </div>

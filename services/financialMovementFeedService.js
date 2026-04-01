@@ -73,7 +73,7 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         `دين علينا — ${entLabel}${en ? ` (${en})` : ''}`,
         ep.notes || '—',
         ep.notes || 'مُسجَّل كالتزام صريح تجاه الكيان.',
-        'إدراج في جدول التزامات entity_payables (يمكن تسويته لاحقاً من صرف أو مرتجع).',
+        'إدراج في سجل التزامات الديون (يمكن تسويته لاحقاً من صرف أو مرتجع).',
         ep.entity_type === 'fund' ? `/debts/fund/${ep.entity_id}` : `/debts/company/${ep.entity_id}`,
         ep
       )
@@ -98,7 +98,7 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         'شحن — بيع آجل (دين)',
         `صنف: ${s.item_type || '—'} — الكمية: ${s.quantity ?? '—'}`,
         'بيع مُسجَّل كدين (آجل) في معاملات الشحن.',
-        'حقل status = debt في shipping_transactions.',
+        'معاملة شحن مسجّلة كبيع آجل (دين).',
         '/shipping',
         s
       )
@@ -173,9 +173,9 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         a.balance_payable,
         'USD',
         `معتمد — مطلوب دفع: ${a.name || ''}`,
-        `balance_payable = ${a.balance_payable}`,
+        `مبلغ مطلوب الدفع: ${a.balance_payable}`,
         'التزام تجاه المعتمد (مطلوب تسديد).',
-        'حقل balance_payable في accreditation_entities.',
+        'يُستخرج من رصيد «مطلوب الدفع» في ملف المعتمد.',
         `/approvals/${a.id}`,
         a
       )
@@ -220,10 +220,10 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         new Date(),
         breakdown.payablesSumUsd,
         'USD',
-        'مجموع entity_payables (USD) — مكوّن إجمالي الالتزامات',
-        'يُطابق مجموع السجلات المفتوحة في جدول التزامات الكيانات.',
+        'مجموع الديون المسجّلة يدوياً (بالدولار) — جزء من إجمالي الالتزامات',
+        'يُطابق مجموع السجلات المفتوحة في سجل التزامات الديون.',
         'يُضاف إلى إجمالي الالتزامات مع الشحن والأرصدة السالبة وغيرها.',
-        'من computeDebtBreakdown.payablesSumUsd.',
+        'من حاسبة إجمالي الديون في النظام.',
         '/payables-us',
         { payablesSumUsd: breakdown.payablesSumUsd, entityPayablesFromAccTransferUsd: breakdown.entityPayablesFromAccTransferUsd }
       )
@@ -281,8 +281,8 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         'USD',
         `وكالة فرعية — لنا: ${s.name || ''}`,
         'رصيد الوكالة سالب = لصالحنا وفق حركات الوكالة.',
-        'مجموع مكافآت/أرباح ناقص خصومات في sub_agency_transactions.',
-        'حساب تراكمي على الوكالة.',
+        'مجموع المكافآت والأرباح ناقص الخصومات والمستحقات.',
+        'حساب تراكمي على ملف الوكالة.',
         `/sub-agencies/${s.id}`,
         s
       )
@@ -305,9 +305,9 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         Math.abs(a.balance_amount),
         'USD',
         `معتمد — لنا عليه: ${a.name || ''}`,
-        `balance_amount سالب = لنا على المعتمد.`,
+        `رصيد سالب على المعتمد = لنا عليه.`,
         'رصيد المعتمد سالب يعني مطلوب منه لنا.',
-        'حقل balance_amount في accreditation_entities.',
+        'يُستخرج من ملف المعتمد.',
         `/approvals/${a.id}`,
         a
       )
@@ -332,7 +332,7 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         `مستخدم — دين على العضو`,
         `المعرف: ${m.member_user_id}`,
         'دين مسجّل على العضو لصالح الشركة.',
-        'member_profiles.debt_to_company_usd.',
+        'من سجل المستخدمين في الدليل.',
         '/member-directory',
         m
       )
@@ -366,7 +366,7 @@ async function buildFinancialMovementFeed(db, userId, opts = {}) {
         title,
         r.notes || `إجمالي ${r.amount} — تسوية دين علينا: ${r.payables_settled || 0} — صافٍ: ${net}`,
         'تسجيل مرتجع مالي مع خصم دين علينا إن وُجد.',
-        'جدول financial_returns + قيود الدفتر المرتبطة.',
+        'سجل المرتجعات المالية والقيود المرتبطة.',
         r.entity_type === 'fund' ? `/funds/${r.entity_id}` : `/transfer-companies/${r.entity_id}`,
         r
       )

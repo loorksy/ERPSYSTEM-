@@ -1,13 +1,10 @@
 <div class="tc-page w-full max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10" dir="rtl">
-  <div class="mb-6 erp-toolbar-actions erp-toolbar-actions--2">
-    <button type="button" onclick="tcOpenAdd()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-violet-600 to-violet-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-violet-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
+  <div class="mb-6 flex min-w-0 flex-row flex-wrap items-center gap-3 sm:gap-4">
+    <button type="button" onclick="tcOpenAdd()" class="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-violet-600 to-violet-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-violet-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
       <i class="fas fa-plus text-[10px] sm:text-sm shrink-0 opacity-95" aria-hidden="true"></i>
       <span class="text-center">إضافة شركة</span>
     </button>
-  </div>
-
-  <div class="mb-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-    <div class="relative w-full min-w-0 sm:max-w-md sm:shrink-0">
+    <div class="relative min-w-0 flex-1 sm:max-w-xl">
       <i class="fas fa-search pointer-events-none absolute right-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-slate-400" aria-hidden="true"></i>
       <input
         type="search"
@@ -18,10 +15,6 @@
         aria-label="بحث في شركات التحويل"
       />
     </div>
-    <p class="text-[11px] leading-relaxed text-slate-500 sm:max-w-xs">
-      <i class="fas fa-arrows-alt ml-1 text-slate-400" aria-hidden="true"></i>
-      اسحب من المقبض لترتيب البطاقات — يُحفظ الترتيب في هذا المتصفح.
-    </p>
   </div>
 
   <div id="tcCards" class="agencies-grid">

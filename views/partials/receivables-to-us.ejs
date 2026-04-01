@@ -1,5 +1,23 @@
-<div class="max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10 space-y-6 lg:space-y-8" dir="rtl" id="recvPageRoot">
-  <nav class="erp-toolbar-nav mb-2" aria-label="تنقل سريع">
+<div class="recv-to-us-page max-w-6xl mx-auto min-w-0 space-y-6 px-4 pb-10 sm:px-0 lg:space-y-8" dir="rtl" id="recvPageRoot">
+  <!-- رأس الصفحة -->
+  <header class="overflow-hidden rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/40 p-5 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="flex min-w-0 gap-4">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-900/20">
+          <i class="fas fa-hand-holding-heart text-xl" aria-hidden="true"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">أصول وذمم لصالحنا</p>
+          <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">دين لنا</h1>
+          <p class="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
+            ما يُستحق لنا عبر الوكالات الفرعية، المعتمدين، المستخدمين، أرصدة شركات التحويل الموجبة، ومرتجعات الصناديق التي تبقى نقداً — مقيّماً بالدولار الأمريكي في الإجمالي التالي.
+          </p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="erp-toolbar-nav mb-0" aria-label="تنقل سريع">
     <a href="/financial-movements" class="border border-indigo-200 bg-indigo-50 text-indigo-900 shadow-sm hover:bg-indigo-100 text-[11px] sm:text-sm">
       <i class="fas fa-list-alt text-indigo-600 text-[10px] sm:text-xs shrink-0"></i>
       سجل الحركات
@@ -22,50 +40,55 @@
     </a>
   </nav>
 
-  <!-- إجمالي + شبكة لوحة لابتوب -->
-  <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
-    <div class="lg:col-span-5 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 p-6 sm:p-8 text-white shadow-lg shadow-emerald-900/25">
-      <div class="flex items-center gap-3 mb-4">
+  <!-- إجمالي + مؤشرات فرعية -->
+  <section class="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 lg:gap-6">
+    <div class="rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 p-6 text-white shadow-lg shadow-emerald-900/25 sm:col-span-5 sm:p-8">
+      <div class="mb-4 flex items-center gap-3">
         <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm"><i class="fas fa-coins text-xl"></i></span>
         <div>
           <p class="text-sm text-emerald-100">الإجمالي التقريبي</p>
-          <p class="text-xs text-emerald-200/90">USD — مجموع المصادر أدناه</p>
+          <p class="text-xs leading-snug text-emerald-200/90">بالدولار — مجموع المصادر أدناه</p>
         </div>
       </div>
-      <p class="font-mono text-4xl sm:text-5xl font-bold tabular-nums tracking-tight" id="recvToUsTotalVal">—</p>
+      <p class="font-mono text-4xl font-bold tabular-nums tracking-tight sm:text-5xl" id="recvToUsTotalVal">—</p>
     </div>
-    <div class="lg:col-span-7 grid grid-cols-2 gap-3 sm:gap-4">
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-2">
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:col-span-7 sm:grid-cols-3">
+      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100 text-sky-700"><i class="fas fa-warehouse"></i></span>
         <p class="text-xs font-bold text-slate-700">وكالات فرعية</p>
-        <p class="text-[0.65rem] text-slate-500 leading-snug">رصيد سالب للوكالة = لنا</p>
+        <p class="text-[0.65rem] leading-snug text-slate-500">رصيد سالب للوكالة = لنا</p>
+        <p class="text-left font-mono text-base font-bold tabular-nums text-sky-800 sm:text-lg" dir="ltr" id="recvKpiSubAgency">—</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-2">
+      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-800"><i class="fas fa-stamp"></i></span>
         <p class="text-xs font-bold text-slate-700">معتمدون</p>
-        <p class="text-[0.65rem] text-slate-500 leading-snug">رصيد سالب = لنا على المعتمد</p>
+        <p class="text-[0.65rem] leading-snug text-slate-500">رصيد سالب = لنا على المعتمد</p>
+        <p class="text-left font-mono text-base font-bold tabular-nums text-violet-900 sm:text-lg" dir="ltr" id="recvKpiAccred">—</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-2">
+      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-800"><i class="fas fa-user"></i></span>
         <p class="text-xs font-bold text-slate-700">مستخدمون</p>
-        <p class="text-[0.65rem] text-slate-500 leading-snug">دين على العضو</p>
+        <p class="text-[0.65rem] leading-snug text-slate-500">دين على العضو</p>
+        <p class="text-left font-mono text-base font-bold tabular-nums text-indigo-900 sm:text-lg" dir="ltr" id="recvKpiMembers">—</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-2">
+      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-orange-800"><i class="fas fa-undo"></i></span>
         <p class="text-xs font-bold text-slate-700">مرتجعات صناديق</p>
-        <p class="text-[0.65rem] text-slate-500 leading-snug">يبقى بالصندوق — صافي بعد دين علينا</p>
+        <p class="text-[0.65rem] leading-snug text-slate-500">يبقى بالصندوق — صافٍ بعد دين علينا</p>
+        <p class="text-left font-mono text-base font-bold tabular-nums text-orange-900 sm:text-lg" dir="ltr" id="recvKpiReturns">—</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-2 col-span-2 sm:col-span-1">
+      <div class="col-span-2 flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:col-span-1">
         <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-100 text-cyan-800"><i class="fas fa-exchange-alt"></i></span>
         <p class="text-xs font-bold text-slate-700">شركات تحويل</p>
-        <p class="text-[0.65rem] text-slate-500 leading-snug">رصيد موجب USD = لنا لدى الشركة</p>
+        <p class="text-[0.65rem] leading-snug text-slate-500">رصيد موجب بالدولار = لنا لدى الشركة</p>
+        <p class="text-left font-mono text-base font-bold tabular-nums text-cyan-900 sm:text-lg" dir="ltr" id="recvKpiCompanies">—</p>
       </div>
     </div>
   </section>
 
-  <!-- أقسام التفاصيل: عمود واحد بالموبايل، صفّان باللابتوب -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-h-[12rem]">
+  <!-- التفاصيل -->
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+    <section class="flex min-h-[12rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="flex items-center gap-3 border-b border-slate-100 bg-sky-50/50 px-5 py-4">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-800"><i class="fas fa-warehouse"></i></span>
         <div>
@@ -73,9 +96,9 @@
           <p class="text-xs text-slate-500">من سجل معاملات الوكالة</p>
         </div>
       </div>
-      <div id="recvAgencies" class="flex-1 p-2 sm:p-4 space-y-2 text-sm"></div>
+      <div id="recvAgencies" class="flex-1 space-y-2 p-2 text-sm sm:p-4"></div>
     </section>
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-h-[12rem]">
+    <section class="flex min-h-[12rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="flex items-center gap-3 border-b border-slate-100 bg-violet-50/50 px-5 py-4">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-800"><i class="fas fa-stamp"></i></span>
         <div>
@@ -83,39 +106,39 @@
           <p class="text-xs text-slate-500">رصيد سالب للمعتمد</p>
         </div>
       </div>
-      <div id="recvAccred" class="flex-1 p-2 sm:p-4 space-y-2 text-sm"></div>
+      <div id="recvAccred" class="flex-1 space-y-2 p-2 text-sm sm:p-4"></div>
     </section>
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-h-[12rem]">
+    <section class="flex min-h-[12rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="flex items-center gap-3 border-b border-slate-100 bg-indigo-50/50 px-5 py-4">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-800"><i class="fas fa-users"></i></span>
         <div>
           <h3 class="text-base font-bold text-slate-900">مستخدمون — دين على العضو</h3>
-          <p class="text-xs text-slate-500">أرقام تعريف المستخدم</p>
+          <p class="text-xs text-slate-500">معرّف المستخدم في النظام</p>
         </div>
       </div>
-      <div id="recvMembers" class="flex-1 p-2 sm:p-4 space-y-2 text-sm"></div>
+      <div id="recvMembers" class="flex-1 space-y-2 p-2 text-sm sm:p-4"></div>
     </section>
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-h-[10rem]">
+    <section class="flex min-h-[10rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="flex items-center gap-3 border-b border-slate-100 bg-orange-50/50 px-5 py-4">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-800"><i class="fas fa-box-open"></i></span>
         <div>
           <h3 class="text-base font-bold text-slate-900">مرتجعات صناديق (يبقى بالصندوق)</h3>
-          <p class="text-xs text-slate-500">صافي USD بعد تسوية دين علينا؛ لا يشمل الترحيل لصندوق آخر</p>
+          <p class="text-xs text-slate-500">صافٍ بالدولار بعد تسوية دين علينا؛ لا يشمل الترحيل لصندوق آخر</p>
         </div>
       </div>
       <div class="p-5">
-        <p id="recvReturns" class="text-sm text-slate-700 leading-relaxed">—</p>
+        <p id="recvReturns" class="text-sm leading-relaxed text-slate-700">—</p>
       </div>
     </section>
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col min-h-[12rem] lg:col-span-2">
+    <section class="flex min-h-[12rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-2">
       <div class="flex items-center gap-3 border-b border-slate-100 bg-cyan-50/50 px-5 py-4">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-800"><i class="fas fa-exchange-alt"></i></span>
         <div>
           <h3 class="text-base font-bold text-slate-900">شركات تحويل — لنا لدى الشركة</h3>
-          <p class="text-xs text-slate-500">رصيد موجب USD (عكس «دين علينا» للرصيد السالب)</p>
+          <p class="text-xs text-slate-500">رصيد موجب (عكس «دين علينا» عند الرصيد السالب)</p>
         </div>
       </div>
-      <div id="recvCompanies" class="flex-1 p-2 sm:p-4 space-y-2 text-sm"></div>
+      <div id="recvCompanies" class="flex-1 space-y-2 p-2 text-sm sm:p-4"></div>
     </section>
   </div>
 </div>

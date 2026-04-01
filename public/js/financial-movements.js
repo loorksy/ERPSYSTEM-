@@ -2,9 +2,12 @@
   const BUCKET_LABELS = {
     payable: 'دين علينا',
     receivable: 'دين لنا',
-    obligation: 'التزام',
+    obligation: 'التزامات',
     transfer: 'ترحيل نقدي',
   };
+
+  const FILTER_BASE =
+    'fm-filter-btn inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border px-3 py-2 text-[11px] transition-colors sm:min-h-0 sm:text-sm ';
 
   const BUCKET_BADGE = {
     payable: 'bg-rose-100 text-rose-900 border-rose-200',
@@ -13,12 +16,35 @@
     transfer: 'bg-amber-100 text-amber-900 border-amber-200',
   };
 
+  /** تسمية عربية لنوع السجل الداخلي (لا تُعرَض للمستخدم كمعرّف إنجليزي) */
+  const KIND_LABELS_AR = {
+    entity_payable: 'تسجيل دين علينا',
+    shipping_debt: 'شحن — بيع آجل',
+    company_negative_balance: 'شركة — رصيد سالب',
+    fund_negative_balance: 'صندوق — رصيد سالب',
+    accreditation_payable: 'معتمد — مطلوب دفع',
+    fx_spread: 'فرق تصريف',
+    aggregate_entity_payables: 'مجموع ديون مسجّلة',
+    company_positive_balance: 'شركة — لنا لديها',
+    sub_agency_receivable: 'وكالة فرعية — لنا',
+    accreditation_receivable: 'معتمد — دين لنا',
+    member_debt_to_company: 'مستخدم — دين على العضو',
+    financial_return: 'مرتجع مالي',
+  };
+
   let currentBucket = 'all';
   let lastItems = [];
 
   function fmtMoney(n) {
     if (n == null || Number.isNaN(Number(n))) return '—';
     return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+  }
+
+  function fmtKpi(n) {
+    if (n == null || Number.isNaN(Number(n))) return '—';
+    return (
+      Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' دولار'
+    );
   }
 
   function fmtDate(iso) {
@@ -45,15 +71,25 @@
     return div.innerHTML;
   }
 
+  function currencyAr(c) {
+    const x = String(c == null ? '' : c).toUpperCase();
+    if (x === 'USD') return 'دولار';
+    if (x === 'TRY') return 'ليرة تركية';
+    if (x === 'SYP') return 'ليرة سورية';
+    return c ? escapeHtml(c) : '';
+  }
+
   function setActiveFilter() {
     document.querySelectorAll('.fm-filter-btn').forEach((btn) => {
       const b = btn.getAttribute('data-fm-bucket');
       const on = b === currentBucket;
+      const transferSpan = b === 'transfer' ? ' col-span-2 sm:col-span-1' : '';
       btn.className =
-        'fm-filter-btn rounded-xl border px-3 py-2 text-sm font-medium transition-colors ' +
+        FILTER_BASE +
         (on
-          ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
-          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50');
+          ? 'font-bold border-indigo-500 bg-indigo-50 text-indigo-900'
+          : 'font-semibold border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50') +
+        transferSpan;
     });
   }
 
@@ -63,9 +99,9 @@
     const elO = document.getElementById('fmKpiObligation');
     const elR = document.getElementById('fmKpiRecv');
     const elP = document.getElementById('fmKpiPayables');
-    if (elO) elO.textContent = fmtMoney(t.totalObligationUsd);
-    if (elR) elR.textContent = fmtMoney(t.receivablesToUsUsd);
-    if (elP) elP.textContent = fmtMoney(br.payablesSumUsd);
+    if (elO) elO.textContent = fmtKpi(t.totalObligationUsd);
+    if (elR) elR.textContent = fmtKpi(t.receivablesToUsUsd);
+    if (elP) elP.textContent = fmtKpi(br.payablesSumUsd);
   }
 
   function renderTable(items) {
@@ -90,17 +126,18 @@
       tr.setAttribute('data-fm-idx', String(idx));
       const badge = BUCKET_BADGE[row.bucket] || 'bg-slate-100 text-slate-800 border-slate-200';
       const lbl = BUCKET_LABELS[row.bucket] || row.bucket;
+      const kindAr = KIND_LABELS_AR[row.kind] || 'حركة';
       tr.innerHTML = `
         <td class="px-3 py-3 align-top">
           <span class="inline-flex items-center rounded-lg border px-2 py-0.5 text-xs font-semibold ${badge}">${escapeHtml(lbl)}</span>
-          <div class="text-[0.65rem] text-slate-500 mt-1 font-mono">${escapeHtml(row.kind || '')}</div>
+          <div class="text-[0.65rem] text-slate-500 mt-1">${escapeHtml(kindAr)}</div>
         </td>
         <td class="px-3 py-3 align-top">
           <div class="font-medium text-slate-900">${escapeHtml(row.titleAr || '')}</div>
           <div class="text-xs text-slate-600 mt-1 line-clamp-2">${escapeHtml(row.summaryAr || '')}</div>
         </td>
         <td class="px-3 py-3 align-top text-slate-700 whitespace-nowrap">${escapeHtml(fmtDate(row.occurredAt))}</td>
-        <td class="px-3 py-3 align-top text-left font-mono tabular-nums" dir="ltr">${escapeHtml(fmtMoney(row.amount))} ${escapeHtml(row.currency || 'USD')}</td>
+        <td class="px-3 py-3 align-top text-left font-mono tabular-nums" dir="ltr">${escapeHtml(fmtMoney(row.amount))} ${currencyAr(row.currency || 'USD')}</td>
       `;
       tr.addEventListener('click', () => openModal(row));
       tbody.appendChild(tr);
@@ -116,6 +153,7 @@
     if (title) title.textContent = row.titleAr || 'تفاصيل الحركة';
 
     const lbl = BUCKET_LABELS[row.bucket] || row.bucket;
+    const kindAr = KIND_LABELS_AR[row.kind] || '—';
     let detailJson = '';
     try {
       detailJson = JSON.stringify(row.detail || {}, null, 2);
@@ -130,6 +168,7 @@
       <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
         <p class="text-xs font-bold text-slate-500">التصنيف</p>
         <p class="text-slate-900">${escapeHtml(lbl)}</p>
+        <p class="text-[11px] text-slate-500">نوع السجل: <span class="font-medium text-slate-700">${escapeHtml(kindAr)}</span></p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div class="rounded-xl border border-slate-200 p-3">
@@ -139,7 +178,7 @@
         </div>
         <div class="rounded-xl border border-slate-200 p-3">
           <p class="text-xs font-bold text-slate-500 mb-1">المبلغ</p>
-          <p class="font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr">${escapeHtml(fmtMoney(row.amount))} ${escapeHtml(row.currency || 'USD')}</p>
+          <p class="font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr">${escapeHtml(fmtMoney(row.amount))} ${currencyAr(row.currency || 'USD')}</p>
         </div>
       </div>
       <div class="rounded-xl border border-slate-200 p-3">
@@ -162,12 +201,13 @@
           : ''
       }
       <div>
-        <p class="text-xs font-bold text-slate-500 mb-2">البيانات التفصيلية (JSON)</p>
+        <p class="text-xs font-bold text-slate-500 mb-2">البيانات التفصيلية (للنسخ أو المراجعة)</p>
         <pre class="text-[0.7rem] leading-relaxed bg-slate-900 text-emerald-100/95 p-3 rounded-xl overflow-x-auto max-h-48 overflow-y-auto font-mono" dir="ltr">${escapeHtml(detailJson)}</pre>
       </div>
     `;
 
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
   }
@@ -176,9 +216,12 @@
     const modal = document.getElementById('fmModal');
     if (!modal) return;
     modal.classList.add('hidden');
+    modal.classList.remove('flex');
     modal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
+
+  window.fmCloseFmModal = closeModal;
 
   async function load() {
     const errEl = document.getElementById('fmError');

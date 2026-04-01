@@ -93,7 +93,7 @@
         '<button type="button" class="qa-item w-full py-3 px-4 rounded-xl border border-slate-200 text-right font-semibold hover:bg-slate-50" data-qa="in-debt">دين</button>' +
         '<button type="button" class="qa-item w-full py-3 px-4 rounded-xl border border-slate-200 text-right font-semibold hover:bg-slate-50" data-qa="in-acc">اعتماد</button>' +
         '<button type="button" class="qa-item w-full py-3 px-4 rounded-xl border border-slate-200 text-right font-semibold hover:bg-slate-50" data-qa="in-fx">فرق تصريف</button>' +
-        '<button type="button" class="qa-item w-full py-3 px-4 rounded-xl border border-teal-200 bg-teal-50/80 text-right font-semibold hover:bg-teal-100" data-qa="in-recv">ديين لنا</button>' +
+        '<button type="button" class="qa-item w-full py-3 px-4 rounded-xl border border-teal-200 bg-teal-50/80 text-right font-semibold hover:bg-teal-100" data-qa="in-recv">دين لنا</button>' +
         '<button type="button" class="qa-item w-full py-3 px-4 rounded-xl border border-slate-200 text-right font-semibold hover:bg-slate-50" data-qa="in-subdeduct">خصم وكالة <span class="text-slate-500 text-xs">(شحن/راتب)</span></button>' +
         '</div>'
       );

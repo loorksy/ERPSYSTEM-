@@ -1586,30 +1586,51 @@
   function accApplyUrlOpenParam() {
     var params = new URLSearchParams(window.location.search);
     var open = params.get('open');
-    var addP = document.getElementById('accAddAmountPanel');
-    var tfP = document.getElementById('accTransferPanel');
-    if (!addP || !tfP) return;
-    addP.classList.add('hidden');
-    tfP.classList.add('hidden');
+    var mAdd = document.getElementById('accDetailAddAmountModal');
+    var mTf = document.getElementById('accDetailTransferModal');
     if (open === 'add') {
-      addP.classList.remove('hidden');
-      tfP.classList.add('hidden');
+      accCloseDetailTransferModal();
       var ak = document.getElementById('accAmountKind');
       if (ak) ak.value = 'debt_receivable';
       accAmountKindChange();
       accSyncCurrencyUi();
+      if (mAdd) {
+        mAdd.classList.remove('hidden');
+        mAdd.classList.add('flex');
+      }
       try {
         history.replaceState({}, '', window.location.pathname);
       } catch (err) {}
     } else if (open === 'transfer') {
-      tfP.classList.remove('hidden');
-      addP.classList.add('hidden');
+      accCloseDetailAddAmountModal();
       accTfTypeChange();
+      if (mTf) {
+        mTf.classList.remove('hidden');
+        mTf.classList.add('flex');
+      }
       try {
         history.replaceState({}, '', window.location.pathname);
       } catch (err2) {}
     }
   }
+
+  window.accCloseDetailAddAmountModal = function() {
+    var m = document.getElementById('accDetailAddAmountModal');
+    if (m) {
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+  };
+  window.accCloseDetailTransferModal = function() {
+    var m = document.getElementById('accDetailTransferModal');
+    if (m) {
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+  };
+  window.accDownloadAccDetailPdf = function() {
+    window.open('/api/reports/pdf/accreditations', '_blank');
+  };
 
   function accPopulateDetail(id) {
     currentId = id;
@@ -1687,8 +1708,8 @@
       }
       document.getElementById('accLedger').innerHTML = (res.ledger || []).map(accLedgerRowHtml).join('') ||
         '<p class="py-6 text-center text-sm text-slate-400">لا توجد حركات</p>';
-      document.getElementById('accAddAmountPanel').classList.add('hidden');
-      document.getElementById('accTransferPanel').classList.add('hidden');
+      accCloseDetailAddAmountModal();
+      accCloseDetailTransferModal();
       Promise.all([
         apiCall('/api/sub-agencies/cycles/list'),
         apiCall('/api/funds/list?forAccreditationTransfer=1'),
@@ -1962,15 +1983,25 @@
   };
 
   window.accShowAddAmount = function() {
-    document.getElementById('accAddAmountPanel').classList.toggle('hidden');
+    accCloseDetailTransferModal();
     var ak = document.getElementById('accAmountKind');
     if (ak) ak.value = 'debt_receivable';
     accAmountKindChange();
     accSyncCurrencyUi();
+    var m = document.getElementById('accDetailAddAmountModal');
+    if (m) {
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
   };
   window.accShowTransfer = function() {
-    document.getElementById('accTransferPanel').classList.toggle('hidden');
+    accCloseDetailAddAmountModal();
     accTfTypeChange();
+    var m = document.getElementById('accDetailTransferModal');
+    if (m) {
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
   };
   window.accTfTypeChange = function() {
     var t = document.getElementById('accTfType').value;
@@ -2039,7 +2070,10 @@
         entityId: currentId,
         onDone: function(res) {
           toast(res.message || '', res.success ? 'success' : 'error');
-          if (res.success) accReloadDetail();
+          if (res.success) {
+            accCloseDetailAddAmountModal();
+            accReloadDetail();
+          }
         },
       });
       return;
@@ -2049,7 +2083,10 @@
       body: JSON.stringify(body)
     }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
-      if (res.success) accReloadDetail();
+      if (res.success) {
+        accCloseDetailAddAmountModal();
+        accReloadDetail();
+      }
     });
   };
 
@@ -2072,6 +2109,7 @@
         msg = msg || 'رصيد الصندوق الرئيسي غير كافٍ.';
       }
       toast(msg, res.success ? 'success' : 'error');
+      if (res.success) accCloseDetailTransferModal();
       if (res.success) accReloadDetail();
     });
   };

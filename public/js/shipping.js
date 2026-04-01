@@ -481,7 +481,7 @@
     }
     if (mode === 'cash') {
       html.push('<p class="text-slate-700">→ للصندوق الرئيسي: ' + fmtMoneyPreview(netAfter) + '</p>');
-      html.push('<p class="text-xs text-slate-500">دين على الشركة (payables): 0</p>');
+      html.push('<p class="text-xs text-slate-500">دين على الشركة (مطلوب دفع): 0</p>');
     } else if (mode === 'installment') {
       var fi = isNaN(first) || first < 0 ? 0 : first;
       var rest = Math.max(0, netAfter - fi);

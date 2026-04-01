@@ -55,7 +55,7 @@ const pages = [
   { path: '/profit-sources', page: 'profit-sources', title: 'مصادر الربح' },
   { path: '/admin-brokerage', page: 'admin-brokerage', title: 'وساطة إدارية' },
   { path: '/payables-us', page: 'payables-overview', title: 'دين علينا' },
-  { path: '/receivables-to-us', page: 'receivables-to-us', title: 'ديين لنا' },
+  { path: '/receivables-to-us', page: 'receivables-to-us', title: 'دين لنا' },
   { path: '/financial-movements', page: 'financial-movements', title: 'سجل الحركات المالية' },
   { path: '/payment-due', page: 'payment-due', title: 'مطلوب دفع' },
   { path: '/deferred-balance', page: 'deferred-balance', title: 'رصيد المؤجل' },
