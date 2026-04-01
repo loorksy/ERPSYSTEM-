@@ -135,9 +135,14 @@ function renderAccreditations(data, terminologyMode = MODES.ACCOUNTANT) {
     String(e.id),
     e.name,
     e.code || '—',
-    fmtNum(e.balance_amount),
+    fmtNum(e.balance_receivable ?? 0),
+    fmtNum(e.balance_payable ?? 0),
   ]);
-  inner += tableHtml([tr('المعرف', m), tr('الاسم', m), tr('الكود', m), tr('الرصيد', m)], entRows);
+  inner += tableHtml(
+    [tr('المعرف', m), tr('الاسم', m), tr('الكود', m), tr('لنا', m), tr('علينا', m)],
+    entRows
+  );
+  inner += `<p class="muted">${escapeHtml(tr('الصافي في شاشة المعتمد = عمود علينا (مبلغ التسليم).', m))}</p>`;
   inner += `<h2>${tr('دفتر الاعتمادات', m)}</h2>`;
   if (data.truncated) inner += '<p class="muted">' + escapeHtml(tr('تم اقتطاع الحركات.', m)) + '</p>';
   const lr = data.ledger.map((l) => [
@@ -312,9 +317,15 @@ function renderComprehensive(d, terminologyMode = MODES.ACCOUNTANT) {
 
   inner += `<h2>${tr('الاعتمادات — الجهات', m)}</h2>`;
   inner += tableHtml(
-    [tr('المعرف', m), tr('الاسم', m), tr('الرصيد', m)],
-    d.accreditations.entities.map((e) => [String(e.id), e.name, fmtNum(e.balance_amount)])
+    [tr('المعرف', m), tr('الاسم', m), tr('لنا', m), tr('علينا', m)],
+    d.accreditations.entities.map((e) => [
+      String(e.id),
+      e.name,
+      fmtNum(e.balance_receivable ?? 0),
+      fmtNum(e.balance_payable ?? 0),
+    ])
   );
+  inner += `<p class="muted">${escapeHtml(tr('علينا = الصافي في شاشة المعتمد ومبلغ التسليم.', m))}</p>`;
 
   inner += `<h2>${tr('شركات التحويل', m)}</h2>`;
   inner += '<p class="muted">' + escapeHtml(tr(d.transferCompanies.noteNoCycle || '', m)) + '</p>';
@@ -559,11 +570,14 @@ function renderReconciliationInner(rec, terminologyMode = MODES.ACCOUNTANT) {
   });
   h += '</tbody></table>';
 
+  /** netResult = أرباح (7–13) − مصاريف − دين علينا — لا يساوي نقد الصندوق الرئيسي بالضرورة */
   const netLine = S.showDeficit
-    ? `<p style="color:#b91c1c;font-weight:700;">${escapeHtml(tr('مجموع الكسر', m))}: ${fmtNum(S.deficitOrSurplusAmount)} USD</p>`
-    : `<p style="color:#15803d;font-weight:700;">${escapeHtml(tr('مجموع الرصيد الموجود', m))}: ${fmtNum(S.deficitOrSurplusAmount)} USD</p>`;
+    ? `<p style="color:#b91c1c;font-weight:700;">${escapeHtml(tr('عجز محاسبي (تقدير)', m))}: ${fmtNum(S.deficitOrSurplusAmount)} USD — ${escapeHtml(tr('(أرباح − مصاريف − دين علينا)', m))}</p>`
+    : `<p style="color:#15803d;font-weight:700;">${escapeHtml(tr('فائض محاسبي (تقدير)', m))}: ${fmtNum(S.deficitOrSurplusAmount)} USD — ${escapeHtml(tr('(أرباح − مصاريف − دين علينا)', m))}</p>`;
 
   h += `<h2>${escapeHtml(tr('قسم 3 — التسوية النهائية', m))}</h2>`;
+  h += `<p class="muted" style="margin-bottom:6px;">${escapeHtml(tr('رصيد الصندوق الرئيسي في القسم 1 يعكس النقد الفعلي؛ يُعرض هنا أيضاً للمقارنة مع صافي التقدير المحاسبي.', m))}</p>`;
+  h += `<p style="margin-bottom:8px;"><strong>${escapeHtml(tr('رصيد الصندوق الرئيسي (نقد)', m))}:</strong> <span style="font-weight:700;color:#1d4ed8;">${fmtNum(L.mainFundUsd)} USD</span></p>`;
   h += netLine;
   h += `<table style="width:100%;margin-top:8px;border-collapse:collapse;"><tbody>`;
   h += `<tr><td>${escapeHtml(tr('مجموع الغير مقبوض', m))}</td><td style="font-weight:600;color:#c2410c;">${fmtNum(S.uncollectedTotal)}</td></tr>`;
@@ -745,9 +759,14 @@ function renderAccreditationsWithNet(data, terminologyMode = MODES.ACCOUNTANT) {
     String(e.id),
     e.name,
     e.code || '—',
-    fmtNum(e.balance_amount),
+    fmtNum(e.balance_receivable ?? 0),
+    fmtNum(e.balance_payable ?? 0),
   ]);
-  inner += tableHtml([tr('المعرف', m), tr('الاسم', m), tr('الكود', m), tr('الرصيد', m)], entRows);
+  inner += tableHtml(
+    [tr('المعرف', m), tr('الاسم', m), tr('الكود', m), tr('لنا', m), tr('علينا', m)],
+    entRows
+  );
+  inner += `<p class="muted">${escapeHtml(tr('عمود علينا = الصافي المعروض في الواجهة ومبلغ التسليم.', m))}</p>`;
   inner += `<h2>${tr('دفتر الاعتمادات', m)}</h2>`;
   if (data.truncated) inner += '<p class="muted">' + escapeHtml(tr('تم اقتطاع الحركات.', m)) + '</p>';
   const lr = data.ledger.map((l) => [
@@ -764,8 +783,10 @@ function renderAccreditationsWithNet(data, terminologyMode = MODES.ACCOUNTANT) {
     ['#', tr('الجهة', m), tr('النوع', m), tr('المبلغ', m), tr('العملة', m), tr('الدورة', m), tr('ملاحظات', m), tr('التاريخ', m)],
     lr
   );
-  const sumBal = (data.entities || []).reduce((s, e) => s + (Number(e.balance_amount) || 0), 0);
-  inner += `<h2>${escapeHtml(tr('الصافي (مجموع أرصدة الجهات)', m))}: ${fmtNum(sumBal)}</h2>`;
+  const sumRec = (data.entities || []).reduce((s, e) => s + (Number(e.balance_receivable) || 0), 0);
+  const sumPay = (data.entities || []).reduce((s, e) => s + (Number(e.balance_payable) || 0), 0);
+  inner +=
+    `<h2>${escapeHtml(tr('مجموع لنا', m))}: ${fmtNum(sumRec)} — ${escapeHtml(tr('مجموع علينا (صافي التسليم)', m))}: ${fmtNum(sumPay)}</h2>`;
   return docShell(tr('تقرير الاعتمادات', m), inner);
 }
 

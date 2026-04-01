@@ -236,7 +236,7 @@ async function getSubAgencyReportData(db, userId, subAgencyId, cycleId) {
 async function getAccreditationsReportData(db, userId, cycleId) {
   const entities = (
     await db.query(
-      `SELECT id, name, code, balance_amount, pinned, is_primary, created_at
+      `SELECT id, name, code, balance_amount, balance_payable, balance_receivable, pinned, is_primary, created_at
        FROM accreditation_entities WHERE user_id = $1
        ORDER BY is_primary DESC, pinned DESC, name`,
       [userId]
