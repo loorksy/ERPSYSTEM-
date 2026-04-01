@@ -1109,3 +1109,51 @@
     transition: none !important;
   }
 }
+
+/* صفحة بيانات المستخدمين: أزرار بخلفية صلبة ومتناسقة عبر المتصفحات */
+.member-directory-page button.md-toolbar-btn,
+.member-directory-page button.md-pager-btn {
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.member-directory-page button.md-toolbar-btn--primary,
+.member-directory-page button.md-pager-btn--primary {
+  background-color: #4f46e5;
+  border-color: #4338ca;
+  color: #fff;
+}
+.member-directory-page button.md-toolbar-btn--primary:hover:not(:disabled),
+.member-directory-page button.md-pager-btn--primary:hover:not(:disabled) {
+  background-color: #4338ca;
+  border-color: #3730a3;
+}
+.member-directory-page button.md-toolbar-btn--neutral {
+  background-color: #334155;
+  border-color: #475569;
+  color: #fff;
+}
+.member-directory-page button.md-toolbar-btn--neutral:hover:not(:disabled) {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+.member-directory-page button.md-pager-btn--secondary {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+.member-directory-page button.md-pager-btn--secondary:hover:not(:disabled) {
+  background-color: #e2e8f0;
+  border-color: #94a3b8;
+}
+.member-directory-page button.md-pager-btn--primary:disabled,
+.member-directory-page button.md-toolbar-btn--primary:disabled {
+  background-color: #cbd5e1;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+.member-directory-page button.md-pager-btn--secondary:disabled {
+  background-color: #e2e8f0;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
