@@ -48,12 +48,12 @@
     const res = await fetch('/api/member-directory/list?' + params.toString(), { credentials: 'same-origin' });
     if (res.status === 401) {
       tbody.innerHTML =
-        '<tr><td colspan="7" class="px-4 py-6 text-center text-red-600">انتهت الجلسة — أعد تسجيل الدخول</td></tr>';
+        '<tr><td colspan="7" class="px-3 py-10 text-center text-sm text-red-600 sm:px-4">انتهت الجلسة — أعد تسجيل الدخول</td></tr>';
       return;
     }
     const data = await res.json();
     if (!data.success) {
-      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-red-600">' + esc(data.message || 'فشل') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-10 text-center text-sm text-red-600 sm:px-4">' + esc(data.message || 'فشل') + '</td></tr>';
       return;
     }
     total = data.total || 0;
@@ -63,7 +63,7 @@
         sessionStorage.removeItem('mdMemberNavIds');
       } catch (_) {}
       tbody.innerHTML =
-        '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">لا توجد نتائج — يُستخرج الأعضاء من التدقيق، المؤجل، أو الوكالات</td></tr>';
+        '<tr><td colspan="7" class="px-3 py-12 text-center text-sm leading-relaxed text-slate-500 sm:px-4">لا توجد نتائج — يُستخرج الأعضاء من التدقيق، المؤجل، أو الوكالات</td></tr>';
     } else {
       try {
         sessionStorage.setItem(
@@ -75,26 +75,27 @@
         .map((r) => {
           const idEnc = encodeURIComponent(r.member_user_id);
           return (
-            '<tr class="hover:bg-slate-50/80">' +
-            '<td class="px-4 py-2 font-mono text-xs">' +
+            '<tr class="transition-colors hover:bg-indigo-50/40">' +
+            '<td class="py-3.5 pl-2 pr-2 font-mono text-xs tabular-nums text-slate-900 sm:pl-4">' +
             esc(r.member_user_id) +
             '</td>' +
-            '<td class="px-4 py-2">' +
+            '<td class="px-2 py-3.5 text-slate-800 sm:px-4">' +
             esc(r.display_name || r.last_seen_name || '—') +
             '</td>' +
-            '<td class="px-4 py-2 font-mono">' +
+            '<td class="px-2 py-3.5 font-mono text-sm tabular-nums text-slate-800 sm:px-4" dir="ltr">' +
             esc(Number(r.total_salary_audited_usd || 0).toFixed(2)) +
             '</td>' +
-            '<td class="px-4 py-2">' +
+            '<td class="px-2 py-3.5 font-mono text-sm tabular-nums text-slate-800 sm:px-4" dir="ltr">' +
             esc(Number(r.deferred_balance_usd || 0).toFixed(2)) +
             '</td>' +
-            '<td class="px-4 py-2">' +
+            '<td class="px-2 py-3.5 font-mono text-sm tabular-nums text-slate-800 sm:px-4" dir="ltr">' +
             esc(Number(r.debt_to_company_usd || 0).toFixed(2)) +
             '</td>' +
-            '<td class="px-4 py-2 text-xs text-slate-500">' +
+            '<td class="px-2 py-3.5 text-xs text-slate-500 sm:px-4">' +
             esc(r.updated_at ? new Date(r.updated_at).toLocaleString('ar') : '—') +
             '</td>' +
-            '<td class="px-4 py-2"><a class="text-indigo-600 text-xs font-semibold hover:underline" href="/member-directory/member/' +
+            '<td class="py-3.5 pl-4 pr-2 text-left sm:pr-4">' +
+            '<a class="inline-flex items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 hover:text-indigo-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400" href="/member-directory/member/' +
             idEnc +
             '">تفاصيل</a></td>' +
             '</tr>'
