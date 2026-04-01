@@ -288,10 +288,36 @@ function initHomeSheetsStatus() {
 
 var LORKERP_SIDEBAR_DESKTOP_COLLAPSED_KEY = 'lorkerp_sidebar_desktop_collapsed';
 
+/** مزامنة <details> في الشريط: عند الطي تُفتح المجموعات لإظهار الأيقونات فقط؛ عند التوسيع تُعاد حسب الصفحة الحالية */
+function lorkerpSyncSidebarNavDetails() {
+  var mq = window.matchMedia('(min-width: 1024px)');
+  if (!mq.matches) return;
+  var collapsed = document.body.classList.contains('sidebar-desktop-collapsed');
+  var p = (document.body && document.body.getAttribute('data-page')) || '';
+  var g1 = ['sheet', 'payroll-google', 'search', 'sub-agencies', 'sub-agency-detail', 'member-directory', 'member-directory-detail', 'member-adjustments', 'admin-brokerage'];
+  var g3 = ['debts', 'debt-company', 'debt-fund', 'payables-overview', 'receivables-to-us', 'profit-sources', 'profit-source-detail', 'payment-due', 'financial-movements', 'expenses-page'];
+  var d1 = document.getElementById('sidebarDetailsGroup1');
+  var d3 = document.getElementById('sidebarDetailsGroup3');
+  if (collapsed) {
+    if (d1) d1.setAttribute('open', '');
+    if (d3) d3.setAttribute('open', '');
+    return;
+  }
+  if (d1) {
+    if (g1.indexOf(p) >= 0) d1.setAttribute('open', '');
+    else d1.removeAttribute('open');
+  }
+  if (d3) {
+    if (g3.indexOf(p) >= 0) d3.setAttribute('open', '');
+    else d3.removeAttribute('open');
+  }
+}
+
 function applyDesktopSidebarCollapsed(collapsed) {
   var mq = window.matchMedia('(min-width: 1024px)');
   if (!mq.matches) return;
   document.body.classList.toggle('sidebar-desktop-collapsed', collapsed);
+  lorkerpSyncSidebarNavDetails();
   var btn = document.getElementById('sidebarCollapseToggle');
   if (btn) {
     btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
@@ -371,6 +397,8 @@ function initSidebar() {
 
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
   if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+
+  lorkerpSyncSidebarNavDetails();
 
   /** إغلاق القائمة عند اختيار رابط داخلها فقط (لا يُستدعى عند لمس خلفية تمرّر الحدث) */
   if (sidebar) {
