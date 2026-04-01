@@ -1,25 +1,13 @@
-<div class="debts-page touch-manipulation w-full max-w-6xl mx-auto min-w-0 overflow-x-clip px-4 pb-10 sm:px-5 lg:px-0 [-webkit-tap-highlight-color:transparent] space-y-6 sm:space-y-7 lg:space-y-8" dir="rtl" id="debtsPageRoot" role="region" aria-labelledby="debts-page-title">
+<div class="debts-page touch-manipulation w-full max-w-6xl mx-auto min-w-0 overflow-x-clip px-4 pb-10 sm:px-5 lg:px-0 [-webkit-tap-highlight-color:transparent] space-y-8 lg:space-y-10" dir="rtl" id="debtsPageRoot" role="region" aria-labelledby="debts-page-title">
 
-  <header class="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_30px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/[0.04]">
-    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_70%_at_100%_0%,rgba(244,63,94,0.09),transparent_55%)]"></div>
-    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_0%_100%,rgba(99,102,241,0.06),transparent_45%)]"></div>
-    <div class="relative px-4 py-6 sm:px-7 sm:py-8">
-      <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-        <div class="flex min-w-0 items-start gap-4">
-          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-800 text-white shadow-lg shadow-rose-900/20 sm:h-16 sm:w-16" aria-hidden="true">
-            <i class="fas fa-scale-balanced text-2xl"></i>
-          </div>
-          <div class="min-w-0 pt-0.5">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-rose-600">لوحة الالتزامات</p>
-            <h1 id="debts-page-title" class="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">الديون</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">نظرة موحّدة على الشحن، مطلوب دفع المعتمدين، التسجيلات اليدوية، والأرصدة السالبة لشركات التحويل والصناديق — بنفس منطق الحساب في النظام.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
+  <div class="flex items-center gap-3 border-b border-slate-200/80 pb-6">
+    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-800 text-white shadow-md sm:h-14 sm:w-14" aria-hidden="true">
+      <i class="fas fa-scale-balanced text-xl sm:text-2xl"></i>
+    </span>
+    <h1 id="debts-page-title" class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">الديون</h1>
+  </div>
 
-  <nav class="erp-toolbar-nav mb-0" aria-label="تنقل سريع بين أقسام المالية">
+  <nav class="erp-toolbar-nav finance-toolbar-nav mb-0 gap-2 sm:gap-3" aria-label="تنقل سريع بين أقسام المالية">
     <a href="/receivables-to-us" class="border border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 text-[11px] sm:text-sm">
       <i class="fas fa-hand-holding-heart text-emerald-600 text-[10px] sm:text-xs shrink-0" aria-hidden="true"></i>
       دين لنا

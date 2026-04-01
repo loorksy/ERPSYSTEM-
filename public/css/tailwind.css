@@ -2376,14 +2376,8 @@
     --tw-gradient-position: to right in oklab;
     background-image: linear-gradient(var(--tw-gradient-stops));
   }
-  .bg-\[radial-gradient\(ellipse_55\%_45\%_at_0\%_100\%\,rgba\(99\,102\,241\,0\.06\)\,transparent_45\%\)\] {
-    background-image: radial-gradient(ellipse 55% 45% at 0% 100%,rgba(99,102,241,0.06),transparent 45%);
-  }
   .bg-\[radial-gradient\(ellipse_70\%_50\%_at_0\%_100\%\,rgba\(245\,158\,11\,0\.1\)\,transparent\)\] {
     background-image: radial-gradient(ellipse 70% 50% at 0% 100%,rgba(245,158,11,0.1),transparent);
-  }
-  .bg-\[radial-gradient\(ellipse_85\%_70\%_at_100\%_0\%\,rgba\(244\,63\,94\,0\.09\)\,transparent_55\%\)\] {
-    background-image: radial-gradient(ellipse 85% 70% at 100% 0%,rgba(244,63,94,0.09),transparent 55%);
   }
   .from-\[\#1a1a2e\] {
     --tw-gradient-from: #1a1a2e;
@@ -2984,6 +2978,9 @@
   }
   .pb-3 {
     padding-bottom: calc(var(--spacing) * 3);
+  }
+  .pb-6 {
+    padding-bottom: calc(var(--spacing) * 6);
   }
   .pb-8 {
     padding-bottom: calc(var(--spacing) * 8);
@@ -3623,10 +3620,6 @@
     --tw-shadow: 0 8px 24px var(--tw-shadow-color, rgba(79,70,229,0.35));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
-  .shadow-\[0_8px_30px_-12px_rgba\(15\,23\,42\,0\.12\)\] {
-    --tw-shadow: 0 8px 30px -12px var(--tw-shadow-color, rgba(15,23,42,0.12));
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
   .shadow-inner {
     --tw-shadow: inset 0 2px 4px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.05));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
@@ -3769,12 +3762,6 @@
     --tw-shadow-color: color-mix(in srgb, oklch(41% 0.159 10.272) 15%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--color-rose-900) 15%, transparent) var(--tw-shadow-alpha), transparent);
-    }
-  }
-  .shadow-rose-900\/20 {
-    --tw-shadow-color: color-mix(in srgb, oklch(41% 0.159 10.272) 20%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--color-rose-900) 20%, transparent) var(--tw-shadow-alpha), transparent);
     }
   }
   .shadow-slate-200\/40 {
@@ -3985,12 +3972,6 @@
     --tw-ring-color: color-mix(in srgb, oklch(20.8% 0.042 265.755) 3%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       --tw-ring-color: color-mix(in oklab, var(--color-slate-900) 3%, transparent);
-    }
-  }
-  .ring-slate-900\/\[0\.04\] {
-    --tw-ring-color: color-mix(in srgb, oklch(20.8% 0.042 265.755) 4%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      --tw-ring-color: color-mix(in oklab, var(--color-slate-900) 4%, transparent);
     }
   }
   .ring-violet-200\/50 {
@@ -6639,15 +6620,6 @@
       gap: calc(var(--spacing) * 8);
     }
   }
-  .sm\:space-y-7 {
-    @media (width >= 40rem) {
-      :where(& > :not(:last-child)) {
-        --tw-space-y-reverse: 0;
-        margin-block-start: calc(calc(var(--spacing) * 7) * var(--tw-space-y-reverse));
-        margin-block-end: calc(calc(var(--spacing) * 7) * calc(1 - var(--tw-space-y-reverse)));
-      }
-    }
-  }
   .sm\:gap-x-3 {
     @media (width >= 40rem) {
       -moz-column-gap: calc(var(--spacing) * 3);
@@ -7192,9 +7164,9 @@
       bottom: calc(var(--spacing) * 8);
     }
   }
-  .lg\:left-\[2\.35rem\] {
+  .lg\:left-1\/2 {
     @media (width >= 64rem) {
-      left: 2.35rem;
+      left: calc(1 / 2 * 100%);
     }
   }
   .lg\:z-\[1004\] {
@@ -7292,6 +7264,12 @@
       flex-shrink: 0;
     }
   }
+  .lg\:-translate-x-1\/2 {
+    @media (width >= 64rem) {
+      --tw-translate-x: calc(calc(1 / 2 * 100%) * -1);
+      translate: var(--tw-translate-x) var(--tw-translate-y);
+    }
+  }
   .lg\:grid-cols-2 {
     @media (width >= 64rem) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7377,6 +7355,15 @@
         --tw-space-y-reverse: 0;
         margin-block-start: calc(calc(var(--spacing) * 8) * var(--tw-space-y-reverse));
         margin-block-end: calc(calc(var(--spacing) * 8) * calc(1 - var(--tw-space-y-reverse)));
+      }
+    }
+  }
+  .lg\:space-y-10 {
+    @media (width >= 64rem) {
+      :where(& > :not(:last-child)) {
+        --tw-space-y-reverse: 0;
+        margin-block-start: calc(calc(var(--spacing) * 10) * var(--tw-space-y-reverse));
+        margin-block-end: calc(calc(var(--spacing) * 10) * calc(1 - var(--tw-space-y-reverse)));
       }
     }
   }
@@ -8307,6 +8294,14 @@
     max-width: none;
     min-height: 0;
     padding: 0.625rem 1rem;
+  }
+}
+.erp-toolbar-nav.finance-toolbar-nav {
+  gap: 0.5rem;
+}
+@media (min-width: 640px) {
+  .erp-toolbar-nav.finance-toolbar-nav {
+    gap: 0.75rem;
   }
 }
 .agencies-grid {

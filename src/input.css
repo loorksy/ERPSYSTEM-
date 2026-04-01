@@ -821,6 +821,16 @@
   }
 }
 
+/* دين لنا / علينا / الديون / سجل الحركات — تباعد أوضح بين أزرار الشريط */
+.erp-toolbar-nav.finance-toolbar-nav {
+  gap: 0.5rem;
+}
+@media (min-width: 640px) {
+  .erp-toolbar-nav.finance-toolbar-nav {
+    gap: 0.75rem;
+  }
+}
+
 /* Migrated from views/partials/sub-agencies.ejs */
 .agencies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
 .btn-add { padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; transition: all 0.2s; }
