@@ -41,16 +41,26 @@
       </div>
 
       <div class="p-3 sm:p-4">
-        <div id="accBalanceSummary" class="mb-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3 sm:grid-cols-3 sm:gap-3">
-          <div class="rounded-lg border border-amber-100 bg-white px-3 py-2.5 shadow-sm">
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-800">دين لنا</p>
-            <p id="accDetailRec" class="mt-1 text-base font-bold tabular-nums text-amber-900">—</p>
-            <p class="mt-0.5 text-[10px] leading-snug text-slate-500">ما للمعتمد علينا (يظهر في «دين لنا»)</p>
+        <div id="accPendingRecvOffsetBanner" class="mb-4 hidden rounded-xl border border-sky-200 bg-sky-50/95 px-3 py-3 shadow-sm">
+          <p class="text-center text-[11px] font-semibold text-sky-950">عملية «إضافة مبلغ» معلّقة — اختر خصم الدين أو التأجيل</p>
+          <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-center sm:gap-3">
+            <button type="button" onclick="accResumeReceivableOffsetModal(Number(document.getElementById('accDetailPage').dataset.accreditationId))" class="inline-flex min-h-[2.5rem] w-full items-center justify-center gap-2 rounded-xl border border-sky-400 bg-white px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100 sm:w-auto">
+              <i class="fas fa-scale-balanced text-sky-600" aria-hidden="true"></i>
+              متابعة اختيار خصم الدين
+            </button>
+            <button type="button" onclick="accDismissPendingReceivableBanner()" class="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline">إزالة التذكير</button>
           </div>
-          <div class="rounded-lg border border-emerald-100 bg-white px-3 py-2.5 shadow-sm">
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">دين علينا (رصيد له)</p>
-            <p id="accDetailPay" class="mt-1 text-base font-bold tabular-nums text-emerald-900">—</p>
-            <p class="mt-0.5 text-[10px] leading-snug text-slate-500">المبلغ المسجّل لمصلحته / مطلوب منّا</p>
+        </div>
+        <div id="accBalanceSummary" class="mb-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3 sm:grid-cols-3 sm:gap-3">
+          <div class="rounded-lg border border-emerald-200 bg-white px-3 py-2.5 shadow-sm">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">لنا</p>
+            <p id="accDetailRec" class="mt-1 text-base font-bold tabular-nums text-emerald-700">—</p>
+            <p class="mt-0.5 text-[10px] leading-snug text-slate-500">دين لنا (ما للمعتمد علينا)</p>
+          </div>
+          <div class="rounded-lg border border-rose-200 bg-white px-3 py-2.5 shadow-sm">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-rose-800">علينا</p>
+            <p id="accDetailPay" class="mt-1 text-base font-bold tabular-nums text-rose-700">—</p>
+            <p class="mt-0.5 text-[10px] leading-snug text-slate-500">دين علينا (رصيد له / مطلوب دفع)</p>
           </div>
           <div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
             <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">صافي الحساب</p>

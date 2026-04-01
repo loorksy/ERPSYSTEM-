@@ -14,6 +14,22 @@
     return 'accDeferSettlement_' + (entityId != null ? String(entityId) : '');
   }
 
+  /** قرار خصم دين لنا معلّق بعد «تجاهل الآن» — يُستأنف بنفس النافذة */
+  function accPendingRecvOffsetStorageKey(entityId) {
+    return 'accRecvOffsetPending_v1_' + (entityId != null ? String(entityId) : '');
+  }
+
+  function accUpdatePendingBanner(entityId) {
+    var ban = document.getElementById('accPendingRecvOffsetBanner');
+    if (!ban) return;
+    var has = false;
+    try {
+      has = !!sessionStorage.getItem(accPendingRecvOffsetStorageKey(entityId));
+    } catch (e) {}
+    if (has) ban.classList.remove('hidden');
+    else ban.classList.add('hidden');
+  }
+
   function escHtml(s) {
     if (s == null) return '';
     return String(s)
@@ -72,10 +88,30 @@
     accReceivableOffsetPending = null;
   }
 
-  /** إغلاق النافذة دون طلب؛ تنبيه بإمكانية المتابعة لاحقاً من «إضافة مبلغ». */
+  /** إغلاق النافذة دون طلب؛ حفظ العملية معلّقة لاستئنافها من البطاقة أو ملف المعتمد. */
   function accDismissReceivableOffsetForLater() {
+    var p = accReceivableOffsetPending;
+    if (p && p.entityId != null) {
+      try {
+        sessionStorage.setItem(
+          accPendingRecvOffsetStorageKey(p.entityId),
+          JSON.stringify({
+            baseBody: p.baseBody,
+            url: p.url,
+            rec: p.rec,
+            amount: p.amount,
+            at: Date.now(),
+          })
+        );
+      } catch (e) {}
+    }
     accCloseReceivableOffsetModal();
-    toast('لم يُسجّل شيء. يمكنك لاحقاً فتح «إضافة مبلغ» واختيار خصم الدين أو التأجيل.', 'info');
+    toast('لم يُسجّل شيء. اضغط «قرار معلّق» على البطاقة أو في الملف لمتابعة خصم الدين.', 'info');
+    if (document.getElementById('accCards')) accLoad();
+    var pg = document.getElementById('accDetailPage');
+    if (pg && pg.dataset.accreditationId) {
+      accUpdatePendingBanner(parseInt(pg.dataset.accreditationId, 10));
+    }
   }
 
   function wireAccReceivableOffsetModal() {
@@ -127,6 +163,9 @@
         }
         apiCall(p.url, { method: 'POST', body: JSON.stringify(body) }).then(function(res) {
           if (res && res.success && p.entityId != null) {
+            try {
+              sessionStorage.removeItem(accPendingRecvOffsetStorageKey(p.entityId));
+            } catch (e) {}
             try {
               var dk = accDeferSettlementStorageKey(p.entityId);
               if (mode === 'defer') sessionStorage.setItem(dk, '1');
@@ -184,6 +223,55 @@
 
   window.accCloseReceivableOffsetModal = accCloseReceivableOffsetModal;
   window.accDismissReceivableOffsetForLater = accDismissReceivableOffsetForLater;
+
+  window.accResumeReceivableOffsetModal = function(id) {
+    var raw = sessionStorage.getItem(accPendingRecvOffsetStorageKey(id));
+    if (!raw) {
+      toast('لا يوجد قرار معلّق لهذا المعتمد.', 'info');
+      return;
+    }
+    var data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+    var onDetail = !!document.getElementById('accDetailPage');
+    accOpenReceivableOffsetModal({
+      rec: data.rec,
+      amount: data.amount,
+      baseBody: data.baseBody,
+      url: data.url,
+      entityId: id,
+      onDone: function(res) {
+        toast(res.message || '', res.success ? 'success' : 'error');
+        if (res && res.success) {
+          try {
+            sessionStorage.removeItem(accPendingRecvOffsetStorageKey(id));
+          } catch (e) {}
+          if (onDetail) {
+            if (typeof window.accReloadDetail === 'function') window.accReloadDetail();
+            accUpdatePendingBanner(id);
+          } else {
+            if (typeof window.accCloseListAddAmountModal === 'function') window.accCloseListAddAmountModal();
+            accLoad();
+          }
+        }
+      },
+    });
+  };
+
+  window.accDismissPendingReceivableBanner = function() {
+    var pg = document.getElementById('accDetailPage');
+    if (!pg || !pg.dataset.accreditationId) return;
+    var id = parseInt(pg.dataset.accreditationId, 10);
+    if (!id) return;
+    try {
+      sessionStorage.removeItem(accPendingRecvOffsetStorageKey(id));
+    } catch (e) {}
+    accUpdatePendingBanner(id);
+    if (document.getElementById('accCards')) accLoad();
+  };
 
   var accConfirmCallback = null;
 
@@ -753,6 +841,18 @@
           (Number(a.balance_receivable) || 0) > 0.0001
             ? '<span class="absolute left-2 top-2 z-10 max-w-[calc(100%-5rem)] truncate rounded-lg border border-amber-300 bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900 shadow-sm" title="يوجد دين لنا ودين علينا — يحتاج تسوية من ملف المعتمد">تسوية</span>'
             : '';
+        var pendingRecv = false;
+        try {
+          pendingRecv = !!sessionStorage.getItem(accPendingRecvOffsetStorageKey(a.id));
+        } catch (e) {}
+        var pendingRecvHtml = pendingRecv
+          ? '<div class="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-2 py-2 text-center shadow-sm">' +
+            '<button type="button" class="w-full text-[11px] font-bold leading-snug text-sky-900 hover:underline" onclick="event.stopPropagation(); accResumeReceivableOffsetModal(' +
+            a.id +
+            ')">قرار معلّق — اضغط لمتابعة خصم الدين</button></div>'
+          : '';
+        var payCard = Number(a.balance_payable) || 0;
+        var recCard = Number(a.balance_receivable) || 0;
         return (
           '<div class="acc-list-card group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" onclick="accOpen(' +
           a.id +
@@ -771,13 +871,23 @@
           '<p class="mt-2 font-mono text-[11px] text-slate-500 sm:text-xs">كود: ' +
           escHtml(a.code || '—') +
           '</p>' +
-          '<div class="mt-3 flex flex-wrap items-end justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
+          '<div class="mt-3 space-y-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
+          '<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs">' +
+          '<span class="font-semibold text-emerald-700">لنا <span class="tabular-nums font-bold">' +
+          escHtml(accFmtMoney(recCard)) +
+          '</span></span>' +
+          '<span class="font-semibold text-rose-600">علينا <span class="tabular-nums font-bold">' +
+          escHtml(accFmtMoney(payCard)) +
+          '</span></span>' +
+          '</div>' +
+          '<div class="flex items-end justify-between border-t border-slate-200/80 pt-2">' +
           '<span class="text-xs font-semibold text-slate-500">الصافي</span>' +
           '<span class="text-lg font-bold tabular-nums" style="color:' +
           textColor +
           '">' +
           escHtml(accFmtMoney(net)) +
-          '</span></div>' +
+          '</span></div></div>' +
+          pendingRecvHtml +
           '<div class="acc-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
           '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] sm:text-xs" onclick="accOpenShortcut(' +
           a.id +
@@ -825,13 +935,33 @@
   function accDelRowHtml(a) {
     var name = escHtml(a.name || '');
     var code = escHtml(a.code || '');
-    var bal = accFmtMoney(a.balance_amount || 0);
+    var pay = Number(a.balance_payable) || 0;
+    var rec = Number(a.balance_receivable) || 0;
+    var net = Number(a.balance_amount) || 0;
+    var netColor = net > 0.0001 ? 'text-emerald-700' : net < -0.0001 ? 'text-rose-700' : 'text-slate-700';
     return (
-      '<label class="acc-del-row flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm text-center sm:text-right">' +
-      '<input type="checkbox" class="acc-del-cb h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" value="' + a.id + '" checked>' +
-      '<span class="flex-1 min-w-0 text-sm text-slate-800">' + name + (code ? ' <span class="text-slate-400 text-xs font-mono">' + code + '</span>' : '') + '</span>' +
-      '<span class="shrink-0 text-sm font-bold text-emerald-600 tabular-nums">' + bal + '</span>' +
-      '</label>'
+      '<label class="acc-del-row flex flex-col gap-2 p-3 rounded-xl border border-slate-100 bg-white cursor-pointer hover:border-indigo-100 hover:bg-indigo-50/40 transition-colors shadow-sm text-right">' +
+      '<div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">' +
+      '<div class="flex items-start gap-2 min-w-0">' +
+      '<input type="checkbox" class="acc-del-cb mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" value="' +
+      a.id +
+      '" checked>' +
+      '<span class="flex-1 min-w-0 text-sm text-slate-800">' +
+      name +
+      (code ? ' <span class="text-slate-400 text-xs font-mono">' + code + '</span>' : '') +
+      '</span></div>' +
+      '<div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-[11px] sm:text-xs">' +
+      '<span class="font-semibold text-emerald-700">لنا <span class="tabular-nums font-bold">' +
+      escHtml(accFmtMoney(rec)) +
+      '</span></span>' +
+      '<span class="font-semibold text-rose-600">علينا <span class="tabular-nums font-bold">' +
+      escHtml(accFmtMoney(pay)) +
+      '</span></span>' +
+      '<span class="font-bold tabular-nums ' +
+      netColor +
+      '">صافي ' +
+      escHtml(accFmtMoney(net)) +
+      '</span></div></div></label>'
     );
   }
 
@@ -1153,12 +1283,19 @@
       var elRec = document.getElementById('accDetailRec');
       var elPay = document.getElementById('accDetailPay');
       var elNet = document.getElementById('accDetailNet');
-      if (elRec) elRec.textContent = accFmtMoney(recV);
-      if (elPay) elPay.textContent = accFmtMoney(payV);
+      if (elRec) {
+        elRec.textContent = accFmtMoney(recV);
+        elRec.className = 'mt-1 text-base font-bold tabular-nums text-emerald-700';
+      }
+      if (elPay) {
+        elPay.textContent = accFmtMoney(payV);
+        elPay.className = 'mt-1 text-base font-bold tabular-nums text-rose-700';
+      }
       if (elNet) {
         elNet.textContent = accFmtMoney(netV);
         elNet.className = 'mt-1 text-base font-bold tabular-nums ' + accNetBalanceClass(netV);
       }
+      accUpdatePendingBanner(id);
       var titleEl = document.getElementById('accDetailTitle');
       if (titleEl) titleEl.textContent = e.name || '';
       var pinBtn = document.getElementById('accPinBtn');
