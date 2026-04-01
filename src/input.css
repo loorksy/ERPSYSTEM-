@@ -1092,3 +1092,20 @@
     opacity: 0.35;
   }
 }
+
+/* صفحة الديون: طباعة وتقليل حركة عند طلب المستخدم */
+@media print {
+  .debts-page .erp-toolbar-nav {
+    display: none !important;
+  }
+  .debts-page {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .debts-page .group:hover .pointer-events-none {
+    transition: none !important;
+  }
+}

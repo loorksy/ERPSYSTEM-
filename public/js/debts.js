@@ -25,22 +25,27 @@
     return c ? esc(c) : '';
   }
 
-  function statCard(iconClass, iconBg, label, value, valueClass) {
+  function statCard(iconClass, iconBg, label, value, valueClass, borderAccent) {
+    var accent =
+      borderAccent ||
+      'border-l-slate-300 bg-gradient-to-br from-white to-slate-50/80';
     return (
-      '<div class="min-w-0 rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-4">' +
+      '<div class="debts-stat-card min-w-0 flex flex-col rounded-xl border border-slate-200/90 border-l-4 bg-gradient-to-br p-3.5 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-4 ' +
+      accent +
+      '">' +
       '<div class="flex items-start justify-between gap-2">' +
       '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ' +
       iconBg +
-      '"><i class="' +
+      '" aria-hidden="true"><i class="' +
       iconClass +
       ' text-sm"></i></span>' +
       '</div>' +
-      '<p class="mt-2 text-[0.65rem] font-medium leading-snug text-slate-500">' +
+      '<p class="mt-2 text-[0.65rem] font-semibold leading-snug text-slate-500">' +
       esc(label) +
       '</p>' +
-      '<p class="mt-1 font-mono text-base font-bold tabular-nums sm:text-lg ' +
+      '<p class="mt-2 min-h-[1.75rem] font-mono text-base font-bold tabular-nums leading-tight sm:text-lg ' +
       (valueClass || 'text-slate-900') +
-      '">' +
+      '" dir="ltr">' +
       fmt(value) +
       '</p>' +
       '</div>'
@@ -55,7 +60,7 @@
       .then(function(d) {
         if (!d.success) {
           document.getElementById('debtsSummary').innerHTML =
-            '<div class="col-span-full rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-700">' +
+            '<div class="col-span-full rounded-2xl border border-red-200/90 bg-red-50/95 px-4 py-8 text-center text-sm font-medium leading-relaxed text-red-800 sm:px-6" role="alert">' +
             esc(d.message || 'فشل التحميل') +
             '</div>';
           return;
@@ -70,17 +75,17 @@
         var fxV = d.fxSpreadSumUsd != null ? d.fxSpreadSumUsd : 0;
         var fxCard =
           fxV > 0.0001
-            ? statCard('fas fa-chart-line', 'bg-teal-100 text-teal-800', 'فرق التصريف', fxV, 'text-teal-900')
+            ? statCard('fas fa-chart-line', 'bg-teal-100 text-teal-800', 'فرق التصريف', fxV, 'text-teal-900', 'border-l-teal-500 from-white to-teal-50/45')
             : '';
         sum.innerHTML =
-          statCard('fas fa-truck-fast', 'bg-sky-100 text-sky-700', 'الشحن (بيع دين)', d.shippingDebt, 'text-sky-800') +
-          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'المعتمدون — مطلوب دفع', accPay, 'text-violet-900') +
-          statCard('fas fa-database', 'bg-slate-100 text-slate-700', 'ديون مسجّلة — إجمالي بالدولار', d.payablesSumUsd, 'text-slate-900') +
-          statCard('fas fa-stamp', 'bg-violet-50 text-violet-900', 'من تحويل معتمد (دين علينا)', epAcc, 'text-violet-950') +
-          statCard('fas fa-ellipsis-h', 'bg-slate-50 text-slate-600', 'ديون مسجّلة — أخرى (يدوي، شحن، …)', epOther, 'text-slate-800') +
+          statCard('fas fa-truck-fast', 'bg-sky-100 text-sky-700', 'الشحن (بيع دين)', d.shippingDebt, 'text-sky-800', 'border-l-sky-500 from-white to-sky-50/50') +
+          statCard('fas fa-certificate', 'bg-violet-100 text-violet-800', 'المعتمدون — مطلوب دفع', accPay, 'text-violet-900', 'border-l-violet-500 from-white to-violet-50/40') +
+          statCard('fas fa-database', 'bg-slate-100 text-slate-700', 'ديون مسجّلة — إجمالي بالدولار', d.payablesSumUsd, 'text-slate-900', 'border-l-slate-500 from-white to-slate-50/90') +
+          statCard('fas fa-stamp', 'bg-violet-50 text-violet-900', 'من تحويل معتمد (دين علينا)', epAcc, 'text-violet-950', 'border-l-violet-600 from-white to-violet-50/45') +
+          statCard('fas fa-ellipsis-h', 'bg-slate-50 text-slate-600', 'ديون مسجّلة — أخرى (يدوي، شحن، …)', epOther, 'text-slate-800', 'border-l-slate-400 from-white to-slate-50/70') +
           fxCard +
-          statCard('fas fa-building', 'bg-red-100 text-red-700', 'شركات التحويل (رصيد سالب)', d.companyDebtFromBalance, 'text-red-800') +
-          statCard('fas fa-piggy-bank', 'bg-amber-100 text-amber-800', 'الصناديق (رصيد سالب)', d.fundDebtFromBalance, 'text-amber-900');
+          statCard('fas fa-building', 'bg-red-100 text-red-700', 'شركات التحويل (رصيد سالب)', d.companyDebtFromBalance, 'text-red-800', 'border-l-red-500 from-white to-red-50/50') +
+          statCard('fas fa-piggy-bank', 'bg-amber-100 text-amber-800', 'الصناديق (رصيد سالب)', d.fundDebtFromBalance, 'text-amber-900', 'border-l-amber-500 from-white to-amber-50/50');
 
         var comp = document.getElementById('debtsCompanies');
         if (comp) {
@@ -90,7 +95,7 @@
                   return (
                     '<a href="/debts/company/' +
                     c.id +
-                    '" class="group flex items-center justify-between gap-3 px-4 py-4 transition hover:bg-gradient-to-l hover:from-red-50/90 hover:to-transparent">' +
+                    '" class="group flex min-h-[3.25rem] items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-gradient-to-l hover:from-red-50/90 hover:to-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-300 sm:min-h-[3.5rem] sm:px-5 sm:py-4" role="listitem">' +
                     '<div class="flex min-w-0 items-center gap-3">' +
                     '<span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-700 shadow-sm transition group-hover:bg-red-600 group-hover:text-white"><i class="fas fa-building"></i></span>' +
                     '<div class="min-w-0">' +
@@ -100,7 +105,7 @@
                     '<p class="text-xs text-slate-500 mt-0.5">شركة تحويل</p>' +
                     '</div></div>' +
                     '<div class="flex shrink-0 items-center gap-2">' +
-                    '<span class="font-mono text-sm font-bold tabular-nums text-rose-700">' +
+                    '<span class="font-mono text-sm font-bold tabular-nums text-rose-700" dir="ltr">' +
                     fmt(c.balance_amount) +
                     ' ' +
                     currencyAr(c.balance_currency || 'USD') +
@@ -110,7 +115,7 @@
                   );
                 })
                 .join('')
-            : '<p class="px-4 py-8 text-center text-sm text-slate-400">لا توجد شركات برصيد سالب حالياً</p>';
+            : '<p class="px-4 py-10 text-center text-sm leading-relaxed text-slate-500" role="status">لا توجد شركات برصيد سالب حالياً</p>';
         }
         var fd = document.getElementById('debtsFunds');
         if (fd) {
@@ -120,7 +125,7 @@
                   return (
                     '<a href="/debts/fund/' +
                     f.id +
-                    '" class="group flex items-center justify-between gap-3 px-4 py-4 transition hover:bg-gradient-to-l hover:from-amber-50/90 hover:to-transparent">' +
+                    '" class="group flex min-h-[3.25rem] items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-gradient-to-l hover:from-amber-50/90 hover:to-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300 sm:min-h-[3.5rem] sm:px-5 sm:py-4" role="listitem">' +
                     '<div class="flex min-w-0 items-center gap-3">' +
                     '<span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 shadow-sm transition group-hover:bg-amber-600 group-hover:text-white"><i class="fas fa-piggy-bank"></i></span>' +
                     '<div class="min-w-0">' +
@@ -130,7 +135,7 @@
                     '<p class="text-xs text-slate-500 mt-0.5">صندوق</p>' +
                     '</div></div>' +
                     '<div class="flex shrink-0 items-center gap-2">' +
-                    '<span class="font-mono text-sm font-bold tabular-nums text-amber-800">' +
+                    '<span class="font-mono text-sm font-bold tabular-nums text-amber-800" dir="ltr">' +
                     fmt(f.amount) +
                     ' ' +
                     currencyAr(f.currency || '') +
@@ -140,7 +145,7 @@
                   );
                 })
                 .join('')
-            : '<p class="px-4 py-8 text-center text-sm text-slate-400">لا توجد صناديق برصيد سالب</p>';
+            : '<p class="px-4 py-10 text-center text-sm leading-relaxed text-slate-500" role="status">لا توجد صناديق برصيد سالب</p>';
         }
         var pay = document.getElementById('debtsPayables');
         if (pay) {
@@ -149,7 +154,7 @@
                 .map(function(p) {
                   var kind = p.entity_type === 'fund' ? 'صندوق' : 'شركة تحويل';
                   return (
-                    '<div class="flex flex-col gap-2 rounded-xl border border-violet-200/80 bg-violet-50/30 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">' +
+                    '<div class="flex flex-col gap-2 rounded-xl border border-violet-200/80 bg-violet-50/30 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4" role="listitem">' +
                     '<div class="flex items-start gap-2.5 min-w-0">' +
                     '<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-[0.65rem] font-bold text-violet-800">#' +
                     esc(String(p.entity_id)) +
@@ -163,7 +168,7 @@
                       : '') +
                     '</div></div>' +
                     '<div class="flex shrink-0 items-center justify-end border-t border-violet-100 pt-2 sm:border-0 sm:pt-0 sm:pl-3">' +
-                    '<span class="inline-flex min-w-[7rem] items-center justify-center rounded-lg bg-white px-3 py-2 font-mono text-sm font-bold tabular-nums text-violet-900 ring-1 ring-violet-200/80">' +
+                    '<span class="inline-flex min-w-[7rem] items-center justify-center rounded-lg bg-white px-3 py-2 font-mono text-sm font-bold tabular-nums text-violet-900 ring-1 ring-violet-200/80" dir="ltr">' +
                     fmt(p.amount) +
                     ' ' +
                     currencyAr(p.currency || '') +
@@ -172,14 +177,14 @@
                   );
                 })
                 .join('')
-            : '<p class="py-8 text-center text-sm text-slate-400">لا توجد مديونيات يدوية مسجّلة</p>';
+            : '<p class="py-10 text-center text-sm leading-relaxed text-slate-500" role="status">لا توجد مديونيات يدوية مسجّلة</p>';
         }
       })
       .catch(function() {
         var sum = document.getElementById('debtsSummary');
         if (sum)
           sum.innerHTML =
-            '<div class="col-span-full rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-700">فشل التحميل</div>';
+            '<div class="col-span-full rounded-2xl border border-red-200/90 bg-red-50/95 px-4 py-8 text-center text-sm font-medium text-red-800 sm:px-6" role="alert">فشل التحميل</div>';
       });
   }
 

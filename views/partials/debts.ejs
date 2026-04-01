@@ -1,136 +1,174 @@
-<div class="debts-page max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-8 sm:pb-10 space-y-5 lg:space-y-6" dir="rtl" id="debtsPageRoot">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-    <div class="flex min-w-0 items-center gap-3">
-      <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-md sm:h-12 sm:w-12 sm:rounded-2xl"><i class="fas fa-scale-balanced text-lg" aria-hidden="true"></i></span>
-      <div class="min-w-0">
-        <h1 class="text-lg font-bold text-slate-900 sm:text-xl">الديون</h1>
-        <p class="mt-0.5 text-xs text-slate-500 sm:text-sm">ملخص الالتزامات والتفصيل والتسجيل</p>
+<div class="debts-page touch-manipulation w-full max-w-6xl mx-auto min-w-0 overflow-x-clip px-4 pb-10 sm:px-5 lg:px-0 [-webkit-tap-highlight-color:transparent] space-y-6 sm:space-y-7 lg:space-y-8" dir="rtl" id="debtsPageRoot" role="region" aria-labelledby="debts-page-title">
+
+  <header class="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_30px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/[0.04]">
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_70%_at_100%_0%,rgba(244,63,94,0.09),transparent_55%)]"></div>
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_0%_100%,rgba(99,102,241,0.06),transparent_45%)]"></div>
+    <div class="relative px-4 py-6 sm:px-7 sm:py-8">
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div class="flex min-w-0 items-start gap-4">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-800 text-white shadow-lg shadow-rose-900/20 sm:h-16 sm:w-16" aria-hidden="true">
+            <i class="fas fa-scale-balanced text-2xl"></i>
+          </div>
+          <div class="min-w-0 pt-0.5">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-rose-600">لوحة الالتزامات</p>
+            <h1 id="debts-page-title" class="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">الديون</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">نظرة موحّدة على الشحن، مطلوب دفع المعتمدين، التسجيلات اليدوية، والأرصدة السالبة لشركات التحويل والصناديق — بنفس منطق الحساب في النظام.</p>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </header>
 
-  <nav class="erp-toolbar-nav mb-0" aria-label="تنقل سريع">
-    <a href="/receivables-to-us" class="border border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm hover:bg-emerald-100 text-[11px] sm:text-sm">
-      <i class="fas fa-hand-holding-heart text-emerald-600 text-[10px] sm:text-xs shrink-0"></i>
+  <nav class="erp-toolbar-nav mb-0" aria-label="تنقل سريع بين أقسام المالية">
+    <a href="/receivables-to-us" class="border border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-heart text-emerald-600 text-[10px] sm:text-xs shrink-0" aria-hidden="true"></i>
       دين لنا
     </a>
-    <a href="/payables-us" class="border border-rose-200 bg-rose-50 text-rose-900 shadow-sm hover:bg-rose-100 text-[11px] sm:text-sm">
-      <i class="fas fa-hand-holding-usd text-rose-600 text-[10px] sm:text-xs shrink-0"></i>
+    <a href="/payables-us" class="border border-rose-200 bg-rose-50 text-rose-900 shadow-sm hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 text-[11px] sm:text-sm">
+      <i class="fas fa-hand-holding-usd text-rose-600 text-[10px] sm:text-xs shrink-0" aria-hidden="true"></i>
       دين علينا
     </a>
-    <a href="/payment-due" class="border border-amber-200 bg-amber-50 text-amber-900 shadow-sm hover:bg-amber-100 text-[11px] sm:text-sm">
-      <i class="fas fa-money-bill-wave text-amber-600 text-[10px] sm:text-xs shrink-0"></i>
+    <a href="/payment-due" class="border border-amber-200 bg-amber-50 text-amber-900 shadow-sm hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 text-[11px] sm:text-sm">
+      <i class="fas fa-money-bill-wave text-amber-600 text-[10px] sm:text-xs shrink-0" aria-hidden="true"></i>
       مطلوب دفع
     </a>
-    <a href="/dashboard" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50 text-[11px] sm:text-sm">
-      <i class="fas fa-arrow-right text-[10px] sm:text-xs opacity-70 shrink-0"></i>
+    <a href="/dashboard" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 text-[11px] sm:text-sm">
+      <i class="fas fa-arrow-right text-[10px] sm:text-xs opacity-70 shrink-0" aria-hidden="true"></i>
       الرئيسية
     </a>
   </nav>
 
-  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4" aria-label="ملخص لنا وعلينا">
-    <a href="/receivables-to-us" class="group flex flex-col rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-sm ring-1 ring-emerald-900/[0.04] transition hover:border-emerald-300 hover:shadow-md sm:p-5">
-      <div class="flex items-center justify-between gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><i class="fas fa-hand-holding-usd"></i></span>
-        <span class="text-emerald-600 opacity-0 transition group-hover:opacity-100"><i class="fas fa-chevron-left text-sm"></i></span>
+  <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5" aria-label="ملخص دين لنا ودين علينا">
+    <a href="/receivables-to-us" class="group relative flex min-h-[8.5rem] flex-col justify-between overflow-hidden rounded-2xl border border-emerald-200/90 bg-white p-5 shadow-sm ring-1 ring-emerald-900/[0.04] transition hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:min-h-[9rem] sm:p-6">
+      <div class="pointer-events-none absolute -left-8 top-0 h-24 w-24 rounded-full bg-emerald-400/10 blur-2xl transition group-hover:bg-emerald-400/15"></div>
+      <div class="relative flex items-start justify-between gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200/60 transition group-hover:bg-emerald-600 group-hover:text-white group-hover:ring-emerald-500" aria-hidden="true"><i class="fas fa-hand-holding-usd"></i></span>
+        <span class="text-emerald-600 opacity-0 transition group-hover:opacity-100" aria-hidden="true"><i class="fas fa-chevron-left text-sm"></i></span>
       </div>
-      <p class="mt-3 text-sm font-bold text-slate-900">دين لنا</p>
-      <p class="mt-1 text-[11px] leading-snug text-slate-500">وكالات، معتمدون، مستخدمون</p>
+      <div class="relative mt-3">
+        <p class="text-base font-bold text-slate-900 sm:text-lg">دين لنا</p>
+        <p class="mt-1 text-[12px] leading-snug text-slate-500 sm:text-sm">وكالات، معتمدون، مستخدمون — عرض التفاصيل</p>
+      </div>
     </a>
-    <div class="flex flex-col rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-50/80 to-white p-4 shadow-sm ring-1 ring-rose-900/[0.05] sm:p-5">
-      <div class="flex items-center gap-2">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700"><i class="fas fa-file-invoice-dollar"></i></span>
-        <p class="text-sm font-bold text-slate-900">دين علينا — الإجمالي</p>
+    <div class="relative flex min-h-[8.5rem] flex-col justify-between overflow-hidden rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-50/90 via-white to-white p-5 shadow-sm ring-1 ring-rose-900/[0.06] sm:min-h-[9rem] sm:p-6">
+      <div class="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-rose-300/15 blur-2xl"></div>
+      <div class="relative flex items-center gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 ring-1 ring-rose-200/70" aria-hidden="true"><i class="fas fa-file-invoice-dollar"></i></span>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-rose-600/90">إجمالي</p>
+          <p class="text-base font-bold text-slate-900 sm:text-lg">دين علينا</p>
+        </div>
       </div>
-      <p class="mt-3 font-mono text-2xl font-bold tabular-nums leading-none text-rose-700 sm:text-3xl" id="debtsTotalObligations">—</p>
-      <p class="mt-2 text-[11px] text-slate-500">من تفصيل البطاقات أدناه</p>
+      <div class="relative mt-2">
+        <p class="font-mono text-3xl font-bold tabular-nums leading-none tracking-tight text-rose-700 sm:text-4xl break-all text-end" id="debtsTotalObligations" dir="ltr">—</p>
+        <p class="mt-2 text-[11px] leading-snug text-slate-500 sm:text-xs">يُفصَّل في بطاقات «تفصيل الالتزامات» أدناه</p>
+      </div>
     </div>
   </section>
 
   <section aria-labelledby="debts-kpi-heading">
-    <h2 id="debts-kpi-heading" class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">تفصيل الالتزامات</h2>
-    <div id="debtsSummary" class="grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
-      <div class="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 py-12 text-slate-500">
-        <i class="fas fa-circle-notch fa-spin mb-2 text-xl text-indigo-500"></i>
-        <span class="text-sm font-medium">جاري التحميل…</span>
+    <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+      <div>
+        <h2 id="debts-kpi-heading" class="text-sm font-bold text-slate-900 sm:text-base">تفصيل الالتزامات</h2>
+        <p class="mt-0.5 text-[11px] text-slate-500 sm:text-xs">مبالغ بالدولار حيث ينطبق — حسب مصدر الحساب في النظام</p>
+      </div>
+    </div>
+    <div id="debtsSummary" class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+      <div class="col-span-full flex min-h-[10rem] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/90 bg-slate-50/80 px-4 py-12 text-slate-500" role="status" aria-live="polite">
+        <i class="fas fa-circle-notch fa-spin mb-3 text-2xl text-indigo-500" aria-hidden="true"></i>
+        <span class="text-sm font-medium">جاري تحميل الأرقام…</span>
       </div>
     </div>
   </section>
 
-  <section class="rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-    <div class="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-      <h2 class="text-sm font-bold text-slate-900 sm:text-base">تسجيل التزام (مديونية على حسابنا)</h2>
-      <p class="mt-0.5 text-[11px] text-slate-500">شركة تحويل أو صندوق حسب الإعدادات</p>
+  <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.03]" aria-labelledby="debts-reg-heading">
+    <div class="border-b border-slate-100 bg-gradient-to-l from-rose-50/80 to-white px-4 py-4 sm:px-6 sm:py-5">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 ring-1 ring-rose-200/60" aria-hidden="true"><i class="fas fa-plus-circle text-sm"></i></span>
+        <div>
+          <h2 id="debts-reg-heading" class="text-base font-bold text-slate-900 sm:text-lg">تسجيل التزام (مديونية على حسابنا)</h2>
+          <p class="mt-0.5 text-[11px] leading-snug text-slate-500 sm:text-xs">ربط بدين على شركة تحويل أو صندوق حسب الإعدادات المحاسبية</p>
+        </div>
+      </div>
     </div>
-    <div class="p-4 sm:p-5">
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div class="p-4 sm:p-6">
+      <div class="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-x-6 md:gap-y-5">
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-slate-600">النوع</label>
-          <select id="debtRegEntityType" class="w-full rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15">
+          <label for="debtRegEntityType" class="block text-xs font-semibold text-slate-700">النوع</label>
+          <select id="debtRegEntityType" autocomplete="off" class="w-full min-h-[44px] rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
             <option value="transfer_company">شركة تحويل</option>
             <option value="fund">صندوق</option>
           </select>
         </div>
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-slate-600">الكيان</label>
-          <select id="debtRegEntityId" class="w-full rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15">
+          <label for="debtRegEntityId" class="block text-xs font-semibold text-slate-700">الكيان</label>
+          <select id="debtRegEntityId" autocomplete="off" class="w-full min-h-[44px] rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
             <option value="">— اختر الكيان —</option>
           </select>
         </div>
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-slate-600">المبلغ</label>
-          <input type="number" id="debtRegAmount" step="0.01" min="0" class="w-full rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-3 font-mono text-sm tabular-nums transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15" placeholder="0.00">
+          <label for="debtRegAmount" class="block text-xs font-semibold text-slate-700">المبلغ</label>
+          <input type="number" id="debtRegAmount" inputmode="decimal" step="0.01" min="0" autocomplete="off" class="w-full min-h-[44px] rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-2.5 font-mono text-sm tabular-nums transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="0.00">
         </div>
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-slate-600">العملة</label>
-          <select id="debtRegCurrency" class="w-full rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15">
+          <label for="debtRegCurrency" class="block text-xs font-semibold text-slate-700">العملة</label>
+          <select id="debtRegCurrency" class="w-full min-h-[44px] rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
             <option value="USD">دولار أمريكي</option>
             <option value="TRY">ليرة تركية</option>
             <option value="SYP">ليرة سورية</option>
           </select>
         </div>
         <div class="space-y-1.5 md:col-span-2">
-          <label class="text-xs font-semibold text-slate-600">طريقة التسوية</label>
-          <select id="debtRegSettlement" class="w-full rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15">
+          <label for="debtRegSettlement" class="block text-xs font-semibold text-slate-700">طريقة التسوية</label>
+          <select id="debtRegSettlement" class="w-full min-h-[44px] rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-medium transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
             <option value="payable">دين علينا (افتراضي)</option>
             <option value="cash">إيداع نقدي في الصندوق الرئيسي بالدولار</option>
           </select>
         </div>
         <div class="space-y-1.5 md:col-span-2">
-          <label class="text-xs font-semibold text-slate-600">ملاحظات</label>
-          <input type="text" id="debtRegNotes" class="w-full rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-3 text-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15" placeholder="اختياري">
+          <label for="debtRegNotes" class="block text-xs font-semibold text-slate-700">ملاحظات <span class="font-normal text-slate-400">(اختياري)</span></label>
+          <input type="text" id="debtRegNotes" autocomplete="off" class="w-full min-h-[44px] rounded-xl border-2 border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="نص قصير إن لزم">
         </div>
       </div>
-      <button type="button" id="debtRegSubmit" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-rose-700 active:scale-[0.99] sm:w-auto">
-        <i class="fas fa-check"></i>
+      <button type="button" id="debtRegSubmit" class="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-rose-600 to-rose-700 px-5 py-3 text-sm font-bold text-white shadow-md shadow-rose-900/15 transition hover:from-rose-700 hover:to-rose-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 active:scale-[0.99] sm:w-auto sm:min-w-[12rem]">
+        <i class="fas fa-check" aria-hidden="true"></i>
         تسجيل الدين
       </button>
     </div>
   </section>
 
-  <div class="space-y-4 lg:space-y-5">
-    <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-      <div class="flex items-center gap-2 border-b border-slate-100 bg-red-50/50 px-4 py-3 sm:px-5">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700"><i class="fas fa-building text-sm"></i></span>
-        <h2 class="text-sm font-bold text-slate-900 sm:text-base">شركات التحويل</h2>
+  <div class="space-y-5 lg:space-y-6">
+    <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.03]" aria-labelledby="debts-companies-heading">
+      <div class="flex flex-wrap items-center gap-3 border-b border-red-100/90 bg-gradient-to-l from-red-50/90 to-white px-4 py-3.5 sm:px-5">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 ring-1 ring-red-200/50" aria-hidden="true"><i class="fas fa-building text-sm"></i></span>
+        <div>
+          <h2 id="debts-companies-heading" class="text-sm font-bold text-slate-900 sm:text-base">شركات التحويل</h2>
+          <p class="text-[11px] text-slate-500">رصيد سالب = مديونية علينا تجاه الشركة</p>
+        </div>
       </div>
-      <div id="debtsCompanies" class="min-h-[3rem] divide-y divide-slate-100"></div>
+      <div id="debtsCompanies" class="min-h-[3rem] divide-y divide-slate-100" role="list"></div>
     </section>
 
-    <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-      <div class="flex items-center gap-2 border-b border-slate-100 bg-amber-50/50 px-4 py-3 sm:px-5">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-800"><i class="fas fa-piggy-bank text-sm"></i></span>
-        <h2 class="text-sm font-bold text-slate-900 sm:text-base">الصناديق</h2>
+    <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.03]" aria-labelledby="debts-funds-heading">
+      <div class="flex flex-wrap items-center gap-3 border-b border-amber-100/90 bg-gradient-to-l from-amber-50/90 to-white px-4 py-3.5 sm:px-5">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800 ring-1 ring-amber-200/50" aria-hidden="true"><i class="fas fa-piggy-bank text-sm"></i></span>
+        <div>
+          <h2 id="debts-funds-heading" class="text-sm font-bold text-slate-900 sm:text-base">الصناديق</h2>
+          <p class="text-[11px] text-slate-500">أرصدة سالبة مقيّمة حسب العملة المعروضة</p>
+        </div>
       </div>
-      <div id="debtsFunds" class="min-h-[3rem] divide-y divide-slate-100"></div>
+      <div id="debtsFunds" class="min-h-[3rem] divide-y divide-slate-100" role="list"></div>
     </section>
 
-    <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-      <div class="flex items-center gap-2 border-b border-slate-100 bg-violet-50/50 px-4 py-3 sm:px-5">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-800"><i class="fas fa-list-alt text-sm"></i></span>
-        <h2 class="text-sm font-bold text-slate-900 sm:text-base">مديونيات مسجّلة يدوياً</h2>
+    <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.03]" aria-labelledby="debts-payables-heading">
+      <div class="flex flex-wrap items-center gap-3 border-b border-violet-100/90 bg-gradient-to-l from-violet-50/90 to-white px-4 py-3.5 sm:px-5">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-800 ring-1 ring-violet-200/50" aria-hidden="true"><i class="fas fa-list-alt text-sm"></i></span>
+        <div>
+          <h2 id="debts-payables-heading" class="text-sm font-bold text-slate-900 sm:text-base">مديونيات مسجّلة يدوياً</h2>
+          <p class="text-[11px] text-slate-500">التزامات مسجّلة يدوياً على كيان</p>
+        </div>
       </div>
-      <div id="debtsPayables" class="min-h-[3rem] space-y-2 p-3 sm:p-4"></div>
+      <div id="debtsPayables" class="min-h-[3rem] space-y-3 p-3 sm:p-5" role="list"></div>
     </section>
   </div>
 </div>
