@@ -821,13 +821,15 @@
   }
 }
 
-/* دين لنا / علينا / الديون / سجل الحركات — تباعد أوضح بين أزرار الشريط */
+/* دين لنا / علينا / الديون / سجل الحركات — تباعد بين الأزرار وبين الشريط والمحتوى أسفله */
 .erp-toolbar-nav.finance-toolbar-nav {
   gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 @media (min-width: 640px) {
   .erp-toolbar-nav.finance-toolbar-nav {
     gap: 0.75rem;
+    margin-bottom: 2rem;
   }
 }
 
@@ -1023,6 +1025,22 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* مجموعات قابلة للطي في الشريط الجانبي */
+#sidebar .sidebar-nav-details > summary.sidebar-nav-disclosure {
+  user-select: none;
+  list-style: none;
+}
+#sidebar .sidebar-nav-details > summary.sidebar-nav-disclosure::-webkit-details-marker {
+  display: none;
+}
+#sidebar .sidebar-nav-details[open] > summary .sidebar-nav-chevron {
+  transform: rotate(180deg);
+}
+#sidebar .sidebar-nav-details > ul a.sidebar-nav-item {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
 /*
  * لابتوب (lg+): القائمة الجانبية قابلة للطي — شريط ضيق بالأيقونات فقط؛ الهامش يتبع العرض.
  * الموبايل: بدون هامش (القائمة طبقة منزلقة) — لا يُطبَّق إلا من 1024px فما فوق.
@@ -1100,6 +1118,25 @@
     margin: 0.4rem auto;
     border-radius: 9999px;
     opacity: 0.35;
+  }
+  body.sidebar-desktop-collapsed #sidebar .sidebar-nav-disclosure-text,
+  body.sidebar-desktop-collapsed #sidebar .sidebar-nav-chevron {
+    display: none !important;
+  }
+  body.sidebar-desktop-collapsed #sidebar summary.sidebar-nav-disclosure {
+    justify-content: center;
+    gap: 0;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+  body.sidebar-desktop-collapsed #sidebar .sidebar-nav-details > ul {
+    border-right: none !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+  /* منع إغلاق المجموعة بالخطأ عند وضع الأيقونات فقط */
+  body.sidebar-desktop-collapsed #sidebar .sidebar-nav-details > summary.sidebar-nav-disclosure {
+    pointer-events: none;
   }
 }
 
