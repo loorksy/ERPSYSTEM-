@@ -1124,6 +1124,10 @@
     --tw-translate-x: calc(var(--spacing) * 0);
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
+  .-translate-y-1\/2 {
+    --tw-translate-y: calc(calc(1 / 2 * 100%) * -1);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
   .scale-\[0\.35\] {
     scale: 0.35;
   }
@@ -1141,6 +1145,9 @@
   }
   .animate-\[toastOut_0\.3s_ease\] {
     animation: toastOut 0.3s ease;
+  }
+  .cursor-grab {
+    cursor: grab;
   }
   .cursor-pointer {
     cursor: pointer;
@@ -1190,6 +1197,9 @@
   }
   .flex-row {
     flex-direction: row;
+  }
+  .flex-row-reverse {
+    flex-direction: row-reverse;
   }
   .flex-nowrap {
     flex-wrap: nowrap;
@@ -1513,6 +1523,12 @@
       border-color: color-mix(in oklab, var(--color-emerald-200) 70%, transparent);
     }
   }
+  .border-emerald-200\/80 {
+    border-color: color-mix(in srgb, oklch(90.5% 0.093 164.15) 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-emerald-200) 80%, transparent);
+    }
+  }
   .border-emerald-200\/90 {
     border-color: color-mix(in srgb, oklch(90.5% 0.093 164.15) 90%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -1823,6 +1839,12 @@
     background-color: color-mix(in srgb, oklch(97.9% 0.021 166.113) 40%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-emerald-50) 40%, transparent);
+    }
+  }
+  .bg-emerald-50\/60 {
+    background-color: color-mix(in srgb, oklch(97.9% 0.021 166.113) 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-emerald-50) 60%, transparent);
     }
   }
   .bg-emerald-50\/80 {
@@ -2210,6 +2232,12 @@
     background-color: color-mix(in srgb, #fff 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-white) 60%, transparent);
+    }
+  }
+  .bg-white\/70 {
+    background-color: color-mix(in srgb, #fff 70%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-white) 70%, transparent);
     }
   }
   .bg-white\/80 {
@@ -2758,6 +2786,9 @@
   .pr-5 {
     padding-right: calc(var(--spacing) * 5);
   }
+  .pr-10 {
+    padding-right: calc(var(--spacing) * 10);
+  }
   .pr-12 {
     padding-right: calc(var(--spacing) * 12);
   }
@@ -2790,6 +2821,9 @@
   }
   .pl-2\.5 {
     padding-left: calc(var(--spacing) * 2.5);
+  }
+  .pl-4 {
+    padding-left: calc(var(--spacing) * 4);
   }
   .pl-12 {
     padding-left: calc(var(--spacing) * 12);
@@ -3647,6 +3681,9 @@
   .ring-indigo-200 {
     --tw-ring-color: var(--color-indigo-200);
   }
+  .ring-indigo-400 {
+    --tw-ring-color: var(--color-indigo-400);
+  }
   .ring-indigo-500 {
     --tw-ring-color: var(--color-indigo-500);
   }
@@ -3815,6 +3852,9 @@
   }
   .\[scrollbar-width\:thin\] {
     scrollbar-width: thin;
+  }
+  .ring-inset {
+    --tw-ring-inset: inset;
   }
   .group-hover\:scale-110 {
     &:is(:where(.group):hover *) {
@@ -5184,6 +5224,14 @@
       }
     }
   }
+  .focus\:ring-amber-500\/20 {
+    &:focus {
+      --tw-ring-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 20%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-ring-color: color-mix(in oklab, var(--color-amber-500) 20%, transparent);
+      }
+    }
+  }
   .focus\:ring-emerald-500\/15 {
     &:focus {
       --tw-ring-color: color-mix(in srgb, oklch(69.6% 0.17 162.48) 15%, transparent);
@@ -5393,6 +5441,11 @@
   .active\:scale-\[0\.99\] {
     &:active {
       scale: 0.99;
+    }
+  }
+  .active\:cursor-grabbing {
+    &:active {
+      cursor: grabbing;
     }
   }
   .active\:bg-indigo-50\/80 {
@@ -5958,6 +6011,11 @@
   .sm\:max-w-\[7rem\] {
     @media (width >= 40rem) {
       max-width: 7rem;
+    }
+  }
+  .sm\:max-w-md {
+    @media (width >= 40rem) {
+      max-width: var(--container-md);
     }
   }
   .sm\:max-w-none {
@@ -7450,6 +7508,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.25rem;
+}
+.acc-card-drag-handle {
+  touch-action: none;
 }
 .btn-add {
   padding: 0.75rem 1.25rem;

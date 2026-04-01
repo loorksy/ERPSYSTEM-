@@ -2,6 +2,10 @@
   var currentId = null;
   var currentPinned = false;
   var accBulkStagingItems = [];
+  /** قائمة المعتمدين بعد تطبيق ترتيب المستخدم (محفوظ محلياً) */
+  var accCardsOrderedList = [];
+  var accDnDDraggingId = null;
+  var ACC_CARD_ORDER_STORAGE_KEY = 'erp_accreditation_card_order_v1';
   /** معرف المعتمد عند فتح «إضافة مبلغ» أو «تحويل» من بطاقة القائمة */
   var accShortcutModalId = null;
   /** تُملأ من accPopulateDetail / accOpenShortcut لاستخدام نافذة خصم «دين لنا» */
@@ -581,6 +585,47 @@
     sel.value = accRowToBulkReviewKindCode(accBulkStagingItems[0]);
   }
 
+  /** تطبيع نص الكود/الاسم من الملف أو من DB لمطابقة أوسع. */
+  function accBulkStrNorm(s) {
+    if (s == null) return '';
+    return String(s)
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
+  /** مطابقة كود أو اسم: مطابقة تامة، أو بدون حساسية لحالة الأحرف اللاتينية، أو كرقمين (001 و 1). */
+  function accBulkFieldMatch(a, b) {
+    var x = accBulkStrNorm(a);
+    var y = accBulkStrNorm(b);
+    if (!x || !y) return false;
+    if (x === y) return true;
+    if (x.toLowerCase() === y.toLowerCase()) return true;
+    var nx = parseFloat(String(x).replace(/,/g, ''));
+    var ny = parseFloat(String(y).replace(/,/g, ''));
+    if (!isNaN(nx) && !isNaN(ny) && nx === ny) return true;
+    return false;
+  }
+
+  /**
+   * يطابق صف الاستيراد بمعتمد القائمة — أوسع من المطابقة الحرفية حتى يظهر «دين لنا (حالي)»
+   * بعد إضافة يدوية (اختلاف بسيط في الكود أو الاسم بين الملف والسجل).
+   */
+  function accFindEntityForBulkPreviewRow(list, it) {
+    var rowCode = accBulkStrNorm(it.code);
+    var rowName = accBulkStrNorm(it.name);
+    var arr = list || [];
+    for (var i = 0; i < arr.length; i++) {
+      var e = arr[i];
+      var ec = accBulkStrNorm(e.code);
+      var en = accBulkStrNorm(e.name);
+      if (rowCode && ec && accBulkFieldMatch(rowCode, ec)) return e;
+      if (rowName && en && accBulkFieldMatch(rowName, en)) return e;
+      if (rowCode && en && accBulkFieldMatch(rowCode, en)) return e;
+      if (rowName && ec && accBulkFieldMatch(rowName, ec)) return e;
+    }
+    return null;
+  }
+
   /** يجلب أرصدة «دين لنا / علينا» الحالية لكل صف لعرضها في المعاينة (نفس حقول القائمة). */
   function accEnrichBulkStagingBalances(callback) {
     apiCall('/api/accreditations/list').then(function(res) {
@@ -592,17 +637,9 @@
         if (typeof callback === 'function') callback();
         return;
       }
-      var byKey = {};
-      (res.list || []).forEach(function(a) {
-        var c = a.code != null ? String(a.code).trim() : '';
-        var n = a.name != null ? String(a.name).trim() : '';
-        if (c) byKey['c:' + c] = a;
-        if (n) byKey['n:' + n] = a;
-      });
+      var list = res.list || [];
       accBulkStagingItems.forEach(function(it) {
-        var c = it.code != null ? String(it.code).trim() : '';
-        var n = it.name != null ? String(it.name).trim() : '';
-        var ent = (c && byKey['c:' + c]) || (n && byKey['n:' + n]) || null;
+        var ent = accFindEntityForBulkPreviewRow(list, it);
         it.bulkEntityExists = !!ent;
         if (ent) {
           it.recBefore = Number(ent.balance_receivable) || 0;
@@ -941,9 +978,252 @@
     );
   }
 
+  function accGetSavedCardOrderIds() {
+    try {
+      var raw = localStorage.getItem(ACC_CARD_ORDER_STORAGE_KEY);
+      if (!raw) return [];
+      var o = JSON.parse(raw);
+      return Array.isArray(o) ? o.map(function(x) { return parseInt(x, 10); }).filter(function(n) { return !isNaN(n); }) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function accSaveCardOrderIds(ids) {
+    try {
+      localStorage.setItem(ACC_CARD_ORDER_STORAGE_KEY, JSON.stringify(ids));
+    } catch (e) {}
+  }
+
+  function accSortListBySavedOrder(list) {
+    if (!list || !list.length) return [];
+    var order = accGetSavedCardOrderIds();
+    if (!order.length) return list.slice();
+    var map = {};
+    list.forEach(function(a) {
+      map[a.id] = a;
+    });
+    var out = [];
+    var seen = {};
+    order.forEach(function(id) {
+      if (map[id]) {
+        out.push(map[id]);
+        seen[id] = true;
+      }
+    });
+    list.forEach(function(a) {
+      if (!seen[a.id]) out.push(a);
+    });
+    return out;
+  }
+
+  function accReorderCardsById(fromId, toId, insertBefore) {
+    var fromIdx = accCardsOrderedList.findIndex(function(a) { return a.id === fromId; });
+    var toIdx = accCardsOrderedList.findIndex(function(a) { return a.id === toId; });
+    if (fromIdx < 0 || toIdx < 0 || fromId === toId) return;
+    var item = accCardsOrderedList.splice(fromIdx, 1)[0];
+    toIdx = accCardsOrderedList.findIndex(function(a) { return a.id === toId; });
+    if (toIdx < 0) {
+      accCardsOrderedList.push(item);
+    } else if (insertBefore) {
+      accCardsOrderedList.splice(toIdx, 0, item);
+    } else {
+      accCardsOrderedList.splice(toIdx + 1, 0, item);
+    }
+    accSaveCardOrderIds(accCardsOrderedList.map(function(a) { return a.id; }));
+    accRenderAccreditationCards();
+  }
+
+  function accAccreditationCardHtml(a, idx) {
+    var payCard = Number(a.balance_payable) || 0;
+    var recCard = Number(a.balance_receivable) || 0;
+    var textColor = '#64748b';
+    if (payCard > 0.0001) textColor = '#be123c';
+    var bar = accCardBarColors[idx % accCardBarColors.length];
+    var pinHtml = a.pinned
+      ? '<span class="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-700 shadow-sm" title="مثبت"><i class="fas fa-thumbtack text-xs"></i></span>'
+      : '';
+    var settleHide = false;
+    try {
+      settleHide = sessionStorage.getItem(accDeferSettlementStorageKey(a.id)) === '1';
+    } catch (e) {}
+    var settleHint =
+      !settleHide &&
+      (Number(a.balance_payable) || 0) > 0.0001 &&
+      (Number(a.balance_receivable) || 0) > 0.0001
+        ? '<span class="absolute left-2 top-2 z-10 max-w-[calc(100%-5rem)] truncate rounded-lg border border-amber-300 bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900 shadow-sm" title="يوجد دين لنا ودين علينا — يحتاج تسوية من ملف المعتمد">تسوية</span>'
+        : '';
+    var pendingRecv = false;
+    try {
+      pendingRecv = !!sessionStorage.getItem(accPendingRecvOffsetStorageKey(a.id));
+    } catch (e) {}
+    var pendingRecvHtml = pendingRecv
+      ? '<div class="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-2 py-2 text-center shadow-sm">' +
+        '<button type="button" class="w-full text-[11px] font-bold leading-snug text-sky-900 hover:underline" onclick="event.stopPropagation(); accResumeReceivableOffsetModal(' +
+        a.id +
+        ')">قرار معلّق — اضغط لمتابعة خصم الدين</button></div>'
+      : '';
+    return (
+      '<div class="acc-list-card group relative flex flex-row-reverse overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" data-acc-id="' +
+      a.id +
+      '">' +
+      '<div class="acc-card-drag-handle shrink-0 flex w-9 cursor-grab select-none items-center justify-center border-l border-slate-100 bg-slate-50/90 text-slate-400 hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing" draggable="true" title="اسحب لترتيب البطاقات" aria-label="ترتيب البطاقات" role="button" tabindex="0" onclick="event.stopPropagation();">' +
+      '<i class="fas fa-grip-vertical pointer-events-none text-sm" aria-hidden="true"></i></div>' +
+      '<div class="min-w-0 flex-1 cursor-pointer" onclick="accOpen(' +
+      a.id +
+      ')">' +
+      '<div class="' +
+      bar +
+      ' h-1 w-full"></div>' +
+      '<div class="relative p-4">' +
+      pinHtml +
+      settleHint +
+      '<div class="flex items-start justify-between gap-2">' +
+      '<h5 class="min-w-0 flex-1 text-base font-bold leading-snug text-slate-900 sm:text-[1.05rem]">' +
+      escHtml(a.name || '') +
+      '</h5>' +
+      '</div>' +
+      '<p class="mt-2 font-mono text-[11px] text-slate-500 sm:text-xs">كود: ' +
+      escHtml(a.code || '—') +
+      '</p>' +
+      '<div class="mt-3 space-y-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
+      '<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs">' +
+      '<span class="font-semibold text-emerald-700">لنا <span class="tabular-nums font-bold">' +
+      escHtml(accFmtMoney(recCard)) +
+      '</span></span>' +
+      '<span class="font-semibold text-rose-600">علينا <span class="tabular-nums font-bold">' +
+      escHtml(accFmtMoney(payCard)) +
+      '</span></span>' +
+      '</div>' +
+      '<div class="flex items-end justify-between border-t border-slate-200/80 pt-2">' +
+      '<span class="text-xs font-semibold text-slate-500">الصافي (علينا)</span>' +
+      '<span class="text-lg font-bold tabular-nums" style="color:' +
+      textColor +
+      '">' +
+      escHtml(accFmtMoney(payCard)) +
+      '</span></div></div>' +
+      pendingRecvHtml +
+      '<div class="acc-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
+      '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] sm:text-xs" onclick="accOpenShortcut(' +
+      a.id +
+      ',\'add\')"><i class="fas fa-plus-circle text-[0.7rem]"></i>إضافة مبلغ</button>' +
+      '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-slate-600 bg-slate-700 px-3 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.99] sm:text-xs" onclick="accOpenShortcut(' +
+      a.id +
+      ',\'transfer\')"><i class="fas fa-right-left text-[0.7rem]"></i>تحويل</button>' +
+      '</div></div></div></div>'
+    );
+  }
+
+  function accRenderAccreditationCards() {
+    var box = document.getElementById('accCards');
+    if (!box) return;
+    var inp = document.getElementById('accCardsSearch');
+    var q = inp && inp.value != null ? String(inp.value).trim().toLowerCase() : '';
+    if (!accCardsOrderedList.length) {
+      box.innerHTML = accApprovalsEmptyStateHtml('empty');
+      return;
+    }
+    var filtered = accCardsOrderedList;
+    if (q) {
+      filtered = accCardsOrderedList.filter(function(a) {
+        var name = (a.name || '').toLowerCase();
+        var code = (a.code || '').toLowerCase();
+        return name.indexOf(q) !== -1 || code.indexOf(q) !== -1;
+      });
+    }
+    if (!filtered.length) {
+      box.innerHTML =
+        '<div class="col-span-full acc-approvals-empty rounded-2xl border border-slate-200 bg-white py-14 text-center text-slate-500">' +
+        '<i class="fas fa-search mb-2 text-3xl text-slate-300" aria-hidden="true"></i>' +
+        '<p class="text-sm font-medium text-slate-600">لا توجد نتائج للبحث</p>' +
+        '<p class="mx-auto mt-1 max-w-sm text-xs text-slate-400">جرّب اسماً أو كوداً آخر، أو امسح حقل البحث.</p></div>';
+      return;
+    }
+    box.innerHTML = filtered
+      .map(function(a, idx) {
+        return accAccreditationCardHtml(a, idx);
+      })
+      .join('');
+  }
+
+  function wireAccCardsSearch() {
+    var inp = document.getElementById('accCardsSearch');
+    if (!inp || inp.dataset.accSearchBound) return;
+    inp.dataset.accSearchBound = '1';
+    inp.addEventListener('input', function() {
+      accRenderAccreditationCards();
+    });
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        inp.value = '';
+        accRenderAccreditationCards();
+      }
+    });
+  }
+
+  function wireAccCardsDnD() {
+    var box = document.getElementById('accCards');
+    if (!box || box.dataset.accDndBound) return;
+    box.dataset.accDndBound = '1';
+    var dragOverCard = null;
+    box.addEventListener('dragstart', function(e) {
+      var h = e.target.closest('.acc-card-drag-handle');
+      if (!h) return;
+      var card = h.closest('.acc-list-card');
+      if (!card) return;
+      e.stopPropagation();
+      accDnDDraggingId = parseInt(card.getAttribute('data-acc-id'), 10);
+      if (isNaN(accDnDDraggingId)) accDnDDraggingId = null;
+      else {
+        e.dataTransfer.setData('text/plain', String(accDnDDraggingId));
+        e.dataTransfer.effectAllowed = 'move';
+        card.classList.add('opacity-60');
+      }
+    });
+    box.addEventListener('dragend', function(e) {
+      var h = e.target.closest('.acc-card-drag-handle');
+      if (!h) return;
+      accDnDDraggingId = null;
+      box.querySelectorAll('.acc-list-card').forEach(function(c) {
+        c.classList.remove('opacity-60', 'ring-2', 'ring-indigo-400', 'ring-inset');
+      });
+      dragOverCard = null;
+    });
+    box.addEventListener('dragover', function(e) {
+      var card = e.target.closest('.acc-list-card');
+      if (!card || accDnDDraggingId == null) return;
+      var tid = parseInt(card.getAttribute('data-acc-id'), 10);
+      if (isNaN(tid) || tid === accDnDDraggingId) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragOverCard && dragOverCard !== card) {
+        dragOverCard.classList.remove('ring-2', 'ring-indigo-400', 'ring-inset');
+      }
+      dragOverCard = card;
+      card.classList.add('ring-2', 'ring-indigo-400', 'ring-inset');
+    });
+    box.addEventListener('drop', function(e) {
+      e.preventDefault();
+      box.querySelectorAll('.acc-list-card').forEach(function(c) {
+        c.classList.remove('ring-2', 'ring-indigo-400', 'ring-inset');
+      });
+      dragOverCard = null;
+      var targetCard = e.target.closest('.acc-list-card');
+      if (!targetCard || accDnDDraggingId == null) return;
+      var toId = parseInt(targetCard.getAttribute('data-acc-id'), 10);
+      var fromId = accDnDDraggingId;
+      if (isNaN(toId) || fromId === toId) return;
+      var rect = targetCard.getBoundingClientRect();
+      var insertBefore = e.clientY < rect.top + rect.height / 2;
+      accReorderCardsById(fromId, toId, insertBefore);
+    });
+  }
+
   window.accLoad = function() {
     var box = document.getElementById('accCards');
     if (!box) return;
+    wireAccCardsSearch();
+    wireAccCardsDnD();
     box.innerHTML = accApprovalsEmptyStateHtml('loading');
     apiCall('/api/accreditations/list').then(function(res) {
       if (!res.success) {
@@ -952,84 +1232,13 @@
       }
       var list = res.list || [];
       if (list.length === 0) {
+        accCardsOrderedList = [];
         box.innerHTML = accApprovalsEmptyStateHtml('empty');
         return;
       }
-      box.innerHTML = list.map(function(a, idx) {
-        var payCard = Number(a.balance_payable) || 0;
-        var recCard = Number(a.balance_receivable) || 0;
-        /** الصافي في الواجهة = «علينا» فقط — يطابق مبلغ التسليم */
-        var textColor = '#64748b';
-        if (payCard > 0.0001) textColor = '#be123c';
-        var bar = accCardBarColors[idx % accCardBarColors.length];
-        var pinHtml = a.pinned
-          ? '<span class="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-700 shadow-sm" title="مثبت"><i class="fas fa-thumbtack text-xs"></i></span>'
-          : '';
-        var settleHide = false;
-        try {
-          settleHide = sessionStorage.getItem(accDeferSettlementStorageKey(a.id)) === '1';
-        } catch (e) {}
-        var settleHint =
-          !settleHide &&
-          (Number(a.balance_payable) || 0) > 0.0001 &&
-          (Number(a.balance_receivable) || 0) > 0.0001
-            ? '<span class="absolute left-2 top-2 z-10 max-w-[calc(100%-5rem)] truncate rounded-lg border border-amber-300 bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900 shadow-sm" title="يوجد دين لنا ودين علينا — يحتاج تسوية من ملف المعتمد">تسوية</span>'
-            : '';
-        var pendingRecv = false;
-        try {
-          pendingRecv = !!sessionStorage.getItem(accPendingRecvOffsetStorageKey(a.id));
-        } catch (e) {}
-        var pendingRecvHtml = pendingRecv
-          ? '<div class="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-2 py-2 text-center shadow-sm">' +
-            '<button type="button" class="w-full text-[11px] font-bold leading-snug text-sky-900 hover:underline" onclick="event.stopPropagation(); accResumeReceivableOffsetModal(' +
-            a.id +
-            ')">قرار معلّق — اضغط لمتابعة خصم الدين</button></div>'
-          : '';
-        return (
-          '<div class="acc-list-card group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg" onclick="accOpen(' +
-          a.id +
-          ')">' +
-          '<div class="' +
-          bar +
-          ' h-1 w-full"></div>' +
-          '<div class="p-4">' +
-          pinHtml +
-          settleHint +
-          '<div class="flex items-start justify-between gap-2">' +
-          '<h5 class="min-w-0 flex-1 text-base font-bold leading-snug text-slate-900 sm:text-[1.05rem]">' +
-          escHtml(a.name || '') +
-          '</h5>' +
-          '</div>' +
-          '<p class="mt-2 font-mono text-[11px] text-slate-500 sm:text-xs">كود: ' +
-          escHtml(a.code || '—') +
-          '</p>' +
-          '<div class="mt-3 space-y-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
-          '<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs">' +
-          '<span class="font-semibold text-emerald-700">لنا <span class="tabular-nums font-bold">' +
-          escHtml(accFmtMoney(recCard)) +
-          '</span></span>' +
-          '<span class="font-semibold text-rose-600">علينا <span class="tabular-nums font-bold">' +
-          escHtml(accFmtMoney(payCard)) +
-          '</span></span>' +
-          '</div>' +
-          '<div class="flex items-end justify-between border-t border-slate-200/80 pt-2">' +
-          '<span class="text-xs font-semibold text-slate-500">الصافي (علينا)</span>' +
-          '<span class="text-lg font-bold tabular-nums" style="color:' +
-          textColor +
-          '">' +
-          escHtml(accFmtMoney(payCard)) +
-          '</span></div></div>' +
-          pendingRecvHtml +
-          '<div class="acc-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
-          '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] sm:text-xs" onclick="accOpenShortcut(' +
-          a.id +
-          ',\'add\')"><i class="fas fa-plus-circle text-[0.7rem]"></i>إضافة مبلغ</button>' +
-          '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-slate-600 bg-slate-700 px-3 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.99] sm:text-xs" onclick="accOpenShortcut(' +
-          a.id +
-          ',\'transfer\')"><i class="fas fa-right-left text-[0.7rem]"></i>تحويل</button>' +
-          '</div></div></div>'
-        );
-      }).join('');
+      accCardsOrderedList = accSortListBySavedOrder(list);
+      accSaveCardOrderIds(accCardsOrderedList.map(function(a) { return a.id; }));
+      accRenderAccreditationCards();
     });
   };
 
