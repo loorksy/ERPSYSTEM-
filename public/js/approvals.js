@@ -581,6 +581,74 @@
     sel.value = accRowToBulkReviewKindCode(accBulkStagingItems[0]);
   }
 
+  /** يجلب أرصدة «دين لنا / علينا» الحالية لكل صف لعرضها في المعاينة (نفس حقول القائمة). */
+  function accEnrichBulkStagingBalances(callback) {
+    apiCall('/api/accreditations/list').then(function(res) {
+      if (!res.success) {
+        toast('تعذر تحميل الأرصدة الحالية للمعاينة', 'error');
+        accBulkStagingItems.forEach(function(it) {
+          it.balancePreviewFailed = true;
+        });
+        if (typeof callback === 'function') callback();
+        return;
+      }
+      var byKey = {};
+      (res.list || []).forEach(function(a) {
+        var c = a.code != null ? String(a.code).trim() : '';
+        var n = a.name != null ? String(a.name).trim() : '';
+        if (c) byKey['c:' + c] = a;
+        if (n) byKey['n:' + n] = a;
+      });
+      accBulkStagingItems.forEach(function(it) {
+        var c = it.code != null ? String(it.code).trim() : '';
+        var n = it.name != null ? String(it.name).trim() : '';
+        var ent = (c && byKey['c:' + c]) || (n && byKey['n:' + n]) || null;
+        it.bulkEntityExists = !!ent;
+        if (ent) {
+          it.recBefore = Number(ent.balance_receivable) || 0;
+          it.payBefore = Number(ent.balance_payable) || 0;
+        } else {
+          it.recBefore = null;
+          it.payBefore = null;
+        }
+      });
+      if (typeof callback === 'function') callback();
+    });
+  }
+
+  function accBulkBalanceBeforeHtml(row) {
+    if (row.balancePreviewFailed) {
+      return (
+        '<div class="mt-2 rounded-lg border border-amber-200 bg-amber-50/90 px-2 py-1.5 text-[10px] leading-snug text-amber-900">تعذر تحميل الأرصدة الحالية.</div>'
+      );
+    }
+    if (row.bulkEntityExists !== true) {
+      return (
+        '<div class="mt-2 rounded-lg border border-slate-200/90 bg-white/70 px-2 py-1.5 text-[10px] leading-snug text-slate-600">' +
+        '<span class="font-bold text-slate-700">دين لنا (حالي):</span> — ' +
+        '<span class="text-slate-400">|</span> ' +
+        '<span class="font-bold text-slate-700">علينا (حالي):</span> —' +
+        '<span class="mt-1 block text-slate-500">لا يوجد معتمد بهذا الكود بعد — سيُنشأ عند الحفظ إن لزم.</span>' +
+        '</div>'
+      );
+    }
+    var rec = Number(row.recBefore) || 0;
+    var pay = Number(row.payBefore) || 0;
+    return (
+      '<div class="mt-2 rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-2 py-1.5 text-[10px] leading-snug">' +
+      '<span class="font-bold text-emerald-900">دين لنا (حالي):</span> ' +
+      '<span class="tabular-nums font-semibold text-emerald-800">' +
+      escHtml(accFmtMoney(rec)) +
+      '</span>' +
+      ' <span class="text-slate-300">|</span> ' +
+      '<span class="font-bold text-rose-900">علينا (حالي):</span> ' +
+      '<span class="tabular-nums font-semibold text-rose-700">' +
+      escHtml(accFmtMoney(pay)) +
+      '</span>' +
+      '</div>'
+    );
+  }
+
   function accShowStagingFromPreview(preview) {
     var valid = (preview || []).filter(function(r) { return r.valid; });
     if (!valid.length) {
@@ -602,16 +670,18 @@
     });
     accSyncBulkReviewKindSelect();
     accApplyBulkReviewKindToItems();
-    accRenderStagingTable();
-    var st = document.getElementById('accBulkStaging');
-    if (st) st.classList.remove('hidden');
-    accSyncBulkStep();
-    accToggleBulkReceivableOffsetPanel();
-    accResetBulkStagingTableScroll();
-    requestAnimationFrame(function() {
+    accEnrichBulkStagingBalances(function() {
+      accRenderStagingTable();
+      var st = document.getElementById('accBulkStaging');
+      if (st) st.classList.remove('hidden');
+      accSyncBulkStep();
+      accToggleBulkReceivableOffsetPanel();
+      accResetBulkStagingTableScroll();
       requestAnimationFrame(function() {
-        accScrollBulkModalToStaging();
-        accResetBulkStagingTableScroll();
+        requestAnimationFrame(function() {
+          accScrollBulkModalToStaging();
+          accResetBulkStagingTableScroll();
+        });
       });
     });
   }
@@ -649,6 +719,7 @@
               ? '<span class="acc-bulk-card-code">' + escHtml(row.code) + '</span>'
               : '') +
             '</div>' +
+          accBulkBalanceBeforeHtml(row) +
           '</div>' +
         '</td>' +
         '<td class="acc-bulk-td acc-bulk-cell-amt p-3 align-middle" data-label="المبلغ"><span class="acc-bulk-val acc-bulk-amt-value tabular-nums">' +
