@@ -156,8 +156,6 @@
     var recvForUs = Math.max(0, bal);
     var textColor = tcBalanceTextColor(bal);
     var bar = tcCardBarColors[idx % tcCardBarColors.length];
-    var types = (c.transfer_types || []).join('، ');
-    if (!types) types = '—';
     var loc = c.country || '';
     if (c.region_syria && String(c.country || '').indexOf('سوريا') !== -1) {
       loc = (loc ? loc + ' · ' : '') + c.region_syria;
@@ -189,11 +187,6 @@
       '</p>' +
       '<div class="mt-3 space-y-2 rounded-xl border border-slate-100 bg-gradient-to-l from-slate-50 to-white px-3 py-2.5">' +
       '<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs">' +
-      '<span class="font-semibold text-slate-600">أنواع التحويل</span>' +
-      '</div>' +
-      '<p class="break-words text-[11px] leading-relaxed text-slate-600">' + escHtml(types) + '</p>' +
-      '<div class="border-t border-slate-200/80 pt-2">' +
-      '<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs">' +
       '<span class="font-semibold text-emerald-700">لنا <span class="tabular-nums font-bold">' +
       escHtml(tcFmtAmount(recvForUs) + ' ' + cur) +
       '</span></span>' +
@@ -201,13 +194,13 @@
       escHtml(tcFmtAmount(payOpen) + ' USD') +
       '</span></span>' +
       '</div>' +
-      '<div class="mt-2 flex items-end justify-between gap-2 border-t border-slate-200/80 pt-2">' +
+      '<div class="mt-2 flex items-end justify-between gap-2 border-t border-slate-200/80 pt-2.5">' +
       '<span class="text-xs font-semibold text-slate-500">رصيد الشركة</span>' +
       '<span class="text-lg font-bold tabular-nums" style="color:' +
       textColor +
       '">' +
       escHtml(balStr) +
-      '</span></div></div></div>' +
+      '</span></div></div>' +
       '<div class="tc-card-shortcuts mt-3 flex gap-2 border-t border-slate-100 pt-3" onclick="event.stopPropagation()">' +
       '<button type="button" class="inline-flex min-h-[2.35rem] flex-1 items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-2 py-2 text-[11px] font-bold text-white shadow-md shadow-violet-600/20 transition hover:bg-violet-700 active:scale-[0.99] sm:text-xs" onclick="tcGoToCompanyShortcut(' +
       c.id +
@@ -491,17 +484,19 @@
       return /مرتجع|return/i.test(l.notes || '') || (l.labelAr && /مرتجع/.test(l.labelAr));
     });
     var hideBal = payTc > 0.0001 && hasOpening && hasReturn;
-    var payEl = document.getElementById('tcDetailPayables');
-    if (payEl) {
+    var payShell = document.getElementById('tcDetailPayablesShell');
+    var payAmtEl = document.getElementById('tcDetailPayablesAmt');
+    if (payShell && payAmtEl) {
       if (payTc > 0.0001) {
-        payEl.classList.remove('hidden');
-        payEl.textContent =
-          'دين علينا تجاه هذه الشركة: ' +
-          payTc.toLocaleString('en-US', { minimumFractionDigits: 2 }) +
-          ' USD';
+        payShell.classList.remove('hidden');
+        payAmtEl.textContent =
+          payTc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
+        if (hideBal) payShell.classList.add('sm:col-span-2');
+        else payShell.classList.remove('sm:col-span-2');
       } else {
-        payEl.classList.add('hidden');
-        payEl.textContent = '';
+        payShell.classList.add('hidden');
+        payShell.classList.remove('sm:col-span-2');
+        payAmtEl.textContent = '';
       }
     }
     var shell = document.getElementById('tcDetailBalanceShell');
@@ -518,6 +513,10 @@
           (c.balance_currency || 'USD');
         balEl.style.color = tcBalanceTextColor(c.balance_amount);
       }
+    }
+    if (shell) {
+      var onlyBalance = !hideBal && payTc <= 0.0001;
+      shell.classList.toggle('sm:col-span-2', onlyBalance);
     }
     tcLedgerById = {};
     (res.ledger || []).forEach(function(l) {
