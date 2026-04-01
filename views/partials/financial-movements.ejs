@@ -1,23 +1,13 @@
-<div class="fm-page max-w-6xl mx-auto min-w-0 space-y-6 px-4 pb-10 sm:px-0 lg:space-y-8" dir="rtl" id="fmPageRoot">
-  <!-- رأس الصفحة -->
-  <header class="overflow-hidden rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/90 via-white to-slate-50/40 p-5 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="flex min-w-0 gap-4">
-        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-900 text-white shadow-lg shadow-indigo-900/20">
-          <i class="fas fa-list-alt text-xl" aria-hidden="true"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-700">شفافية محاسبية</p>
-          <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">سجل الحركات المالية</h1>
-          <p class="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
-            عرض موحّد للحركات المرتبطة بـ <strong class="font-semibold text-rose-800">دين علينا</strong>،
-            <strong class="font-semibold text-emerald-800">دين لنا</strong>، و<strong class="font-semibold text-indigo-800">إجمالي الالتزامات</strong>.
-            اضغط على أي صف للاطلاع على السبب والآلية والتاريخ؛ التفاصيل التقنية أسفل النافذة عند الحاجة.
-          </p>
-        </div>
+<div class="fm-page max-w-6xl mx-auto min-w-0 space-y-5 px-4 pb-8 sm:px-0 sm:pb-10 lg:space-y-6" dir="rtl" id="fmPageRoot">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex min-w-0 items-center gap-3">
+      <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md sm:h-12 sm:w-12 sm:rounded-2xl"><i class="fas fa-list-alt text-lg" aria-hidden="true"></i></span>
+      <div class="min-w-0">
+        <h1 class="text-lg font-bold text-slate-900 sm:text-xl">سجل الحركات المالية</h1>
+        <p class="mt-0.5 text-xs text-slate-500 sm:text-sm">اضغط صفاً للتفاصيل — دين علينا، دين لنا، والالتزامات</p>
       </div>
     </div>
-  </header>
+  </div>
 
   <nav class="erp-toolbar-nav mb-0 flex flex-wrap gap-2" aria-label="تنقل سريع">
     <a href="/debts" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50 text-[11px] sm:text-sm">
@@ -42,70 +32,59 @@
     </a>
   </nav>
 
-  <!-- مؤشرات -->
-  <section class="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4" aria-label="ملخص أرقام">
-    <div class="rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-600 to-indigo-900 p-5 text-white shadow-md">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15"><i class="fas fa-scale-balanced text-sm"></i></span>
-        <p class="text-xs font-medium text-indigo-100">إجمالي الالتزامات (بالدولار)</p>
-      </div>
-      <p class="mt-1 font-mono text-2xl font-bold tabular-nums sm:text-3xl" id="fmKpiObligation">—</p>
-      <p class="mt-2 text-[0.65rem] leading-snug text-indigo-200/90">من حاسبة الديون وفرق التصريف</p>
+  <section class="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3" aria-label="ملخص أرقام">
+    <div class="rounded-xl border border-indigo-200/90 bg-gradient-to-br from-indigo-600 to-indigo-900 p-4 text-white shadow-sm sm:p-4">
+      <p class="text-[0.65rem] font-medium text-indigo-100 sm:text-xs">إجمالي الالتزامات (دولار)</p>
+      <p class="mt-2 font-mono text-xl font-bold tabular-nums sm:text-2xl" id="fmKpiObligation">—</p>
     </div>
-    <div class="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-200/80 text-emerald-900"><i class="fas fa-hand-holding-heart text-sm"></i></span>
-        <p class="text-xs font-medium text-emerald-900">دين لنا (تقريبي بالدولار)</p>
-      </div>
-      <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-emerald-950 sm:text-3xl" id="fmKpiRecv">—</p>
-      <p class="mt-2 text-[0.65rem] leading-snug text-emerald-800/85">من تجميع صفحة «دين لنا»</p>
+    <div class="rounded-xl border border-emerald-200/90 bg-emerald-50/95 p-4 shadow-sm ring-1 ring-emerald-900/[0.06] sm:p-4">
+      <p class="text-[0.65rem] font-medium text-emerald-900 sm:text-xs">دين لنا (تقريبي)</p>
+      <p class="mt-2 font-mono text-xl font-bold tabular-nums text-emerald-950 sm:text-2xl" id="fmKpiRecv">—</p>
     </div>
-    <div class="rounded-2xl border border-rose-200 bg-rose-50/90 p-5 shadow-sm">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-200/80 text-rose-900"><i class="fas fa-database text-sm"></i></span>
-        <p class="text-xs font-medium text-rose-900">دين علينا — ديون مسجّلة (بالدولار)</p>
-      </div>
-      <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-rose-950 sm:text-3xl" id="fmKpiPayables">—</p>
-      <p class="mt-2 text-[0.65rem] leading-snug text-rose-800/85">مجموع التزامات الديون المسجّلة يدوياً</p>
+    <div class="rounded-xl border border-rose-200/90 bg-rose-50/95 p-4 shadow-sm ring-1 ring-rose-900/[0.06] sm:p-4">
+      <p class="text-[0.65rem] font-medium text-rose-900 sm:text-xs">دين علينا — مسجّل</p>
+      <p class="mt-2 font-mono text-xl font-bold tabular-nums text-rose-950 sm:text-2xl" id="fmKpiPayables">—</p>
     </div>
   </section>
 
-  <!-- تصفية -->
-  <div class="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm sm:p-4">
-    <p class="mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">تصفية السجل</p>
-    <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center" role="tablist" aria-label="تصفية السجل">
-      <button type="button" data-fm-bucket="all" class="fm-filter-btn inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border px-3 py-2 text-[11px] font-bold transition-colors sm:min-h-0 sm:text-sm border-indigo-500 bg-indigo-50 text-indigo-900">الكل</button>
-      <button type="button" data-fm-bucket="payable" class="fm-filter-btn inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 sm:min-h-0 sm:text-sm">دين علينا</button>
-      <button type="button" data-fm-bucket="receivable" class="fm-filter-btn inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 sm:min-h-0 sm:text-sm">دين لنا</button>
-      <button type="button" data-fm-bucket="obligation" class="fm-filter-btn inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 sm:min-h-0 sm:text-sm">التزامات</button>
-      <button type="button" data-fm-bucket="transfer" class="fm-filter-btn inline-flex min-h-[2.75rem] w-full col-span-2 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-amber-200 hover:bg-amber-50 sm:col-span-1 sm:min-h-0 sm:text-sm">ترحيل نقدي</button>
+  <div class="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm sm:p-4">
+    <p class="mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">تصفية</p>
+    <div class="flex flex-wrap gap-2" role="tablist" aria-label="تصفية السجل">
+      <button type="button" data-fm-bucket="all" class="fm-filter-btn inline-flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border px-3 py-2 text-[11px] font-bold transition-colors sm:min-h-0 sm:flex-none sm:text-sm border-indigo-500 bg-indigo-50 text-indigo-900">الكل</button>
+      <button type="button" data-fm-bucket="payable" class="fm-filter-btn inline-flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 sm:min-h-0 sm:flex-none sm:text-sm">دين علينا</button>
+      <button type="button" data-fm-bucket="receivable" class="fm-filter-btn inline-flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 sm:min-h-0 sm:flex-none sm:text-sm">دين لنا</button>
+      <button type="button" data-fm-bucket="obligation" class="fm-filter-btn inline-flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 sm:min-h-0 sm:flex-none sm:text-sm">التزامات</button>
+      <button type="button" data-fm-bucket="transfer" class="fm-filter-btn inline-flex min-h-[2.5rem] w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-amber-200 hover:bg-amber-50 sm:min-h-0 sm:w-auto sm:text-sm">ترحيل نقدي</button>
     </div>
   </div>
 
-  <!-- جدول -->
-  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-4 py-3 sm:px-5">
-      <h2 class="flex items-center gap-2 text-base font-bold text-slate-900">
-        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700"><i class="fas fa-table text-sm"></i></span>
-        قائمة الحركات
-      </h2>
-      <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600" id="fmCount">—</span>
+  <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2.5 sm:px-4">
+      <h2 class="text-sm font-bold text-slate-900 sm:text-base">قائمة الحركات</h2>
+      <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/80" id="fmCount">—</span>
     </div>
     <div class="overflow-x-auto">
       <table class="min-w-full text-right text-sm">
         <thead class="border-b border-slate-200 bg-slate-50/90 text-xs font-semibold text-slate-600">
           <tr>
-            <th class="px-3 py-3 font-semibold">التصنيف</th>
-            <th class="px-3 py-3 font-semibold">العنوان</th>
-            <th class="px-3 py-3 font-semibold">متى</th>
-            <th class="px-3 py-3 text-left font-semibold" dir="ltr">المبلغ</th>
+            <th class="px-2 py-2.5 font-semibold sm:px-3 sm:py-3">التصنيف</th>
+            <th class="px-2 py-2.5 font-semibold sm:px-3">العنوان</th>
+            <th class="px-2 py-2.5 font-semibold sm:px-3 sm:py-3 whitespace-nowrap">متى</th>
+            <th class="px-2 py-2.5 text-left font-semibold sm:px-3" dir="ltr">المبلغ</th>
           </tr>
         </thead>
         <tbody id="fmTableBody" class="divide-y divide-slate-100"></tbody>
       </table>
     </div>
-    <p id="fmEmpty" class="hidden px-6 py-12 text-center text-sm text-slate-500">لا توجد حركات ضمن هذا التصفية.</p>
-    <p id="fmError" class="hidden px-6 py-8 text-center text-sm text-rose-600"></p>
+    <div id="fmPagination" class="hidden flex flex-col items-stretch gap-2 border-t border-slate-100 bg-slate-50/50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+      <p class="text-center text-[11px] text-slate-500 sm:text-right" id="fmPageInfo"></p>
+      <div class="flex items-center justify-center gap-2 sm:justify-end">
+        <button type="button" id="fmPrevPage" class="inline-flex min-h-[2.5rem] min-w-[5.5rem] items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">السابق</button>
+        <button type="button" id="fmNextPage" class="inline-flex min-h-[2.5rem] min-w-[5.5rem] items-center justify-center rounded-lg border border-indigo-200 bg-indigo-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">التالي</button>
+      </div>
+    </div>
+    <p id="fmEmpty" class="hidden px-4 py-10 text-center text-sm text-slate-500 sm:px-6">لا توجد حركات ضمن هذا التصفية.</p>
+    <p id="fmError" class="hidden px-4 py-8 text-center text-sm text-rose-600 sm:px-6"></p>
   </div>
 </div>
 

@@ -7,7 +7,7 @@
   };
 
   const FILTER_BASE =
-    'fm-filter-btn inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border px-3 py-2 text-[11px] transition-colors sm:min-h-0 sm:text-sm ';
+    'fm-filter-btn inline-flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border px-3 py-2 text-[11px] transition-colors sm:min-h-0 sm:flex-none sm:text-sm ';
 
   const BUCKET_BADGE = {
     payable: 'bg-rose-100 text-rose-900 border-rose-200',
@@ -32,8 +32,11 @@
     financial_return: 'مرتجع مالي',
   };
 
+  const PAGE_SIZE = 15;
+
   let currentBucket = 'all';
   let lastItems = [];
+  let fmCurrentPage = 0;
 
   function fmtMoney(n) {
     if (n == null || Number.isNaN(Number(n))) return '—';
@@ -83,13 +86,13 @@
     document.querySelectorAll('.fm-filter-btn').forEach((btn) => {
       const b = btn.getAttribute('data-fm-bucket');
       const on = b === currentBucket;
-      const transferSpan = b === 'transfer' ? ' col-span-2 sm:col-span-1' : '';
+      const transferWide = b === 'transfer' ? ' w-full sm:w-auto' : '';
       btn.className =
         FILTER_BASE +
         (on
           ? 'font-bold border-indigo-500 bg-indigo-50 text-indigo-900'
           : 'font-semibold border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50') +
-        transferSpan;
+        transferWide;
     });
   }
 
@@ -104,44 +107,86 @@
     if (elP) elP.textContent = fmtKpi(br.payablesSumUsd);
   }
 
-  function renderTable(items) {
-    lastItems = items || [];
+  function updatePaginationUi(total) {
+    const pag = document.getElementById('fmPagination');
+    const prev = document.getElementById('fmPrevPage');
+    const next = document.getElementById('fmNextPage');
+    const info = document.getElementById('fmPageInfo');
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    if (fmCurrentPage >= totalPages) fmCurrentPage = Math.max(0, totalPages - 1);
+
+    if (!pag) return;
+
+    if (total <= PAGE_SIZE) {
+      pag.classList.add('hidden');
+      return;
+    }
+
+    pag.classList.remove('hidden');
+    const start = fmCurrentPage * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, total);
+    if (info) info.textContent = `عرض ${start + 1}–${end} من ${total}`;
+    if (prev) prev.disabled = fmCurrentPage <= 0;
+    if (next) next.disabled = fmCurrentPage >= totalPages - 1;
+  }
+
+  function renderCurrentPage() {
     const tbody = document.getElementById('fmTableBody');
     const empty = document.getElementById('fmEmpty');
     const count = document.getElementById('fmCount');
     if (!tbody) return;
 
-    tbody.innerHTML = '';
-    if (count) count.textContent = `${lastItems.length} حركة`;
+    const total = lastItems.length;
+    if (count) count.textContent = `${total} حركة`;
 
-    if (!lastItems.length) {
+    tbody.innerHTML = '';
+
+    if (!total) {
       if (empty) empty.classList.remove('hidden');
+      updatePaginationUi(0);
       return;
     }
     if (empty) empty.classList.add('hidden');
 
-    lastItems.forEach((row, idx) => {
+    const start = fmCurrentPage * PAGE_SIZE;
+    const pageSlice = lastItems.slice(start, start + PAGE_SIZE);
+
+    pageSlice.forEach((row) => {
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-slate-50 cursor-pointer transition-colors';
-      tr.setAttribute('data-fm-idx', String(idx));
       const badge = BUCKET_BADGE[row.bucket] || 'bg-slate-100 text-slate-800 border-slate-200';
       const lbl = BUCKET_LABELS[row.bucket] || row.bucket;
       const kindAr = KIND_LABELS_AR[row.kind] || 'حركة';
       tr.innerHTML = `
-        <td class="px-3 py-3 align-top">
-          <span class="inline-flex items-center rounded-lg border px-2 py-0.5 text-xs font-semibold ${badge}">${escapeHtml(lbl)}</span>
-          <div class="text-[0.65rem] text-slate-500 mt-1">${escapeHtml(kindAr)}</div>
+        <td class="px-2 py-2.5 align-top sm:px-3 sm:py-3">
+          <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[0.65rem] font-semibold sm:text-xs ${badge}">${escapeHtml(lbl)}</span>
+          <div class="text-[0.6rem] text-slate-500 mt-0.5 sm:text-[0.65rem]">${escapeHtml(kindAr)}</div>
         </td>
-        <td class="px-3 py-3 align-top">
-          <div class="font-medium text-slate-900">${escapeHtml(row.titleAr || '')}</div>
-          <div class="text-xs text-slate-600 mt-1 line-clamp-2">${escapeHtml(row.summaryAr || '')}</div>
+        <td class="px-2 py-2.5 align-top sm:px-3">
+          <div class="text-sm font-medium text-slate-900">${escapeHtml(row.titleAr || '')}</div>
+          <div class="text-[0.65rem] text-slate-600 mt-0.5 line-clamp-2 sm:text-xs">${escapeHtml(row.summaryAr || '')}</div>
         </td>
-        <td class="px-3 py-3 align-top text-slate-700 whitespace-nowrap">${escapeHtml(fmtDate(row.occurredAt))}</td>
-        <td class="px-3 py-3 align-top text-left font-mono tabular-nums" dir="ltr">${escapeHtml(fmtMoney(row.amount))} ${currencyAr(row.currency || 'USD')}</td>
+        <td class="px-2 py-2.5 align-top text-[0.65rem] text-slate-700 whitespace-nowrap sm:px-3 sm:py-3 sm:text-sm">${escapeHtml(fmtDate(row.occurredAt))}</td>
+        <td class="px-2 py-2.5 align-top text-left text-sm font-mono tabular-nums sm:px-3 sm:py-3" dir="ltr">${escapeHtml(fmtMoney(row.amount))} ${currencyAr(row.currency || 'USD')}</td>
       `;
       tr.addEventListener('click', () => openModal(row));
       tbody.appendChild(tr);
     });
+
+    updatePaginationUi(total);
+  }
+
+  function renderTable(items) {
+    lastItems = items || [];
+    fmCurrentPage = 0;
+    renderCurrentPage();
+  }
+
+  function goFmPage(delta) {
+    const totalPages = Math.max(1, Math.ceil(lastItems.length / PAGE_SIZE));
+    fmCurrentPage = Math.max(0, Math.min(totalPages - 1, fmCurrentPage + delta));
+    renderCurrentPage();
   }
 
   function openModal(row) {
@@ -270,6 +315,11 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
+
+    const prev = document.getElementById('fmPrevPage');
+    const next = document.getElementById('fmNextPage');
+    if (prev) prev.addEventListener('click', () => goFmPage(-1));
+    if (next) next.addEventListener('click', () => goFmPage(1));
 
     setActiveFilter();
     load();

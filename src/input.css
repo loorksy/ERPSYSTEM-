@@ -557,7 +557,10 @@
     #fundTransferModal,
     #fundReturnModal,
     #fmModal,
-    #fundLedgerMoveModal {
+    #fundLedgerMoveModal,
+    #deferredSearchModal,
+    #deferredCycleModal,
+    #deferredMergeModal {
       top: calc(60px + env(safe-area-inset-top, 0px));
       right: 0;
       bottom: calc(65px + env(safe-area-inset-bottom, 0px));
@@ -638,13 +641,19 @@
     }
     #tcLedgerMoveModal,
     #fundLedgerMoveModal,
-    #fmModal {
+    #fmModal,
+    #deferredSearchModal,
+    #deferredCycleModal,
+    #deferredMergeModal {
       align-items: center !important;
       justify-content: center !important;
     }
     #tcLedgerMoveModal > div,
     #fundLedgerMoveModal > div,
-    #fmModal > div {
+    #fmModal > div,
+    #deferredSearchModal > div,
+    #deferredCycleModal > div,
+    #deferredMergeModal > div {
       max-height: 100%;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;

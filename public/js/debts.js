@@ -27,27 +27,23 @@
 
   function statCard(iconClass, iconBg, label, value, valueClass) {
     return (
-      '<div class="group relative rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-white to-slate-50/90 shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:border-indigo-200/70 hover:shadow-md min-w-0">' +
-      '<div class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">' +
-      '<span class="absolute -left-6 -top-6 h-20 w-20 rounded-full bg-indigo-400/[0.06] blur-2xl"></span>' +
-      '</div>' +
-      '<div class="relative z-[1] flex flex-col gap-2.5 p-3 sm:p-4 min-w-0">' +
-      '<div class="flex items-start gap-2.5 min-w-0">' +
-      '<span class="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl shadow-inner ' +
+      '<div class="min-w-0 rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-4">' +
+      '<div class="flex items-start justify-between gap-2">' +
+      '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ' +
       iconBg +
       '"><i class="' +
       iconClass +
-      ' text-sm sm:text-base"></i></span>' +
-      '<p class="flex-1 min-w-0 text-[0.7rem] sm:text-xs font-semibold text-slate-500 leading-snug pt-0.5">' +
+      ' text-sm"></i></span>' +
+      '</div>' +
+      '<p class="mt-2 text-[0.65rem] font-medium leading-snug text-slate-500">' +
       esc(label) +
       '</p>' +
-      '</div>' +
-      '<p class="font-mono text-sm sm:text-base lg:text-lg font-bold tabular-nums text-right w-full min-w-0 break-words leading-snug py-0.5 ' +
+      '<p class="mt-1 font-mono text-base font-bold tabular-nums sm:text-lg ' +
       (valueClass || 'text-slate-900') +
       '">' +
       fmt(value) +
       '</p>' +
-      '</div></div>'
+      '</div>'
     );
   }
 
@@ -153,21 +149,21 @@
                 .map(function(p) {
                   var kind = p.entity_type === 'fund' ? 'صندوق' : 'شركة تحويل';
                   return (
-                    '<div class="flex flex-col gap-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/40 via-white to-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">' +
-                    '<div class="flex items-start gap-3 min-w-0">' +
-                    '<span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-800 text-xs font-bold shadow-sm">#' +
+                    '<div class="flex flex-col gap-2 rounded-xl border border-violet-200/80 bg-violet-50/30 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">' +
+                    '<div class="flex items-start gap-2.5 min-w-0">' +
+                    '<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-[0.65rem] font-bold text-violet-800">#' +
                     esc(String(p.entity_id)) +
                     '</span>' +
                     '<div class="min-w-0">' +
-                    '<p class="text-sm font-bold text-slate-900">' +
+                    '<p class="text-sm font-semibold text-slate-900">' +
                     kind +
                     '</p>' +
                     (p.notes
-                      ? '<p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">' + esc(p.notes) + '</p>'
+                      ? '<p class="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">' + esc(p.notes) + '</p>'
                       : '') +
                     '</div></div>' +
-                    '<div class="flex shrink-0 items-center justify-end sm:pl-4">' +
-                    '<span class="inline-flex items-center rounded-xl border border-violet-200/80 bg-violet-50 px-3 py-2 font-mono text-sm font-bold tabular-nums text-violet-900">' +
+                    '<div class="flex shrink-0 items-center justify-end border-t border-violet-100 pt-2 sm:border-0 sm:pt-0 sm:pl-3">' +
+                    '<span class="inline-flex min-w-[7rem] items-center justify-center rounded-lg bg-white px-3 py-2 font-mono text-sm font-bold tabular-nums text-violet-900 ring-1 ring-violet-200/80">' +
                     fmt(p.amount) +
                     ' ' +
                     currencyAr(p.currency || '') +

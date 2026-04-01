@@ -1,21 +1,13 @@
-<div class="payables-overview-page max-w-6xl mx-auto min-w-0 space-y-6 px-4 pb-10 sm:px-0 lg:space-y-8" dir="rtl" id="payablesPageRoot">
-  <!-- رأس الصفحة -->
-  <header class="overflow-hidden rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-50/90 via-white to-slate-50/40 p-5 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="flex min-w-0 gap-4">
-        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-800 text-white shadow-lg shadow-rose-900/15">
-          <i class="fas fa-hand-holding-usd text-xl" aria-hidden="true"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-[11px] font-semibold uppercase tracking-wide text-rose-700">التزاماتنا</p>
-          <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">دين علينا</h1>
-          <p class="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
-            نظرة على إجمالي ما عليك: الشحن، مطلوب دفع المعتمدين، الديون المسجّلة يدوياً، فرق التصريف، والأرصدة السالبة لشركات التحويل والصناديق — مع تفصيل وقائمة السجلات.
-          </p>
-        </div>
+<div class="payables-overview-page max-w-6xl mx-auto min-w-0 space-y-5 px-4 pb-8 sm:px-0 sm:pb-10 lg:space-y-6" dir="rtl" id="payablesPageRoot">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex min-w-0 items-center gap-3">
+      <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-md sm:h-12 sm:w-12 sm:rounded-2xl"><i class="fas fa-hand-holding-usd text-lg" aria-hidden="true"></i></span>
+      <div class="min-w-0">
+        <h1 class="text-lg font-bold text-slate-900 sm:text-xl">دين علينا</h1>
+        <p class="mt-0.5 text-xs text-slate-500 sm:text-sm">إجمالي التزاماتك ومؤشراتها</p>
       </div>
     </div>
-  </header>
+  </div>
 
   <nav class="erp-toolbar-nav mb-0" aria-label="تنقل سريع">
     <a href="/financial-movements" class="border border-indigo-200 bg-indigo-50 text-indigo-900 shadow-sm hover:bg-indigo-100 text-[11px] sm:text-sm">
@@ -40,99 +32,79 @@
     </a>
   </nav>
 
-  <!-- إجمالي + مؤشرات -->
-  <section class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
-    <div class="lg:col-span-5 rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-600 to-rose-800 p-6 text-white shadow-lg shadow-rose-900/20 sm:p-8">
-      <div class="mb-4 flex items-center gap-3">
-        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm"><i class="fas fa-scale-balanced text-xl"></i></span>
-        <div>
-          <p class="text-sm text-rose-100">إجمالي التزامات (من الحاسبة)</p>
-          <p class="text-xs leading-snug text-rose-200/90">شحن + مطلوب دفع معتمدين + مجموع الديون المسجّلة يدوياً (بما فيها ما ناشئ عن تحويل معتمد كـ «دين علينا») + أرصدة سالبة لشركات وصناديق</p>
-        </div>
-      </div>
-      <p class="font-mono text-4xl font-bold tabular-nums tracking-tight sm:text-5xl" id="payablesHeroTotal">—</p>
+  <section class="space-y-3" aria-label="الإجمالي والمؤشرات">
+    <div class="rounded-2xl border border-rose-200/90 bg-gradient-to-br from-rose-600 to-rose-900 p-4 text-white shadow-md sm:p-6">
+      <p class="text-xs font-medium text-rose-100 sm:text-sm">إجمالي التزامات (من الحاسبة)</p>
+      <p class="mt-2 font-mono text-3xl font-bold tabular-nums tracking-tight sm:text-4xl" id="payablesHeroTotal">—</p>
     </div>
-    <div class="lg:col-span-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><i class="fas fa-truck-fast text-sky-500"></i> الشحن</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr" id="payablesKpiShipping">—</p>
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 sm:gap-3">
+      <div class="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-3.5">
+        <p class="text-[0.65rem] font-medium leading-tight text-slate-500"><i class="fas fa-truck-fast ms-1 text-sky-500"></i> الشحن</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-slate-900 sm:text-lg" dir="ltr" id="payablesKpiShipping">—</p>
       </div>
-      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><i class="fas fa-certificate text-violet-500"></i> معتمدون — مطلوب دفع</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr" id="payablesKpiAcc">—</p>
+      <div class="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-3.5">
+        <p class="text-[0.65rem] font-medium leading-tight text-slate-500"><i class="fas fa-certificate ms-1 text-violet-500"></i> معتمدون</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-slate-900 sm:text-lg" dir="ltr" id="payablesKpiAcc">—</p>
       </div>
-      <div class="col-span-2 flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:col-span-1">
-        <p class="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><i class="fas fa-database text-slate-500"></i> ديون مسجّلة — إجمالي بالدولار</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr" id="payablesKpiManual">—</p>
+      <div class="col-span-2 flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:col-span-1 sm:p-3.5">
+        <p class="text-[0.65rem] font-medium leading-tight text-slate-500">ديون مسجّلة — إجمالي</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-slate-900 sm:text-lg" dir="ltr" id="payablesKpiManual">—</p>
       </div>
-      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-violet-100 bg-violet-50/40 p-4 shadow-sm">
-        <p class="flex items-start gap-1 text-[0.65rem] font-semibold leading-tight text-violet-800"><i class="fas fa-stamp mt-0.5 shrink-0 text-violet-600"></i> من تحويل معتمد (دين علينا)</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-violet-950" dir="ltr" id="payablesKpiEpAcc">—</p>
+      <div class="flex flex-col justify-between rounded-xl border border-violet-200/80 bg-violet-50/50 p-3 shadow-sm sm:p-3.5">
+        <p class="text-[0.6rem] font-medium leading-tight text-violet-900"><i class="fas fa-stamp ms-0.5"></i> من تحويل معتمد</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-violet-950 sm:text-lg" dir="ltr" id="payablesKpiEpAcc">—</p>
       </div>
-      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="flex items-start gap-1 text-[0.65rem] font-semibold leading-tight text-slate-500"><i class="fas fa-ellipsis-h mt-0.5 shrink-0 text-slate-400"></i> ديون مسجّلة — أخرى (يدوي، شحن، …)</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr" id="payablesKpiEpOther">—</p>
+      <div class="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm sm:p-3.5">
+        <p class="text-[0.6rem] font-medium leading-tight text-slate-500">ديون مسجّلة — أخرى</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-slate-900 sm:text-lg" dir="ltr" id="payablesKpiEpOther">—</p>
       </div>
-      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><i class="fas fa-building text-red-500"></i> شركات التحويل</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr" id="payablesKpiCo">—</p>
+      <div class="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm sm:p-3.5">
+        <p class="text-[0.65rem] font-medium leading-tight text-slate-500"><i class="fas fa-building ms-1 text-red-500"></i> شركات</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-slate-900 sm:text-lg" dir="ltr" id="payablesKpiCo">—</p>
       </div>
-      <div class="flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><i class="fas fa-piggy-bank text-amber-500"></i> الصناديق</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr" id="payablesKpiFund">—</p>
+      <div class="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm sm:p-3.5">
+        <p class="text-[0.65rem] font-medium leading-tight text-slate-500"><i class="fas fa-piggy-bank ms-1 text-amber-500"></i> صناديق</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-slate-900 sm:text-lg" dir="ltr" id="payablesKpiFund">—</p>
       </div>
-      <div id="payablesKpiFxWrap" class="col-span-2 flex min-h-[5.5rem] flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:col-span-1">
-        <p class="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><i class="fas fa-chart-line text-teal-500"></i> فرق التصريف</p>
-        <p class="text-left font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr" id="payablesKpiFx">—</p>
+      <div id="payablesKpiFxWrap" class="col-span-2 flex flex-col justify-between rounded-xl border border-teal-200/80 bg-teal-50/40 p-3 shadow-sm sm:col-span-1 sm:p-3.5">
+        <p class="text-[0.65rem] font-medium leading-tight text-teal-900"><i class="fas fa-chart-line ms-1"></i> فرق التصريف</p>
+        <p class="mt-2 text-left font-mono text-base font-bold tabular-nums text-teal-950 sm:text-lg" dir="ltr" id="payablesKpiFx">—</p>
       </div>
     </div>
   </section>
 
-  <section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6">
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="flex items-center gap-3 border-b border-slate-100 bg-red-50/50 px-5 py-4">
-        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-700"><i class="fas fa-building"></i></span>
-        <div>
-          <h3 class="text-base font-bold text-slate-900">شركات تحويل (رصيد سالب)</h3>
-          <p class="text-xs text-slate-500">مديونية علينا تجاه الشركة</p>
-        </div>
+  <section class="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+    <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+      <div class="border-b border-red-100 bg-red-50/40 px-4 py-3">
+        <h2 class="text-sm font-bold text-slate-900">شركات تحويل (رصيد سالب)</h2>
       </div>
-      <div id="payablesNegCompanies" class="min-h-[4rem] divide-y divide-slate-100"></div>
+      <div id="payablesNegCompanies" class="min-h-[3rem] divide-y divide-slate-100"></div>
     </div>
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="flex items-center gap-3 border-b border-slate-100 bg-amber-50/50 px-5 py-4">
-        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="fas fa-piggy-bank"></i></span>
-        <div>
-          <h3 class="text-base font-bold text-slate-900">صناديق (رصيد سالب بالدولار)</h3>
-          <p class="text-xs text-slate-500">التزامات بالدولار الأمريكي</p>
-        </div>
+    <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+      <div class="border-b border-amber-100 bg-amber-50/40 px-4 py-3">
+        <h2 class="text-sm font-bold text-slate-900">صناديق (رصيد سالب)</h2>
       </div>
-      <div id="payablesNegFunds" class="min-h-[4rem] divide-y divide-slate-100"></div>
+      <div id="payablesNegFunds" class="min-h-[3rem] divide-y divide-slate-100"></div>
     </div>
   </section>
 
-  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-center gap-3">
-        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-800"><i class="fas fa-list-check"></i></span>
-        <div>
-          <h3 class="text-base font-bold text-slate-900">سجل الديون المسجّلة</h3>
-          <p class="text-xs text-slate-500">آخر 500 سجل (صندوق أو شركة تحويل، بما فيها ما ناشئ عن تحويل معتمد كـ «دين علينا» عند التسجيل)</p>
-        </div>
-      </div>
+  <section class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+    <div class="border-b border-slate-100 bg-slate-50/80 px-4 py-3 sm:px-5">
+      <h2 class="text-sm font-bold text-slate-900 sm:text-base">سجل الديون المسجّلة</h2>
+      <p class="mt-0.5 text-[11px] text-slate-500">آخر 500 سجل</p>
     </div>
     <div class="overflow-x-auto">
-      <table class="w-full min-w-[320px] text-sm">
+      <table class="w-full min-w-[300px] text-sm">
         <thead>
           <tr class="border-b border-slate-200 bg-slate-50/90 text-right text-xs font-semibold text-slate-600">
-            <th class="px-4 py-3">النوع</th>
-            <th class="px-4 py-3">المعرّف</th>
-            <th class="px-4 py-3 text-left" dir="ltr">المبلغ</th>
-            <th class="hidden px-4 py-3 sm:table-cell">ملاحظات</th>
+            <th class="px-3 py-2.5 sm:px-4">النوع</th>
+            <th class="px-3 py-2.5 sm:px-4">المعرّف</th>
+            <th class="px-3 py-2.5 text-left sm:px-4" dir="ltr">المبلغ</th>
+            <th class="hidden px-4 py-2.5 sm:table-cell">ملاحظات</th>
           </tr>
         </thead>
         <tbody id="payablesTableBody" class="divide-y divide-slate-100">
-          <tr><td colspan="4" class="px-4 py-12 text-center text-slate-400"><i class="fas fa-circle-notch fa-spin mr-2 text-indigo-500"></i> جاري التحميل…</td></tr>
+          <tr><td colspan="4" class="px-4 py-10 text-center text-slate-400"><i class="fas fa-circle-notch fa-spin mr-2 text-indigo-500"></i> جاري التحميل…</td></tr>
         </tbody>
       </table>
     </div>
