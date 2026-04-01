@@ -6013,11 +6013,6 @@
       max-width: 7rem;
     }
   }
-  .sm\:max-w-md {
-    @media (width >= 40rem) {
-      max-width: var(--container-md);
-    }
-  }
   .sm\:max-w-none {
     @media (width >= 40rem) {
       max-width: none;
@@ -6770,6 +6765,16 @@
       display: inline-flex;
     }
   }
+  .lg\:h-10 {
+    @media (width >= 64rem) {
+      height: calc(var(--spacing) * 10);
+    }
+  }
+  .lg\:min-h-0 {
+    @media (width >= 64rem) {
+      min-height: calc(var(--spacing) * 0);
+    }
+  }
   .lg\:min-h-\[36rem\] {
     @media (width >= 64rem) {
       min-height: 36rem;
@@ -6785,6 +6790,11 @@
       max-width: 16rem;
     }
   }
+  .lg\:max-w-md {
+    @media (width >= 64rem) {
+      max-width: var(--container-md);
+    }
+  }
   .lg\:max-w-none {
     @media (width >= 64rem) {
       max-width: none;
@@ -6793,6 +6803,16 @@
   .lg\:min-w-\[11rem\] {
     @media (width >= 64rem) {
       min-width: 11rem;
+    }
+  }
+  .lg\:flex-1 {
+    @media (width >= 64rem) {
+      flex: 1;
+    }
+  }
+  .lg\:flex-shrink-0 {
+    @media (width >= 64rem) {
+      flex-shrink: 0;
     }
   }
   .lg\:shrink-0 {
@@ -6835,6 +6855,11 @@
       flex-direction: row;
     }
   }
+  .lg\:flex-nowrap {
+    @media (width >= 64rem) {
+      flex-wrap: nowrap;
+    }
+  }
   .lg\:flex-wrap {
     @media (width >= 64rem) {
       flex-wrap: wrap;
@@ -6858,6 +6883,11 @@
   .lg\:gap-3 {
     @media (width >= 64rem) {
       gap: calc(var(--spacing) * 3);
+    }
+  }
+  .lg\:gap-4 {
+    @media (width >= 64rem) {
+      gap: calc(var(--spacing) * 4);
     }
   }
   .lg\:gap-6 {
@@ -6906,6 +6936,11 @@
   .lg\:px-10 {
     @media (width >= 64rem) {
       padding-inline: calc(var(--spacing) * 10);
+    }
+  }
+  .lg\:py-0 {
+    @media (width >= 64rem) {
+      padding-block: calc(var(--spacing) * 0);
     }
   }
   .lg\:py-10 {
@@ -7510,6 +7545,12 @@
   gap: 1.25rem;
 }
 .acc-card-drag-handle {
+  touch-action: none;
+}
+html.acc-dnd-scroll-lock,
+  body.acc-dnd-scroll-lock {
+  overflow: hidden !important;
+  overscroll-behavior: none;
   touch-action: none;
 }
 .btn-add {
