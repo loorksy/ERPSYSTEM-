@@ -1,7 +1,33 @@
 const { adjustFundBalance, getMainFundId } = require('./fundService');
 const { insertLedgerEntry, insertNetProfitLedgerAndMirrorFund } = require('./ledgerService');
 const { syncNetBalance, applySalaryToThem } = require('./accreditationBalance');
-const { splitDebtPayableWithDiscount, roundMoney } = require('./accreditationDebtAmounts');
+const {
+  splitDebtPayableWithDiscount,
+  roundMoney,
+  parseReceivableOffsetFromBody,
+  isReceivableOffsetChoiceMissing,
+  debtPayableLedgerNote,
+} = require('./accreditationDebtAmounts');
+
+/** دمج خيارات تسوية «دين لنا» من الصف أو من الاستيراد الجماعي (نفس حقول add-amount). */
+function buildReceivableOffsetBody(item, globalOpts) {
+  const g = globalOpts || {};
+  const mode =
+    item.receivableOffsetMode != null && String(item.receivableOffsetMode).trim() !== ''
+      ? item.receivableOffsetMode
+      : g.receivableOffsetMode;
+  const usd =
+    item.receivableOffsetUsd != null && item.receivableOffsetUsd !== ''
+      ? item.receivableOffsetUsd
+      : g.receivableOffsetUsd;
+  let ack = item.receivableOffsetAcknowledged;
+  if (ack === undefined || ack === null) ack = g.receivableOffsetAcknowledged;
+  return {
+    receivableOffsetMode: mode,
+    receivableOffsetUsd: usd,
+    receivableOffsetAcknowledged: ack,
+  };
+}
 
 /**
  * استيراد أرصدة معتمدين من ملف: أعمدة A كود، B اسم، C رصيد، D معتمد رئيسي.
@@ -54,7 +80,7 @@ function normalizeBulkAmountKind(k) {
   return k || 'salary';
 }
 
-async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId, defaultBrokeragePct) {
+async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId, defaultBrokeragePct, offsetOptions = {}) {
   if (!items || !items.length) {
     return { success: false, message: 'لا توجد صفوف', imported: 0, errors: [] };
   }
@@ -131,15 +157,29 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     }
 
     if (amountKind === 'debt_payable') {
+      if (!mainFundId) {
+        errs.push(`صف ${i + 1}: عيّن صندوقاً رئيسياً قبل تسجيل دين علينا`);
+        continue;
+      }
       const rec0 = roundMoney(rec);
       const gross = roundMoney(bal);
-      if (rec0 > 0.0001) {
+      const body = buildReceivableOffsetBody(it, offsetOptions);
+      if (rec0 > 0.0001 && isReceivableOffsetChoiceMissing(body)) {
         errs.push(
-          `صف ${i + 1}: يوجد دين لنا — لا يُستورد «علينا» من الاستيراد الجماعي. أضِف المبلغ من ملف المعتمد بعد اختيار خصم الدين أو التأجيل من «إضافة مبلغ».`
+          `صف ${i + 1}: يوجد دين لنا — اختر تسوية دين لنا (تأجيل/خصم كامل/مخصص) وأقرّ من واجهة الاستيراد قبل الحفظ.`
         );
         continue;
       }
-      const offsetUsd = 0;
+      let offsetUsd = 0;
+      let offsetMode = 'defer';
+      try {
+        const parsed = parseReceivableOffsetFromBody(body, rec0, gross);
+        offsetUsd = parsed.s;
+        offsetMode = parsed.mode;
+      } catch (e) {
+        errs.push(`صف ${i + 1}: ${e.message || 'فشل تسوية دين لنا'}`);
+        continue;
+      }
       const remainingGross = roundMoney(gross - offsetUsd);
       if (remainingGross < 0) {
         errs.push(`صف ${i + 1}: المبلغ بعد خصم الدين غير صالح`);
@@ -152,15 +192,20 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
         grossInputUsd: gross,
         offsetFromReceivableUsd: offsetUsd,
         remainingGrossAfterOffsetUsd: remainingGross,
+        receivableOffsetMode: offsetMode,
       };
       const ledgerMeta = JSON.stringify(debtMetaObj);
       const noteImp =
         (it.notes && String(it.notes).trim()) ||
-        (discountAmt > 0
-          ? `استيراد — دين علينا (صافي بعد خصم)`
-          : offsetUsd > 0
-            ? `استيراد — دين علينا (بعد خصم ${offsetUsd.toFixed(2)} من دين لنا)`
-            : 'استيراد — دين علينا');
+        debtPayableLedgerNote({
+          kindLabel: 'دين علينا',
+          notes: it.notes,
+          discountAmt,
+          discountPct: discRaw,
+          offsetUsd,
+          offsetMode,
+          hadReceivableBefore: rec0 > 0.0001,
+        });
       pay = roundMoney(pay + netAmt);
       rec = roundMoney(rec0 - offsetUsd);
 
@@ -252,13 +297,23 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     if (amountKind === 'debt_payable_no_fund') {
       const rec0 = roundMoney(rec);
       const gross = roundMoney(bal);
-      if (rec0 > 0.0001) {
+      const body = buildReceivableOffsetBody(it, offsetOptions);
+      if (rec0 > 0.0001 && isReceivableOffsetChoiceMissing(body)) {
         errs.push(
-          `صف ${i + 1}: يوجد دين لنا — لا يُستورد «لهم» من الاستيراد الجماعي. أضِف المبلغ من ملف المعتمد بعد اختيار خصم الدين أو التأجيل من «إضافة مبلغ».`
+          `صف ${i + 1}: يوجد دين لنا — اختر تسوية دين لنا (تأجيل/خصم كامل/مخصص) وأقرّ من واجهة الاستيراد قبل الحفظ.`
         );
         continue;
       }
-      const offsetUsd = 0;
+      let offsetUsd = 0;
+      let offsetMode = 'defer';
+      try {
+        const parsed = parseReceivableOffsetFromBody(body, rec0, gross);
+        offsetUsd = parsed.s;
+        offsetMode = parsed.mode;
+      } catch (e) {
+        errs.push(`صف ${i + 1}: ${e.message || 'فشل تسوية دين لنا'}`);
+        continue;
+      }
       const remainingGross = roundMoney(gross - offsetUsd);
       if (remainingGross < 0) {
         errs.push(`صف ${i + 1}: المبلغ بعد خصم الدين غير صالح`);
@@ -272,15 +327,20 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
         offsetFromReceivableUsd: offsetUsd,
         remainingGrossAfterOffsetUsd: remainingGross,
         noMainFund: true,
+        receivableOffsetMode: offsetMode,
       };
       const ledgerMeta = JSON.stringify(debtMetaObj);
       const noteImp =
         (it.notes && String(it.notes).trim()) ||
-        (discountAmt > 0
-          ? `استيراد — لهم (صافي بعد خصم)`
-          : offsetUsd > 0
-            ? `استيراد — لهم (بعد خصم ${offsetUsd.toFixed(2)} من دين لنا)`
-            : 'استيراد — لهم (بدون صندوق رئيسي)');
+        debtPayableLedgerNote({
+          kindLabel: 'لهم',
+          notes: it.notes,
+          discountAmt,
+          discountPct: discRaw,
+          offsetUsd,
+          offsetMode,
+          hadReceivableBefore: rec0 > 0.0001,
+        });
       pay = roundMoney(pay + netAmt);
       rec = roundMoney(rec0 - offsetUsd);
 
@@ -351,14 +411,25 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     const brokerageAmount = pct > 0 ? roundMoney(bal * (pct / 100)) : 0;
     const remainder = roundMoney(bal - brokerageAmount);
     let offsetUsd = 0;
+    let offsetMode = 'defer';
+    const body = buildReceivableOffsetBody(it, offsetOptions);
     if (salaryDirection === 'to_us') {
-      if (rec0 > 0.0001) {
+      if (rec0 > 0.0001 && isReceivableOffsetChoiceMissing(body)) {
         errs.push(
-          `صف ${i + 1}: يوجد دين لنا — لا تُستورد دفعة «لنا» من الاستيراد الجماعي. أضِف المبلغ من ملف المعتمد بعد اختيار خصم الدين أو التأجيل من «إضافة مبلغ».`
+          `صف ${i + 1}: يوجد دين لنا — اختر تسوية دين لنا (تأجيل/خصم كامل/مخصص) وأقرّ من واجهة الاستيراد قبل الحفظ.`
         );
         continue;
       }
-      offsetUsd = 0;
+      try {
+        const parsed = parseReceivableOffsetFromBody(body, rec0, bal, {
+          salaryRemainderAfterBrokerage: remainder,
+        });
+        offsetUsd = parsed.s;
+        offsetMode = parsed.mode;
+      } catch (e) {
+        errs.push(`صف ${i + 1}: ${e.message || 'فشل تسوية دين لنا'}`);
+        continue;
+      }
       pay = roundMoney(pay + bal - offsetUsd);
       rec = roundMoney(rec0 - offsetUsd);
     } else if (rec0 > 0.0001) {
@@ -386,12 +457,14 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
     }
 
     const salaryMeta =
-      salaryDirection === 'to_us' && offsetUsd > 0.0001
+      salaryDirection === 'to_us'
         ? JSON.stringify({
-            offsetUsd,
             grossSalaryUsd: bal,
             remainderAfterBrokerageUsd: remainder,
             fundDepositUsd: fundDepositToUs,
+            receivableOffsetMode: offsetMode,
+            offsetUsd,
+            offsetFromReceivableUsd: offsetUsd,
           })
         : null;
 
@@ -449,7 +522,7 @@ async function processAccreditationBulkRowsFromItems(db, userId, items, cycleId,
   return { success: true, message: `تم معالجة ${ok} صف`, imported: ok, errors: errs };
 }
 
-async function processAccreditationBulkRows(db, userId, rows, cycleId, brokeragePctOpt) {
+async function processAccreditationBulkRows(db, userId, rows, cycleId, brokeragePctOpt, offsetOptions) {
   if (!rows || rows.length < 2) {
     return { success: false, message: 'لا توجد بيانات كافية', imported: 0, errors: [] };
   }
@@ -466,7 +539,10 @@ async function processAccreditationBulkRows(db, userId, rows, cycleId, brokerage
       amountKind: 'salary',
     });
   }
-  return processAccreditationBulkRowsFromItems(db, userId, items, cycleId, brokeragePctOpt);
+  const opts =
+    offsetOptions ||
+    ({ receivableOffsetMode: 'defer', receivableOffsetAcknowledged: true });
+  return processAccreditationBulkRowsFromItems(db, userId, items, cycleId, brokeragePctOpt, opts);
 }
 
 module.exports = {

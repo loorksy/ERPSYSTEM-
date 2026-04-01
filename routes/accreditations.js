@@ -25,58 +25,13 @@ const {
   splitDebtPayableWithDiscount,
   roundMoney,
   parseReceivableOffsetFromBody,
+  isReceivableOffsetChoiceMissing,
+  debtPayableLedgerNote,
 } = require('../services/accreditationDebtAmounts');
 
 const uploadsDir = path.join(__dirname, '../uploads/temp');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const upload = multer({ dest: uploadsDir, limits: { fileSize: 15 * 1024 * 1024 } });
-
-/** عند وجود «دين لنا»: لا يُقبل أي وضع (حتى defer) دون إقرار صريح من نافذة الاختيار — يمنع إرسال defer افتراضياً من عميل نصي. */
-function isReceivableOffsetChoiceMissing(body) {
-  const m = body && body.receivableOffsetMode;
-  if (m == null || String(m).trim() === '') return true;
-  const mode = String(m).trim().toLowerCase();
-  if (!['defer', 'full', 'custom'].includes(mode)) return true;
-  if (body.receivableOffsetAcknowledged !== true) return true;
-  return false;
-}
-
-/**
- * ملاحظة قيد «علينا/لهم» توضّح تأجيل الخصم مقابل خصم كامل/مخصص.
- * @param {boolean} hadReceivableBefore — كان هناك دين لنا قبل العملية (لتمييز «تأجيل» عن حالة عدم وجود دين لنا).
- */
-function debtPayableLedgerNote({
-  kindLabel,
-  notes,
-  discountAmt,
-  discountPct,
-  offsetUsd,
-  offsetMode,
-  hadReceivableBefore,
-}) {
-  const n = notes && String(notes).trim();
-  if (n) return n;
-  if (discountAmt > 0) {
-    return discountPct != null && !isNaN(Number(discountPct))
-      ? `${kindLabel} — صافي بعد خصم ${discountPct}%`
-      : `${kindLabel} — صافي بعد خصم`;
-  }
-  if (offsetUsd <= 0.0001) {
-    if (hadReceivableBefore && offsetMode === 'defer') {
-      return `${kindLabel} — تأجيل خصم من دين لنا (المبلغ الكامل لمصلحتهم؛ دين لنا على المعتمد دون تغيير)`;
-    }
-    return kindLabel === 'لهم'
-      ? 'لهم — مطلوب دفع (بدون صندوق رئيسي)'
-      : 'دين علينا — مطلوب دفع';
-  }
-  if (offsetMode === 'full') {
-    return `${kindLabel} — خصم كامل من دين لنا (${offsetUsd.toFixed(2)})؛ الباقي دين علينا (رصيد له)`;
-  }
-  if (offsetMode === 'custom') {
-    return `${kindLabel} — خصم مخصص ${offsetUsd.toFixed(2)} من دين لنا؛ الباقي دين علينا (رصيد له)`;
-  }
-  return `${kindLabel} — بعد خصم ${offsetUsd.toFixed(2)} من دين لنا`;
-}
 
 /** صافي USD من قيود رصيد مرجعي ومرتجعات في سجل الصندوق — يُخصم من التزام «دين علينا» قبل تسجيل entity_payables */
 async function sumFundReferenceAndReturnUsdForFund(db, fundId) {
@@ -798,11 +753,23 @@ router.post('/bulk-balance-parse-sheet-url', requireAuth, async (req, res) => {
 /** حفظ بعد المراجعة */
 router.post('/bulk-balance-commit', requireAuth, async (req, res) => {
   try {
-    const { cycleId, items, defaultBrokeragePct } = req.body || {};
+    const {
+      cycleId,
+      items,
+      defaultBrokeragePct,
+      receivableOffsetMode,
+      receivableOffsetUsd,
+      receivableOffsetAcknowledged,
+    } = req.body || {};
     const list = Array.isArray(items) ? items : [];
     if (!list.length) return res.json({ success: false, message: 'لا توجد صفوف' });
     const db = getDb();
-    const out = await processAccreditationBulkRowsFromItems(db, req.session.userId, list, cycleId, defaultBrokeragePct);
+    const offsetOpts = {
+      receivableOffsetMode,
+      receivableOffsetUsd,
+      receivableOffsetAcknowledged,
+    };
+    const out = await processAccreditationBulkRowsFromItems(db, req.session.userId, list, cycleId, defaultBrokeragePct, offsetOpts);
     res.json(out);
   } catch (e) {
     res.json({ success: false, message: e.message || 'فشل' });

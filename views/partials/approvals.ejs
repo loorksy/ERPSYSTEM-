@@ -112,6 +112,26 @@
               <option value="debt_payable_no_fund">لهم — مطلوب دفع + ربح خصم (بدون صندوق رئيسي)</option>
             </select>
           </div>
+
+          <div id="accBulkReceivableOffsetWrap" class="hidden px-4 sm:px-5 py-3 border-b border-slate-100 bg-amber-50/60 space-y-3">
+            <p class="text-xs text-slate-600 leading-relaxed">إن وُجد «دين لنا» على أحد المعتمدين في الصفوف: تُطبَّق نفس تسوية «إضافة مبلغ» (تأجيل، أو خصم كامل/مخصص من دين لنا ضمن المبلغ).</p>
+            <div>
+              <label for="accBulkReceivableOffsetMode" class="block text-xs font-semibold text-slate-700 mb-1.5">تسوية دين لنا</label>
+              <select id="accBulkReceivableOffsetMode" class="w-full max-w-xl px-4 py-2.5 rounded-xl border border-amber-200/80 bg-white text-slate-800 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none">
+                <option value="defer">تأجيل — لا يُخصم من دين لنا الآن</option>
+                <option value="full">خصم كامل من دين لنا ضمن المبلغ</option>
+                <option value="custom">خصم مخصص</option>
+              </select>
+            </div>
+            <div id="accBulkReceivableOffsetCustomWrap" class="hidden">
+              <label for="accBulkReceivableOffsetUsd" class="block text-xs font-semibold text-slate-700 mb-1.5">مبلغ الخصم من دين لنا (USD)</label>
+              <input type="number" id="accBulkReceivableOffsetUsd" min="0" step="0.01" class="w-full max-w-xs px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm tabular-nums" placeholder="0.00">
+            </div>
+            <label class="flex items-start gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" id="accBulkReceivableOffsetAck" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+              <span class="text-xs text-slate-700 leading-relaxed">أقر بأن خيار التسوية أعلاه صحيح لجميع صفوف هذا الاستيراد (مثل الإقرار في نافذة «إضافة مبلغ»).</span>
+            </label>
+          </div>
           
           <div id="accBulkStagingTable" class="w-full"></div>
 

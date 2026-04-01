@@ -504,6 +504,37 @@
     }
   }
 
+  function accToggleBulkReceivableOffsetPanel() {
+    var rk = document.getElementById('accBulkReviewKind');
+    var wrap = document.getElementById('accBulkReceivableOffsetWrap');
+    if (!wrap) return;
+    var v = rk && rk.value;
+    if (v === 'debt_payable' || v === 'debt_payable_no_fund') {
+      wrap.classList.remove('hidden');
+    } else {
+      wrap.classList.add('hidden');
+    }
+    accSyncBulkReceivableOffsetCustomWrap();
+  }
+
+  function accSyncBulkReceivableOffsetCustomWrap() {
+    var modeEl = document.getElementById('accBulkReceivableOffsetMode');
+    var cw = document.getElementById('accBulkReceivableOffsetCustomWrap');
+    if (!modeEl || !cw) return;
+    if (modeEl.value === 'custom') cw.classList.remove('hidden');
+    else cw.classList.add('hidden');
+  }
+
+  function accResetBulkReceivableOffsetFields() {
+    var modeEl = document.getElementById('accBulkReceivableOffsetMode');
+    if (modeEl) modeEl.value = 'defer';
+    var usdEl = document.getElementById('accBulkReceivableOffsetUsd');
+    if (usdEl) usdEl.value = '';
+    var ackEl = document.getElementById('accBulkReceivableOffsetAck');
+    if (ackEl) ackEl.checked = false;
+    accSyncBulkReceivableOffsetCustomWrap();
+  }
+
   function accScrollBulkModalToStaging() {
     var body = document.getElementById('accBulkModalBody');
     var st = document.getElementById('accBulkStaging');
@@ -575,6 +606,7 @@
     var st = document.getElementById('accBulkStaging');
     if (st) st.classList.remove('hidden');
     accSyncBulkStep();
+    accToggleBulkReceivableOffsetPanel();
     accResetBulkStagingTableScroll();
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
@@ -729,9 +761,39 @@
       }
       return it;
     });
+    var rk2 = document.getElementById('accBulkReviewKind');
+    var payload = {
+      cycleId: cid || null,
+      items: items,
+      defaultBrokeragePct: null,
+    };
+    if (rk2 && rk2.value !== 'debt_receivable') {
+      var modeEl = document.getElementById('accBulkReceivableOffsetMode');
+      var usdEl = document.getElementById('accBulkReceivableOffsetUsd');
+      var ackEl = document.getElementById('accBulkReceivableOffsetAck');
+      if (!ackEl || !ackEl.checked) {
+        toast('أقر بتسوية «دين لنا» لهذا الاستيراد (نفس الإقرار في «إضافة مبلغ»).', 'error');
+        return;
+      }
+      payload.receivableOffsetMode = modeEl ? modeEl.value : 'defer';
+      if (payload.receivableOffsetMode === 'custom') {
+        var custom = parseFloat(usdEl && usdEl.value ? String(usdEl.value).replace(/,/g, '') : '');
+        if (isNaN(custom) || custom <= 0) {
+          toast('أدخل مبلغ الخصم المخصص.', 'error');
+          return;
+        }
+        payload.receivableOffsetUsd = custom;
+      } else {
+        payload.receivableOffsetUsd = null;
+      }
+      payload.receivableOffsetAcknowledged = true;
+    } else {
+      payload.receivableOffsetMode = 'defer';
+      payload.receivableOffsetAcknowledged = true;
+    }
     apiCall('/api/accreditations/bulk-balance-commit', {
       method: 'POST',
-      body: JSON.stringify({ cycleId: cid || null, items: items, defaultBrokeragePct: null }),
+      body: JSON.stringify(payload),
     }).then(function(res) {
       toast(res.message || '', res.success ? 'success' : 'error');
       if (res.success) {
@@ -1126,6 +1188,7 @@
     if (method) method.value = 'file';
     var rk = document.getElementById('accBulkReviewKind');
     if (rk) rk.value = 'debt_receivable';
+    accResetBulkReceivableOffsetFields();
     accSyncBulkSourcePanels();
     accSyncBulkStep();
     var modal = document.getElementById('accBulkModal');
@@ -1771,7 +1834,15 @@
     rk.addEventListener('change', function() {
       accApplyBulkReviewKindToItems();
       accRenderStagingTable();
+      accToggleBulkReceivableOffsetPanel();
     });
+  }
+
+  function wireAccBulkReceivableOffsetFields() {
+    var m = document.getElementById('accBulkReceivableOffsetMode');
+    if (!m || m.dataset.accBulkOffsetBound) return;
+    m.dataset.accBulkOffsetBound = '1';
+    m.addEventListener('change', accSyncBulkReceivableOffsetCustomWrap);
   }
 
   function wireAccDeliveryCycle() {
@@ -1890,6 +1961,7 @@
     wireAccBulkSourceMethod();
     wireAccBulkDropzone();
     wireAccBulkReviewKind();
+    wireAccBulkReceivableOffsetFields();
     wireAccDeliveryCycle();
     wireAccDeliverySelectAll();
     wireAccDelListDelegation();

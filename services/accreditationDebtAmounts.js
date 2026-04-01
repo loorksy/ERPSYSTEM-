@@ -79,8 +79,57 @@ function parseReceivableOffsetFromBody(body, recBefore, grossCredit, opts = {}) 
   return { s: roundMoney(s), mode };
 }
 
+/** عند وجود «دين لنا»: لا يُقبل وضع دون إقرار صريح — يمنع إرسال defer افتراضياً من عميل نصي. */
+function isReceivableOffsetChoiceMissing(body) {
+  const m = body && body.receivableOffsetMode;
+  if (m == null || String(m).trim() === '') return true;
+  const mode = String(m).trim().toLowerCase();
+  if (!['defer', 'full', 'custom'].includes(mode)) return true;
+  if (body.receivableOffsetAcknowledged !== true) return true;
+  return false;
+}
+
+/**
+ * ملاحظة قيد «علينا/لهم» توضّح تأجيل الخصم مقابل خصم كامل/مخصص.
+ * @param {boolean} hadReceivableBefore — كان هناك دين لنا قبل العملية
+ */
+function debtPayableLedgerNote({
+  kindLabel,
+  notes,
+  discountAmt,
+  discountPct,
+  offsetUsd,
+  offsetMode,
+  hadReceivableBefore,
+}) {
+  const n = notes && String(notes).trim();
+  if (n) return n;
+  if (discountAmt > 0) {
+    return discountPct != null && !isNaN(Number(discountPct))
+      ? `${kindLabel} — صافي بعد خصم ${discountPct}%`
+      : `${kindLabel} — صافي بعد خصم`;
+  }
+  if (offsetUsd <= 0.0001) {
+    if (hadReceivableBefore && offsetMode === 'defer') {
+      return `${kindLabel} — تأجيل خصم من دين لنا (المبلغ الكامل لمصلحتهم؛ دين لنا على المعتمد دون تغيير)`;
+    }
+    return kindLabel === 'لهم'
+      ? 'لهم — مطلوب دفع (بدون صندوق رئيسي)'
+      : 'دين علينا — مطلوب دفع';
+  }
+  if (offsetMode === 'full') {
+    return `${kindLabel} — خصم كامل من دين لنا (${offsetUsd.toFixed(2)})؛ الباقي دين علينا (رصيد له)`;
+  }
+  if (offsetMode === 'custom') {
+    return `${kindLabel} — خصم مخصص ${offsetUsd.toFixed(2)} من دين لنا؛ الباقي دين علينا (رصيد له)`;
+  }
+  return `${kindLabel} — بعد خصم ${offsetUsd.toFixed(2)} من دين لنا`;
+}
+
 module.exports = {
   roundMoney,
   splitDebtPayableWithDiscount,
   parseReceivableOffsetFromBody,
+  isReceivableOffsetChoiceMissing,
+  debtPayableLedgerNote,
 };
