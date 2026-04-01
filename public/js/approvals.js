@@ -72,6 +72,12 @@
     accReceivableOffsetPending = null;
   }
 
+  /** إغلاق النافذة دون طلب؛ تنبيه بإمكانية المتابعة لاحقاً من «إضافة مبلغ». */
+  function accDismissReceivableOffsetForLater() {
+    accCloseReceivableOffsetModal();
+    toast('لم يُسجّل شيء. يمكنك لاحقاً فتح «إضافة مبلغ» واختيار خصم الدين أو التأجيل.', 'info');
+  }
+
   function wireAccReceivableOffsetModal() {
     var modal = document.getElementById('accReceivableOffsetModal');
     if (!modal || modal.dataset.accRecvOffBound) return;
@@ -86,6 +92,8 @@
     if (bd) bd.addEventListener('click', function() { setMode('defer'); });
     if (bf) bf.addEventListener('click', function() { setMode('full'); });
     if (bc) bc.addEventListener('click', function() { setMode('custom'); });
+    var ign = document.getElementById('accReceivableOffsetBtnIgnoreLater');
+    if (ign) ign.addEventListener('click', function() { accDismissReceivableOffsetForLater(); });
     var sub = document.getElementById('accReceivableOffsetSubmit');
     if (sub) {
       sub.addEventListener('click', function() {
@@ -175,6 +183,7 @@
   }
 
   window.accCloseReceivableOffsetModal = accCloseReceivableOffsetModal;
+  window.accDismissReceivableOffsetForLater = accDismissReceivableOffsetForLater;
 
   var accConfirmCallback = null;
 
@@ -1138,6 +1147,18 @@
       var e = res.entity;
       currentPinned = !!e.pinned;
       accDetailBalanceReceivable = Number(e.balance_receivable) || 0;
+      var payV = Number(e.balance_payable) || 0;
+      var recV = Number(e.balance_receivable) || 0;
+      var netV = Number(e.balance_amount) || 0;
+      var elRec = document.getElementById('accDetailRec');
+      var elPay = document.getElementById('accDetailPay');
+      var elNet = document.getElementById('accDetailNet');
+      if (elRec) elRec.textContent = accFmtMoney(recV);
+      if (elPay) elPay.textContent = accFmtMoney(payV);
+      if (elNet) {
+        elNet.textContent = accFmtMoney(netV);
+        elNet.className = 'mt-1 text-base font-bold tabular-nums ' + accNetBalanceClass(netV);
+      }
       var titleEl = document.getElementById('accDetailTitle');
       if (titleEl) titleEl.textContent = e.name || '';
       var pinBtn = document.getElementById('accPinBtn');
@@ -1161,8 +1182,6 @@
           sp.removeAttribute('data-max-settlement');
         } else if (res.settlementPending && (Number(res.maxSettlement) || 0) > 0.0001) {
           sp.classList.remove('hidden');
-          var payV = Number(e.balance_payable) || 0;
-          var recV = Number(e.balance_receivable) || 0;
           var mx = Math.round((Number(res.maxSettlement) || 0) * 100) / 100;
           sp.setAttribute('data-max-settlement', String(mx));
           var ex = document.getElementById('accSettlementExplain');

@@ -41,6 +41,43 @@ function isReceivableOffsetChoiceMissing(body) {
   return false;
 }
 
+/**
+ * ملاحظة قيد «علينا/لهم» توضّح تأجيل الخصم مقابل خصم كامل/مخصص.
+ * @param {boolean} hadReceivableBefore — كان هناك دين لنا قبل العملية (لتمييز «تأجيل» عن حالة عدم وجود دين لنا).
+ */
+function debtPayableLedgerNote({
+  kindLabel,
+  notes,
+  discountAmt,
+  discountPct,
+  offsetUsd,
+  offsetMode,
+  hadReceivableBefore,
+}) {
+  const n = notes && String(notes).trim();
+  if (n) return n;
+  if (discountAmt > 0) {
+    return discountPct != null && !isNaN(Number(discountPct))
+      ? `${kindLabel} — صافي بعد خصم ${discountPct}%`
+      : `${kindLabel} — صافي بعد خصم`;
+  }
+  if (offsetUsd <= 0.0001) {
+    if (hadReceivableBefore && offsetMode === 'defer') {
+      return `${kindLabel} — تأجيل خصم من دين لنا (المبلغ الكامل لمصلحتهم؛ دين لنا على المعتمد دون تغيير)`;
+    }
+    return kindLabel === 'لهم'
+      ? 'لهم — مطلوب دفع (بدون صندوق رئيسي)'
+      : 'دين علينا — مطلوب دفع';
+  }
+  if (offsetMode === 'full') {
+    return `${kindLabel} — خصم كامل من دين لنا (${offsetUsd.toFixed(2)})؛ الباقي دين علينا (رصيد له)`;
+  }
+  if (offsetMode === 'custom') {
+    return `${kindLabel} — خصم مخصص ${offsetUsd.toFixed(2)} من دين لنا؛ الباقي دين علينا (رصيد له)`;
+  }
+  return `${kindLabel} — بعد خصم ${offsetUsd.toFixed(2)} من دين لنا`;
+}
+
 /** صافي USD من قيود رصيد مرجعي ومرتجعات في سجل الصندوق — يُخصم من التزام «دين علينا» قبل تسجيل entity_payables */
 async function sumFundReferenceAndReturnUsdForFund(db, fundId) {
   const r = (await db.query(
@@ -203,8 +240,11 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         });
       }
       let offsetUsd = 0;
+      let offsetMode = 'defer';
       try {
-        offsetUsd = parseReceivableOffsetFromBody(req.body, rec0, gross).s;
+        const parsed = parseReceivableOffsetFromBody(req.body, rec0, gross);
+        offsetUsd = parsed.s;
+        offsetMode = parsed.mode;
       } catch (e) {
         return res.json({ success: false, message: e.message || 'فشل', code: e.code });
       }
@@ -219,15 +259,18 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         grossInputUsd: gross,
         offsetFromReceivableUsd: offsetUsd,
         remainingGrossAfterOffsetUsd: remainingGross,
+        receivableOffsetMode: offsetMode,
       };
       const ledgerMeta = JSON.stringify(debtMetaObj);
-      const noteDebt =
-        notes ||
-        (discountAmt > 0
-          ? `دين علينا — صافي بعد خصم ${discountPct}%`
-          : offsetUsd > 0
-            ? `دين علينا — بعد خصم ${offsetUsd.toFixed(2)} من دين لنا`
-            : 'دين علينا — مطلوب دفع');
+      const noteDebt = debtPayableLedgerNote({
+        kindLabel: 'دين علينا',
+        notes,
+        discountAmt,
+        discountPct,
+        offsetUsd,
+        offsetMode,
+        hadReceivableBefore: rec0 > 0.0001,
+      });
       pay = roundMoney(pay + netAmt);
       rec = roundMoney(rec0 - offsetUsd);
 
@@ -258,7 +301,10 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         )).rows[0];
         return res.json({
           success: true,
-          message: 'تم خصم من دين لنا (لا يوجد باقي إيداع بعد الخصم)',
+          message:
+            rec0 > 0.0001 && offsetUsd <= 0.0001 && offsetMode === 'defer'
+              ? 'تم التسجيل — تأجيل خصم دين لنا (دين لنا ورصيد له يظهران معًا)'
+              : 'تم خصم من دين لنا (لا يوجد باقي إيداع بعد الخصم)',
           newBalance: outOnly.balance_amount,
           balance_payable: outOnly.balance_payable,
           balance_receivable: outOnly.balance_receivable,
@@ -322,9 +368,16 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       )).rows[0];
       return res.json({
         success: true,
-        message: discountAmt > 0
-          ? 'تم تسجيل دين علينا (صافي) والخصم كربح'
-          : 'تم تسجيل دين علينا والصندوق الرئيسي',
+        message:
+          discountAmt > 0
+            ? 'تم تسجيل دين علينا (صافي) والخصم كربح'
+            : rec0 > 0.0001 && offsetUsd <= 0.0001 && offsetMode === 'defer'
+              ? 'تم التسجيل — تأجيل خصم دين لنا (دين لنا ورصيد له يظهران معًا في الملف)'
+              : offsetUsd > 0.0001 && offsetMode === 'full'
+                ? 'تم التسجيل — خصم كامل من دين لنا والباقي دين علينا (رصيد له)'
+                : offsetUsd > 0.0001 && offsetMode === 'custom'
+                  ? 'تم التسجيل — خصم مخصص من دين لنا والباقي دين علينا (رصيد له)'
+                  : 'تم تسجيل دين علينا والصندوق الرئيسي',
         newBalance: out.balance_amount,
         balance_payable: out.balance_payable,
         balance_receivable: out.balance_receivable,
@@ -343,8 +396,11 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         });
       }
       let offsetUsd = 0;
+      let offsetMode = 'defer';
       try {
-        offsetUsd = parseReceivableOffsetFromBody(req.body, rec0, gross).s;
+        const parsed = parseReceivableOffsetFromBody(req.body, rec0, gross);
+        offsetUsd = parsed.s;
+        offsetMode = parsed.mode;
       } catch (e) {
         return res.json({ success: false, message: e.message || 'فشل', code: e.code });
       }
@@ -360,15 +416,18 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         offsetFromReceivableUsd: offsetUsd,
         remainingGrossAfterOffsetUsd: remainingGross,
         noMainFund: true,
+        receivableOffsetMode: offsetMode,
       };
       const ledgerMeta = JSON.stringify(debtMetaObj);
-      const noteDebt =
-        notes ||
-        (discountAmt > 0
-          ? `لهم — صافي بعد خصم ${discountPct}%`
-          : offsetUsd > 0
-            ? `لهم — بعد خصم ${offsetUsd.toFixed(2)} من دين لنا`
-            : 'لهم — مطلوب دفع (بدون صندوق رئيسي)');
+      const noteDebt = debtPayableLedgerNote({
+        kindLabel: 'لهم',
+        notes,
+        discountAmt,
+        discountPct,
+        offsetUsd,
+        offsetMode,
+        hadReceivableBefore: rec0 > 0.0001,
+      });
       pay = roundMoney(pay + netAmt);
       rec = roundMoney(rec0 - offsetUsd);
 
@@ -398,7 +457,10 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         )).rows[0];
         return res.json({
           success: true,
-          message: 'تم خصم من دين لنا (لا يوجد باقي مطلوب دفع بعد الخصم)',
+          message:
+            rec0 > 0.0001 && offsetUsd <= 0.0001 && offsetMode === 'defer'
+              ? 'تم التسجيل — تأجيل خصم دين لنا (دين لنا ورصيد له يظهران معًا)'
+              : 'تم خصم من دين لنا (لا يوجد باقي مطلوب دفع بعد الخصم)',
           newBalance: outNf.balance_amount,
           balance_payable: outNf.balance_payable,
           balance_receivable: outNf.balance_receivable,
@@ -446,7 +508,16 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       )).rows[0];
       return res.json({
         success: true,
-        message: discountAmt > 0 ? 'تم تسجيل لهم (صافي) والخصم كربح' : 'تم تسجيل لهم — مطلوب دفع فقط',
+        message:
+          discountAmt > 0
+            ? 'تم تسجيل لهم (صافي) والخصم كربح'
+            : rec0 > 0.0001 && offsetUsd <= 0.0001 && offsetMode === 'defer'
+              ? 'تم التسجيل — تأجيل خصم دين لنا (دين لنا ورصيد له يظهران معًا في الملف)'
+              : offsetUsd > 0.0001 && offsetMode === 'full'
+                ? 'تم التسجيل — خصم كامل من دين لنا والباقي لهم (رصيد له)'
+                : offsetUsd > 0.0001 && offsetMode === 'custom'
+                  ? 'تم التسجيل — خصم مخصص من دين لنا والباقي لهم (رصيد له)'
+                  : 'تم تسجيل لهم — مطلوب دفع فقط',
         newBalance: out.balance_amount,
         balance_payable: out.balance_payable,
         balance_receivable: out.balance_receivable,
@@ -464,6 +535,7 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     const dir = salaryDirection === 'to_us' ? 'to_us' : 'to_them';
 
     let offsetUsd = 0;
+    let offsetMode = 'defer';
     if (dir === 'to_us') {
       if (rec0 > 0.0001 && (isReceivableOffsetChoiceMissing(req.body))) {
         return res.status(400).json({
@@ -473,9 +545,11 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
         });
       }
       try {
-        offsetUsd = parseReceivableOffsetFromBody(req.body, rec0, amt, {
+        const parsed = parseReceivableOffsetFromBody(req.body, rec0, amt, {
           salaryRemainderAfterBrokerage: remainder,
-        }).s;
+        });
+        offsetUsd = parsed.s;
+        offsetMode = parsed.mode;
       } catch (e) {
         return res.json({ success: false, message: e.message || 'فشل', code: e.code });
       }
@@ -508,20 +582,36 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
       );
     }
 
-    const salaryMeta =
-      dir === 'to_us' && offsetUsd > 0.0001
-        ? JSON.stringify({
-            offsetUsd,
+    const salaryMetaObj =
+      dir === 'to_us'
+        ? {
             grossSalaryUsd: amt,
             remainderAfterBrokerageUsd: remainder,
             fundDepositUsd: fundDepositToUs,
-          })
+            receivableOffsetMode: offsetMode,
+            offsetUsd,
+            offsetFromReceivableUsd: offsetUsd,
+          }
         : null;
+    const salaryMeta = salaryMetaObj ? JSON.stringify(salaryMetaObj) : null;
+
+    let salaryNotes = notes && String(notes).trim() ? notes : null;
+    if (!salaryNotes && dir === 'to_us') {
+      if (rec0 > 0.0001 && offsetUsd <= 0.0001 && offsetMode === 'defer') {
+        salaryNotes =
+          'راتب لنا — تأجيل خصم من دين لنا (دين لنا دون تغيير؛ المبلغ يُسجّل لمصلحتهم والصندوق)';
+      } else if (offsetUsd > 0.0001) {
+        salaryNotes =
+          offsetMode === 'full'
+            ? `راتب لنا — خصم كامل من دين لنا (${offsetUsd.toFixed(2)})؛ الباقي للصندوق`
+            : `راتب لنا — خصم مخصص ${offsetUsd.toFixed(2)} من دين لنا؛ الباقي للصندوق`;
+      }
+    }
 
     const led = await db.query(
       `INSERT INTO accreditation_ledger (accreditation_id, entry_type, amount, currency, direction, brokerage_pct, brokerage_amount, cycle_id, notes, meta_json)
        VALUES ($1, 'salary', $2, 'USD', $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [id, amt, dir, !isNaN(pct) ? pct : null, brokerageAmount || null, cid, notes || null, salaryMeta]
+      [id, amt, dir, !isNaN(pct) ? pct : null, brokerageAmount || null, cid, salaryNotes, salaryMeta]
     );
     const ledgerId = led.rows[0]?.id;
 
@@ -565,7 +655,19 @@ router.post('/:id/add-amount', requireAuth, async (req, res) => {
     )).rows[0];
     res.json({
       success: true,
-      message: 'تم التسجيل',
+      message: (() => {
+        if (dir !== 'to_us') return 'تم التسجيل';
+        if (rec0 > 0.0001 && offsetUsd <= 0.0001 && offsetMode === 'defer') {
+          return 'تم التسجيل — تأجيل خصم دين لنا (دين لنا ورصيد له يظهران معًا في الملف)';
+        }
+        if (offsetUsd > 0.0001 && offsetMode === 'full') {
+          return 'تم التسجيل — خصم كامل من دين لنا والباقي للصندوق';
+        }
+        if (offsetUsd > 0.0001 && offsetMode === 'custom') {
+          return 'تم التسجيل — خصم مخصص من دين لنا والباقي للصندوق';
+        }
+        return 'تم التسجيل';
+      })(),
       newBalance: out.balance_amount,
       balance_payable: out.balance_payable,
       balance_receivable: out.balance_receivable,

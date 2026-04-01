@@ -41,6 +41,23 @@
       </div>
 
       <div class="p-3 sm:p-4">
+        <div id="accBalanceSummary" class="mb-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3 sm:grid-cols-3 sm:gap-3">
+          <div class="rounded-lg border border-amber-100 bg-white px-3 py-2.5 shadow-sm">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-800">دين لنا</p>
+            <p id="accDetailRec" class="mt-1 text-base font-bold tabular-nums text-amber-900">—</p>
+            <p class="mt-0.5 text-[10px] leading-snug text-slate-500">ما للمعتمد علينا (يظهر في «دين لنا»)</p>
+          </div>
+          <div class="rounded-lg border border-emerald-100 bg-white px-3 py-2.5 shadow-sm">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">دين علينا (رصيد له)</p>
+            <p id="accDetailPay" class="mt-1 text-base font-bold tabular-nums text-emerald-900">—</p>
+            <p class="mt-0.5 text-[10px] leading-snug text-slate-500">المبلغ المسجّل لمصلحته / مطلوب منّا</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">صافي الحساب</p>
+            <p id="accDetailNet" class="mt-1 text-base font-bold tabular-nums text-slate-900">—</p>
+            <p class="mt-0.5 text-[10px] leading-snug text-slate-500">علينا − لنا (موجب = لصالحه)</p>
+          </div>
+        </div>
         <div id="accSettlementPanel" class="mb-4 hidden rounded-xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">

@@ -531,10 +531,17 @@ function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
   const isSuccess = type === 'success';
+  const isInfo = type === 'info';
+  const borderClass = isSuccess ? 'border-r-emerald-500' : isInfo ? 'border-r-sky-500' : 'border-r-red-500';
+  const iconClass = isSuccess
+    ? 'check-circle text-emerald-500'
+    : isInfo
+      ? 'circle-info text-sky-500'
+      : 'exclamation-circle text-red-500';
   const toast = document.createElement('div');
-  toast.className = `flex items-center gap-2.5 py-3.5 px-5 bg-white rounded-xl shadow-lg min-w-[280px] max-w-[400px] text-[0.9rem] animate-[toastIn_0.3s_ease] border-r-4 ${isSuccess ? 'border-r-emerald-500' : 'border-r-red-500'}`;
+  toast.className = `flex items-center gap-2.5 py-3.5 px-5 bg-white rounded-xl shadow-lg min-w-[280px] max-w-[400px] text-[0.9rem] animate-[toastIn_0.3s_ease] border-r-4 ${borderClass}`;
   toast.innerHTML = `
-    <i class="fas fa-${isSuccess ? 'check-circle text-emerald-500' : 'exclamation-circle text-red-500'}"></i>
+    <i class="fas fa-${iconClass}"></i>
     <span>${message}</span>
     <button class="mr-auto text-slate-400 p-1 cursor-pointer hover:text-slate-600" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
   `;
