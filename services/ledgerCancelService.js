@@ -2,6 +2,18 @@ const { runTransaction } = require('../db/database');
 
 const BLOCKED_FUND_TYPES = new Set(['opening_reference', 'movement_cancel', 'net_profit_mirror']);
 
+/** أنواع معروفة في entity_payables — أي اسم جدول/كيان آخر يُمرَّر إن وافق نمطاً آمناً */
+const ENTITY_PAYABLE_TYPES = new Set(['fund', 'transfer_company', 'shipping_company', 'sub_agency']);
+
+function normalizeEntityPayableType(raw) {
+  if (raw == null || raw === '') return 'transfer_company';
+  const t = String(raw).trim();
+  if (t === 'company') return 'transfer_company';
+  if (ENTITY_PAYABLE_TYPES.has(t)) return t;
+  if (/^[a-z][a-z0-9_]*$/i.test(t) && t.length <= 64) return t;
+  return 'transfer_company';
+}
+
 function canCancelFundLedgerRow(row) {
   if (!row || row.cancelled_at) return false;
   if (row.type === 'movement_cancel') return false;
@@ -75,37 +87,62 @@ async function restorePayablesFromPayload(client, userId, payload) {
   if (!payload || !payload.payablesSettled || payload.payablesSettled <= 0.0001) return;
   const ps = parseFloat(payload.payablesSettled) || 0;
   if (ps <= 0) return;
-  const cur = (payload.currency || 'USD').trim();
-  if (payload.kind === 'receive_from_main' && payload.targetFundId) {
+
+  let working = payload;
+  if (payload.kind === 'financial_return' && payload.returnId) {
+    const missingType = payload.entityType == null || String(payload.entityType).trim() === '';
+    const missingId = payload.entityId == null;
+    if (missingType || missingId) {
+      const rid = parseInt(payload.returnId, 10);
+      if (rid) {
+        const fr = (await client.query(
+          'SELECT entity_type, entity_id, currency FROM financial_returns WHERE id = $1 AND user_id = $2',
+          [rid, userId]
+        )).rows[0];
+        if (fr) {
+          working = Object.assign({}, payload, {
+            entityType: missingType ? fr.entity_type : payload.entityType,
+            entityId: missingId ? fr.entity_id : payload.entityId,
+            currency: payload.currency || fr.currency || 'USD',
+          });
+        }
+      }
+    }
+  }
+
+  const cur = (working.currency || 'USD').trim();
+  if (working.kind === 'receive_from_main' && working.targetFundId) {
     await client.query(
       `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
        VALUES ($1, 'fund', $2, $3, $4, $5, 'payable')`,
-      [userId, payload.targetFundId, ps, cur, 'استرجاع من إلغاء تحويل (وارد من الرئيسي)']
+      [userId, working.targetFundId, ps, cur, 'استرجاع من إلغاء تحويل (وارد من الرئيسي)']
     );
     return;
   }
-  if (payload.kind === 'company_payout' && payload.companyId) {
+  if (working.kind === 'company_payout' && working.companyId) {
     await client.query(
       `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
        VALUES ($1, 'transfer_company', $2, $3, $4, $5, 'payable')`,
-      [userId, payload.companyId, ps, cur, 'استرجاع من إلغاء صرف لشركة تحويل']
+      [userId, working.companyId, ps, cur, 'استرجاع من إلغاء صرف لشركة تحويل']
     );
     return;
   }
-  if (payload.kind === 'add_receivable' && payload.companyId) {
+  if (working.kind === 'add_receivable' && working.companyId) {
     await client.query(
       `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
        VALUES ($1, 'transfer_company', $2, $3, $4, $5, 'payable')`,
-      [userId, payload.companyId, ps, cur, 'استرجاع من إلغاء «دين لنا»']
+      [userId, working.companyId, ps, cur, 'استرجاع من إلغاء «دين لنا»']
     );
     return;
   }
-  if (payload.kind === 'financial_return' && payload.entityType && payload.entityId) {
-    const et = payload.entityType === 'fund' ? 'fund' : 'transfer_company';
+  if (working.kind === 'financial_return' && working.entityId != null) {
+    const eid = parseInt(working.entityId, 10);
+    if (!eid || isNaN(eid)) return;
+    const et = normalizeEntityPayableType(working.entityType);
     await client.query(
       `INSERT INTO entity_payables (user_id, entity_type, entity_id, amount, currency, notes, settlement_mode)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [userId, et, payload.entityId, ps, cur, 'استرجاع من إلغاء مرتجع', 'payable']
+      [userId, et, eid, ps, cur, 'استرجاع من إلغاء مرتجع (استعادة دين علينا)', 'payable']
     );
   }
 }
@@ -215,15 +252,27 @@ async function cancelFinancialReturnBundle(client, userId, returnId) {
     await reverseCompanyLedgerRow(client, userId, r);
   }
 
-  const restorePayload = payload && payload.kind === 'financial_return'
-    ? payload
-    : {
+  let restorePayload;
+  if (payload && payload.kind === 'financial_return') {
+    restorePayload = Object.assign({}, payload, {
+      entityType:
+        payload.entityType != null && String(payload.entityType).trim() !== ''
+          ? payload.entityType
+          : fr.entity_type,
+      entityId: payload.entityId != null ? payload.entityId : fr.entity_id,
+    });
+  } else {
+    restorePayload = {
       kind: 'financial_return',
       entityType: fr.entity_type,
       entityId: fr.entity_id,
       payablesSettled: 0,
       currency: fr.currency || 'USD',
     };
+  }
+  if (restorePayload.kind === 'financial_return') {
+    restorePayload.entityType = normalizeEntityPayableType(restorePayload.entityType);
+  }
   await restorePayablesFromPayload(client, userId, restorePayload);
 
   await client.query(
