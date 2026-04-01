@@ -14,20 +14,38 @@ function normalizeEntityPayableType(raw) {
   return 'transfer_company';
 }
 
+function hasNonEmptyMovementGroupId(row) {
+  if (!row || row.movement_group_id == null) return false;
+  return String(row.movement_group_id).trim() !== '';
+}
+
 function canCancelFundLedgerRow(row) {
   if (!row || row.cancelled_at) return false;
   if (row.type === 'movement_cancel') return false;
   if (BLOCKED_FUND_TYPES.has(row.type)) return false;
   if (row.ref_table === 'financial_returns' && row.ref_id) return true;
-  if (row.movement_group_id) return true;
+  if (hasNonEmptyMovementGroupId(row)) return true;
   if (row.ref_table === 'fund_transfers' && row.ref_id) return true;
   return false;
 }
 
+/** رصيد افتتاحي قديم بدون ref ولا مجموعة حركة — يُلغى بعكس سطر الدفتر فقط */
+function isStandaloneOpeningCompanyLedger(row) {
+  if (!row || row.cancelled_at) return false;
+  if (hasNonEmptyMovementGroupId(row)) return false;
+  if (row.ref_table === 'financial_returns' && row.ref_id) return false;
+  if (row.ref_table === 'transfer_company_ledger' && row.ref_id) return false;
+  const notes = String(row.notes || '');
+  const refEmpty = !row.ref_table || String(row.ref_table).trim() === '';
+  return /رصيد افتتاحي/i.test(notes) && refEmpty;
+}
+
 function canCancelCompanyLedgerRow(row) {
   if (!row || row.cancelled_at) return false;
+  if (row.ref_table === 'transfer_company_ledger' && row.ref_id) return false;
   if (row.ref_table === 'financial_returns' && row.ref_id) return true;
-  if (row.movement_group_id) return true;
+  if (hasNonEmptyMovementGroupId(row)) return true;
+  if (isStandaloneOpeningCompanyLedger(row)) return true;
   return false;
 }
 
@@ -297,7 +315,7 @@ async function cancelFundLedgerMovement(db, userId, ledgerId) {
       await cancelFinancialReturnBundle(client, userId, row.ref_id);
       return;
     }
-    if (row.movement_group_id) {
+    if (hasNonEmptyMovementGroupId(row)) {
       await cancelByMovementGroup(client, userId, row.movement_group_id);
       return;
     }
@@ -322,8 +340,12 @@ async function cancelTransferCompanyLedgerMovement(db, userId, ledgerId) {
       await cancelFinancialReturnBundle(client, userId, row.ref_id);
       return;
     }
-    if (row.movement_group_id) {
+    if (hasNonEmptyMovementGroupId(row)) {
       await cancelByMovementGroup(client, userId, row.movement_group_id);
+      return;
+    }
+    if (isStandaloneOpeningCompanyLedger(row)) {
+      await reverseCompanyLedgerRow(client, userId, row);
       return;
     }
     throw new Error('لا يمكن إلغاء هذه الحركة — سجلات قديمة بدون ربط جماعي');
