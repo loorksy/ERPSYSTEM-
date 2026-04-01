@@ -1,25 +1,29 @@
 <div class="acc-approvals-page w-full max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10" dir="rtl">
-  <!-- موبايل/تابلت: عمود؛ من lg (لابتوب): صف واحد يمسّك الأزرار وخانة البحث بمحاذاة عمودية -->
-  <div class="acc-approvals-toolbar mb-6 flex min-w-0 flex-col gap-3 lg:flex-row lg:flex-nowrap lg:items-center lg:gap-4">
-    <div class="erp-toolbar-actions w-full min-w-0 lg:w-auto lg:max-w-none lg:flex-shrink-0">
-      <button type="button" onclick="accOpenBulk()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-slate-700 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-slate-800 active:scale-[0.99] transition text-center touch-manipulation">رفع أرصدة</button>
-      <button type="button" onclick="accOpenDelivery()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-emerald-600 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition text-center touch-manipulation">تسليم</button>
-      <button type="button" onclick="accOpenAdd()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-indigo-600 to-indigo-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-indigo-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
-        <i class="fas fa-plus text-[10px] sm:text-sm shrink-0 opacity-95" aria-hidden="true"></i>
-        <span class="text-center">إضافة معتمد</span>
-      </button>
-    </div>
-    <div class="relative w-full min-w-0 lg:min-h-0 lg:flex-1 lg:max-w-md">
+  <!-- أزرار مدمجة — erp-toolbar-actions: Grid موبايل موحّد بين المتصفحات -->
+  <div class="mb-6 erp-toolbar-actions">
+    <button type="button" onclick="accOpenBulk()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-slate-700 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-slate-800 active:scale-[0.99] transition text-center touch-manipulation">رفع أرصدة</button>
+    <button type="button" onclick="accOpenDelivery()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-emerald-600 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md hover:bg-emerald-700 active:scale-[0.99] transition text-center touch-manipulation">تسليم</button>
+    <button type="button" onclick="accOpenAdd()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-indigo-600 to-indigo-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-indigo-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
+      <i class="fas fa-plus text-[10px] sm:text-sm shrink-0 opacity-95" aria-hidden="true"></i>
+      <span class="text-center">إضافة معتمد</span>
+    </button>
+  </div>
+  <div class="mb-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+    <div class="relative w-full min-w-0 sm:max-w-md sm:shrink-0">
       <i class="fas fa-search pointer-events-none absolute right-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-slate-400" aria-hidden="true"></i>
       <input
         type="search"
         id="accCardsSearch"
         autocomplete="off"
-        class="h-11 w-full rounded-xl border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 lg:h-10 lg:py-0"
+        class="h-11 w-full rounded-xl border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:h-auto sm:py-2.5 lg:py-2"
         placeholder="بحث بالاسم أو الكود…"
         aria-label="بحث في المعتمدين"
       />
     </div>
+    <p class="text-[11px] leading-relaxed text-slate-500 sm:max-w-xs">
+      <i class="fas fa-arrows-alt ml-1 text-slate-400" aria-hidden="true"></i>
+      اسحب من المقبض لترتيب البطاقات — يُحفظ الترتيب في هذا المتصفح.
+    </p>
   </div>
   <div id="accCards" class="agencies-grid">
     <div class="col-span-full acc-approvals-empty text-slate-400 text-center py-12 flex flex-col items-center gap-2">

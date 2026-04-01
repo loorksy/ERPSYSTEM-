@@ -1161,43 +1161,10 @@
     });
   }
 
-  /** يمنع تمرير الصفحة أثناء سحب بطاقة (لابتوب/موبايل). */
-  function accSetDndScrollLock(on) {
-    try {
-      if (on) {
-        document.documentElement.classList.add('acc-dnd-scroll-lock');
-        document.body.classList.add('acc-dnd-scroll-lock');
-      } else {
-        document.documentElement.classList.remove('acc-dnd-scroll-lock');
-        document.body.classList.remove('acc-dnd-scroll-lock');
-      }
-    } catch (e) {}
-  }
-
   function wireAccCardsDnD() {
     var box = document.getElementById('accCards');
     if (!box || box.dataset.accDndBound) return;
     box.dataset.accDndBound = '1';
-    if (!window._accDndGlobalScrollBlock) {
-      window._accDndGlobalScrollBlock = true;
-      window.addEventListener(
-        'wheel',
-        function(e) {
-          if (document.body.classList.contains('acc-dnd-scroll-lock')) e.preventDefault();
-        },
-        { passive: false }
-      );
-      window.addEventListener(
-        'touchmove',
-        function(e) {
-          if (document.body.classList.contains('acc-dnd-scroll-lock')) e.preventDefault();
-        },
-        { passive: false }
-      );
-      document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'hidden') accSetDndScrollLock(false);
-      });
-    }
     var dragOverCard = null;
     box.addEventListener('dragstart', function(e) {
       var h = e.target.closest('.acc-card-drag-handle');
@@ -1211,11 +1178,9 @@
         e.dataTransfer.setData('text/plain', String(accDnDDraggingId));
         e.dataTransfer.effectAllowed = 'move';
         card.classList.add('opacity-60');
-        accSetDndScrollLock(true);
       }
     });
     box.addEventListener('dragend', function(e) {
-      accSetDndScrollLock(false);
       var h = e.target.closest('.acc-card-drag-handle');
       if (!h) return;
       accDnDDraggingId = null;

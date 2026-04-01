@@ -1,104 +1,164 @@
-<div class="max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10" dir="rtl">
-  <div class="mb-6 flex justify-end">
-    <button type="button" onclick="tcOpenAdd()" class="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-md shadow-indigo-600/20 hover:bg-indigo-700 active:scale-[0.99] transition touch-manipulation">
-      <i class="fas fa-plus"></i> إضافة شركة
+<div class="tc-page w-full max-w-6xl mx-auto min-w-0 px-4 sm:px-0 pb-10" dir="rtl">
+  <div class="mb-6 erp-toolbar-actions erp-toolbar-actions--2">
+    <button type="button" onclick="tcOpenAdd()" class="inline-flex items-center justify-center gap-1 rounded-xl px-1.5 py-2 min-h-[2.75rem] sm:min-h-0 sm:px-4 sm:py-2.5 bg-gradient-to-br from-violet-600 to-violet-500 text-white text-[11px] leading-snug sm:text-sm font-semibold shadow-md shadow-violet-500/25 hover:brightness-105 active:scale-[0.99] transition touch-manipulation">
+      <i class="fas fa-plus text-[10px] sm:text-sm shrink-0 opacity-95" aria-hidden="true"></i>
+      <span class="text-center">إضافة شركة</span>
     </button>
   </div>
-  <div id="tcCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    <p class="text-slate-400 col-span-full text-center py-12">جاري التحميل...</p>
+
+  <div class="mb-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+    <div class="relative w-full min-w-0 sm:max-w-md sm:shrink-0">
+      <i class="fas fa-search pointer-events-none absolute right-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-slate-400" aria-hidden="true"></i>
+      <input
+        type="search"
+        id="tcCardsSearch"
+        autocomplete="off"
+        class="h-11 w-full rounded-xl border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 sm:h-auto sm:py-2.5"
+        placeholder="بحث بالاسم أو الدولة…"
+        aria-label="بحث في شركات التحويل"
+      />
+    </div>
+    <p class="text-[11px] leading-relaxed text-slate-500 sm:max-w-xs">
+      <i class="fas fa-arrows-alt ml-1 text-slate-400" aria-hidden="true"></i>
+      اسحب من المقبض لترتيب البطاقات — يُحفظ الترتيب في هذا المتصفح.
+    </p>
+  </div>
+
+  <div id="tcCards" class="agencies-grid">
+    <div class="col-span-full acc-approvals-empty flex flex-col items-center gap-2 py-12 text-center text-slate-400">
+      <i class="fas fa-spinner fa-spin text-3xl text-violet-400" aria-hidden="true"></i>
+      <span class="text-sm font-medium">جاري التحميل...</span>
+    </div>
   </div>
 </div>
 
-<div id="tcAddModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
-  <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-    <h4 class="text-lg font-bold mb-4">إضافة شركة تحويل</h4>
-    <form id="tcAddForm" class="space-y-3">
+<!-- إضافة شركة -->
+<div id="tcAddModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm" dir="rtl" onclick="if(event.target===this)tcCloseAdd()">
+  <div class="tc-modal-shell relative flex max-h-[min(92vh,760px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5" onclick="event.stopPropagation()">
+    <div class="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-gradient-to-l from-violet-50/90 to-white px-5 py-4">
+      <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-md shadow-violet-600/25">
+        <i class="fas fa-money-bill-wave" aria-hidden="true"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+        <h4 class="text-lg font-bold text-slate-900">إضافة شركة تحويل</h4>
+        <p class="mt-0.5 text-xs text-slate-500">البيانات الأساسية وأنواع التحويل المدعومة</p>
+      </div>
+      <button type="button" onclick="tcCloseAdd()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" aria-label="إغلاق"><i class="fas fa-times text-lg"></i></button>
+    </div>
+    <form id="tcAddForm" class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-5 sm:p-6">
       <div>
-        <label class="text-sm font-semibold">اسم الشركة</label>
-        <input type="text" id="tcName" class="w-full mt-1 px-4 py-2.5 rounded-xl border border-slate-200" required>
+        <label class="text-sm font-semibold text-slate-700">اسم الشركة</label>
+        <input type="text" id="tcName" class="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20" required>
       </div>
       <div>
-        <label class="text-sm font-semibold">الدولة</label>
-        <select id="tcCountry" class="w-full mt-1 px-4 py-2.5 rounded-xl border border-slate-200"></select>
+        <label class="text-sm font-semibold text-slate-700">الدولة</label>
+        <select id="tcCountry" class="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20"></select>
       </div>
       <div>
-        <label class="text-sm font-semibold">الرصيد (موجب لنا / سالب علينا)</label>
-        <div class="flex gap-2 mt-1">
-          <input type="number" id="tcBal" step="0.01" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200" value="0">
-          <select id="tcBalCur" class="w-28 rounded-xl border border-slate-200"><option value="USD">USD</option><option value="TRY">TRY</option><option value="SYP">SYP</option></select>
+        <label class="text-sm font-semibold text-slate-700">الرصيد (موجب لنا / سالب علينا)</label>
+        <div class="mt-1 flex gap-2">
+          <input type="number" id="tcBal" step="0.01" class="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20" value="0">
+          <select id="tcBalCur" class="w-28 rounded-xl border border-slate-200 px-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20"><option value="USD">USD</option><option value="TRY">TRY</option><option value="SYP">SYP</option></select>
         </div>
       </div>
       <div>
-        <label class="text-sm font-semibold">أنواع التحويل (اختر عدة)</label>
+        <label class="text-sm font-semibold text-slate-700">أنواع التحويل (اختر عدة)</label>
         <div id="tcTypesWrap" class="mt-2 flex flex-wrap gap-2"></div>
       </div>
-      <div class="flex gap-2 pt-2">
-        <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold">حفظ</button>
-        <button type="button" onclick="tcCloseAdd()" class="px-5 py-3 rounded-xl bg-slate-100">إلغاء</button>
+      <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+        <button type="button" onclick="tcCloseAdd()" class="w-full rounded-xl border border-slate-200 bg-white px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto">إلغاء</button>
+        <button type="submit" class="w-full rounded-xl bg-violet-600 px-6 py-3 font-bold text-white shadow-md hover:bg-violet-700 sm:w-auto">حفظ</button>
       </div>
     </form>
   </div>
 </div>
 
-<div id="tcDetailModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 bg-black/50">
-  <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-    <div class="px-6 py-4 border-b flex justify-between">
-      <h4 id="tcDetailTitle" class="text-lg font-bold">الشركة</h4>
-      <button type="button" onclick="tcCloseDetail()" class="w-10 h-10 rounded-xl hover:bg-slate-100 text-slate-400"><i class="fas fa-times"></i></button>
+<!-- ملف الشركة -->
+<div id="tcDetailModal" class="fixed inset-0 z-[10050] hidden items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm" dir="rtl" onclick="if(event.target===this)tcCloseDetail()">
+  <div class="tc-modal-shell relative flex max-h-[min(92vh,820px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5" onclick="event.stopPropagation()">
+    <div class="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur-sm">
+      <div class="flex min-w-0 flex-1 items-start gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-md">
+          <i class="fas fa-file-invoice-dollar text-lg" aria-hidden="true"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-violet-600">شركة تحويل</p>
+          <h4 id="tcDetailTitle" class="truncate text-lg font-bold text-slate-900">—</h4>
+        </div>
+      </div>
+      <button type="button" onclick="tcCloseDetail()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" aria-label="إغلاق"><i class="fas fa-times text-lg"></i></button>
     </div>
-    <div class="p-4 overflow-y-auto flex-1">
-      <p id="tcDetailPayables" class="hidden text-red-600 font-semibold text-sm mb-2"></p>
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <p id="tcDetailBal" class="text-indigo-600 font-bold"></p>
-        <button type="button" onclick="tcDownloadLedgerPdf()" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
-          <i class="fas fa-file-pdf ml-1"></i> تنزيل PDF
+
+    <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+      <p id="tcDetailPayables" class="mb-3 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800"></p>
+
+      <div id="tcDetailBalanceShell" class="mb-4 rounded-2xl border border-violet-200/70 bg-gradient-to-br from-violet-50 via-white to-slate-50/90 px-4 py-4 shadow-sm sm:px-5 sm:py-5">
+        <p class="text-xs font-semibold text-slate-600">رصيد الشركة</p>
+        <p id="tcDetailBal" class="mt-1 text-2xl font-bold tabular-nums text-slate-900 sm:text-3xl">—</p>
+      </div>
+
+      <div class="mb-4 flex flex-wrap items-center gap-2">
+        <button type="button" onclick="tcDownloadLedgerPdf()" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+          <i class="fas fa-file-pdf text-red-500" aria-hidden="true"></i>
+          تنزيل PDF
         </button>
       </div>
-      <div class="border border-slate-100 rounded-xl p-4 mb-4 bg-slate-50/50">
-        <h5 class="font-bold text-slate-800 mb-2 text-sm">إضافة دين لنا</h5>
-        <div class="flex flex-wrap gap-2 items-end">
-          <input type="number" id="tcRecvAmt" step="0.01" min="0" class="px-3 py-2 rounded-lg border border-slate-200 w-32 text-sm" placeholder="المبلغ">
-          <select id="tcRecvCur" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+
+      <div class="mb-5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50">
+        <div class="border-b border-slate-100 bg-white/80 px-4 py-3">
+          <h5 class="text-sm font-bold text-slate-900">إضافة دين لنا</h5>
+          <p class="mt-0.5 text-[11px] text-slate-500">يُسجّل لدى شركة التحويل ويُحدّث الرصيد</p>
+        </div>
+        <div class="flex flex-wrap items-end gap-2 p-4">
+          <input type="number" id="tcRecvAmt" step="0.01" min="0" class="h-10 w-32 rounded-lg border border-slate-200 px-3 text-sm tabular-nums focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15" placeholder="المبلغ">
+          <select id="tcRecvCur" class="h-10 rounded-lg border border-slate-200 px-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15">
             <option value="USD">USD</option>
             <option value="TRY">TRY</option>
             <option value="SYP">SYP</option>
           </select>
-          <input type="text" id="tcRecvNotes" class="flex-1 min-w-[140px] px-3 py-2 rounded-lg border border-slate-200 text-sm" placeholder="ملاحظات (اختياري)">
-          <button type="button" onclick="tcSubmitReceivable()" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold">تسجيل</button>
+          <input type="text" id="tcRecvNotes" class="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15" placeholder="ملاحظات (اختياري)">
+          <button type="button" onclick="tcSubmitReceivable()" class="h-10 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-violet-700">تسجيل</button>
         </div>
       </div>
-      <p class="text-[10px] text-slate-500 mb-2">اضغط على أي حركة لعرض التفاصيل أو إلغاء التحويل</p>
+
+      <p class="mb-2 text-[11px] text-slate-500">اضغط على أي حركة لعرض التفاصيل أو إلغاء التحويل إن وُجد</p>
       <div id="tcDetailLedger" class="space-y-2 text-sm"></div>
-      <div class="border-t border-slate-200 pt-4 mt-4">
-        <h5 class="font-bold text-slate-800 mb-2">تسجيل مرتجع</h5>
-        <input type="hidden" id="tcReturnCompanyId">
-        <div class="flex flex-wrap gap-2 items-end mb-2">
-          <input type="number" id="tcReturnAmt" step="0.01" min="0" placeholder="المبلغ" class="px-3 py-2 rounded-lg border border-slate-200 w-32 text-sm">
-          <select id="tcReturnCur" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
-            <option value="USD">USD</option>
-            <option value="TRY">TRY</option>
-            <option value="SYP">SYP</option>
-          </select>
-          <select id="tcReturnDisposition" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
-            <option value="remain_at_entity">يبقى لدى الشركة</option>
-            <option value="transfer_to_fund">ترحيل لصندوق</option>
-          </select>
-          <select id="tcReturnFundId" class="px-3 py-2 rounded-lg border border-slate-200 text-sm hidden"></select>
+
+      <div class="mt-6 overflow-hidden rounded-xl border border-emerald-200/80 bg-emerald-50/30">
+        <div class="border-b border-emerald-100 bg-emerald-50/50 px-4 py-3">
+          <h5 class="text-sm font-bold text-emerald-900">تسجيل مرتجع</h5>
+          <p class="mt-0.5 text-[11px] text-emerald-800/80">يبقى لدى الشركة أو يُرحّل لصندوق</p>
         </div>
-        <input type="text" id="tcReturnNotes" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm mb-2" placeholder="ملاحظات (اختياري)">
-        <button type="button" onclick="tcSubmitReturn()" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold">تسجيل المرتجع</button>
+        <div class="space-y-3 p-4">
+          <input type="hidden" id="tcReturnCompanyId">
+          <div class="flex flex-wrap items-end gap-2">
+            <input type="number" id="tcReturnAmt" step="0.01" min="0" placeholder="المبلغ" class="h-10 w-32 rounded-lg border border-slate-200 bg-white px-3 text-sm tabular-nums focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15">
+            <select id="tcReturnCur" class="h-10 rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15">
+              <option value="USD">USD</option>
+              <option value="TRY">TRY</option>
+              <option value="SYP">SYP</option>
+            </select>
+            <select id="tcReturnDisposition" class="h-10 rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15">
+              <option value="remain_at_entity">يبقى لدى الشركة</option>
+              <option value="transfer_to_fund">ترحيل لصندوق</option>
+            </select>
+            <select id="tcReturnFundId" class="hidden h-10 rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15"></select>
+          </div>
+          <input type="text" id="tcReturnNotes" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" placeholder="ملاحظات (اختياري)">
+          <button type="button" onclick="tcSubmitReturn()" class="inline-flex h-10 items-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">تسجيل المرتجع</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<div id="tcLedgerMoveModal" class="fixed inset-0 z-[2100] hidden items-center justify-center p-4 bg-black/50" onclick="if(event.target===this)tcCloseLedgerModal()">
-  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onclick="event.stopPropagation()">
-    <h4 id="tcLedgerMoveModalTitle" class="text-lg font-bold mb-3 text-slate-900">تفاصيل الحركة</h4>
-    <div id="tcLedgerMoveModalBody" class="space-y-2 text-sm text-slate-700 mb-6 min-h-[4rem]"></div>
+<div id="tcLedgerMoveModal" class="fixed inset-0 z-[10060] hidden items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm" dir="rtl" onclick="if(event.target===this)tcCloseLedgerModal()">
+  <div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xl ring-1 ring-slate-900/5" onclick="event.stopPropagation()">
+    <h4 id="tcLedgerMoveModalTitle" class="mb-3 text-lg font-bold text-slate-900">تفاصيل الحركة</h4>
+    <div id="tcLedgerMoveModalBody" class="mb-6 min-h-[4rem] space-y-2 text-sm text-slate-700"></div>
     <div class="flex flex-col-reverse gap-2 sm:flex-row">
-      <button type="button" onclick="tcCloseLedgerModal()" class="w-full py-3 rounded-xl bg-slate-100 font-semibold text-slate-800">إغلاق</button>
-      <button type="button" id="tcLedgerMoveModalCancelBtn" onclick="tcConfirmCancelLedger()" class="hidden w-full py-3 rounded-xl bg-red-600 text-white font-semibold">إلغاء التحويل</button>
+      <button type="button" onclick="tcCloseLedgerModal()" class="w-full rounded-xl bg-slate-100 py-3 font-semibold text-slate-800">إغلاق</button>
+      <button type="button" id="tcLedgerMoveModalCancelBtn" onclick="tcConfirmCancelLedger()" class="hidden w-full rounded-xl bg-red-600 py-3 font-semibold text-white">إلغاء التحويل</button>
     </div>
   </div>
 </div>
