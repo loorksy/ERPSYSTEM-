@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../data/app_database.dart';
+import 'books/cycle_posting_page.dart';
 import 'erp_theme.dart';
 import 'erp_widgets.dart';
 import 'sheet_page.dart';
@@ -13,7 +14,7 @@ import 'ui_kit.dart';
 /// The ⋯ of a period (owner's mockup): a sheet with «تدقيق الدورة» (outside
 /// the audit screen), «مزامنة الدورة» (Google periods), «تعديل الدورة»,
 /// «إقفال التدقيق» / «إعادة فتح التدقيق» and «حذف الدورة».
-enum PeriodAction { audit, sync, edit, lock, delete }
+enum PeriodAction { audit, sync, edit, lock, books, delete }
 
 String periodName(Cycle c) => c.name.isEmpty ? 'دورة #${c.id}' : c.name;
 
@@ -53,6 +54,11 @@ Future<PeriodAction?> showPeriodMenu(
             PeriodAction.lock,
             closed ? Icons.lock_open_outlined : Icons.lock_outline,
             closed ? 'إعادة فتح التدقيق' : 'إقفال التدقيق',
+          ),
+          choice(
+            PeriodAction.books,
+            Icons.menu_book_outlined,
+            'ترحيل إلى الدفاتر',
           ),
           choice(
             PeriodAction.delete,
@@ -130,6 +136,13 @@ Future<bool> runPeriodAction(
         ToastType.success,
       );
       s.cyclesChanged();
+      return false;
+    case PeriodAction.books:
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CyclePostingPage(cycleId: cycle.id),
+        ),
+      );
       return false;
     case PeriodAction.delete:
       final ok = await confirmDialog(

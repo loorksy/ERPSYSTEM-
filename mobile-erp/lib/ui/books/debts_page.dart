@@ -41,6 +41,21 @@ class _DebtsPageState extends State<DebtsPage> {
   Widget build(BuildContext context) => BooksPage(
     title: 'الديون',
     help: debtsHelp,
+    actions:
+        (context, data) => [
+          PdfButton(
+            name: 'الديون',
+            build:
+                (p, s) => p.parties(
+                  s.workspace.name,
+                  'الديون (لنا وعلينا)',
+                  data
+                      as List<
+                        ({Account account, String groupRole, int balance})
+                      >,
+                ),
+          ),
+        ],
     fab:
         (context, _) => FloatingActionButton.extended(
           heroTag: 'debt',

@@ -1,12 +1,16 @@
 // Flutter 3.50 deprecates its bundled Material exports; keep the SDK widgets.
 // ignore_for_file: deprecated_member_use
 
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../accounting/chart.dart';
 import '../../accounting/ledger.dart';
 import '../../accounting/money.dart';
 import '../../app_services.dart';
+import '../../services/pdf_reports.dart';
 import '../erp_theme.dart';
 import '../erp_widgets.dart';
 import '../help.dart';
@@ -322,6 +326,7 @@ class BooksPage extends StatefulWidget {
     required this.load,
     required this.build,
     this.fab,
+    this.actions,
   });
   final String title;
   final List<HelpItem> help;
@@ -333,6 +338,9 @@ class BooksPage extends StatefulWidget {
   )
   build;
   final Widget? Function(BuildContext context, VoidCallback reload)? fab;
+
+  /// Header buttons (before «؟»), given the loaded data.
+  final List<Widget> Function(BuildContext context, Object? data)? actions;
 
   @override
   State<BooksPage> createState() => _BooksPageState();
@@ -376,7 +384,14 @@ class _BooksPageState extends State<BooksPage> {
   @override
   Widget build(BuildContext context) {
     final body = <Widget>[
-      ScreenHeader(title: widget.title, help: () => widget.help),
+      ScreenHeader(
+        title: widget.title,
+        help: () => widget.help,
+        actions:
+            _loading || _error != null
+                ? const []
+                : (widget.actions?.call(context, _data) ?? const []),
+      ),
       if (_loading)
         const Padding(
           padding: EdgeInsets.all(48),
@@ -656,5 +671,59 @@ class HubRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [if (trailing != null) trailing!, const RowChevron()],
     ),
+  );
+}
+
+/// The «PDF» header button: builds the report and lets the user save or
+/// share the file.
+class PdfButton extends StatefulWidget {
+  const PdfButton({super.key, required this.name, required this.build});
+  final String name;
+  final Future<Uint8List> Function(PdfReports pdf, AppServices s) build;
+  @override
+  State<PdfButton> createState() => _PdfButtonState();
+}
+
+class _PdfButtonState extends State<PdfButton> {
+  bool _busy = false;
+
+  Future<void> _go() async {
+    setState(() => _busy = true);
+    final s = AppScope.read(context);
+    try {
+      final bytes = await widget.build(await PdfReports.load(), s);
+      final safe = '${widget.name} ${s.workspace.name} ${Ledger.today()}'
+          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final saved = await FilePicker.platform.saveFile(
+        dialogTitle: 'حفظ التقرير',
+        fileName: '$safe.pdf',
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+        bytes: bytes,
+      );
+      if (saved != null && mounted) {
+        showToast(context, 'حُفظ التقرير', ToastType.success);
+      }
+    } catch (e) {
+      if (mounted) {
+        showToast(context, 'تعذر إنشاء التقرير: $e', ToastType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: 'تقرير PDF',
+    onPressed: _busy ? null : _go,
+    icon:
+        _busy
+            ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+            : Icon(Icons.picture_as_pdf_outlined, size: 23, color: Tw.ink2),
   );
 }

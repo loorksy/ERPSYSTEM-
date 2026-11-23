@@ -215,6 +215,17 @@ class _IncomeStatementPageState extends State<IncomeStatementPage> {
     key: ValueKey('${_period.from}|${_period.to}'),
     title: 'قائمة الدخل',
     help: incomeHelp,
+    actions:
+        (context, data) => [
+          PdfButton(
+            name: 'قائمة الدخل',
+            build:
+                (p, s) => p.incomeStatement(
+                  s.workspace.name,
+                  data as IncomeStatement,
+                ),
+          ),
+        ],
     load: (s) => s.reports.incomeStatement(from: _period.from, to: _period.to),
     build: (context, data, reload) {
       final r = data as IncomeStatement;
@@ -303,6 +314,15 @@ class _BalanceSheetPageState extends State<BalanceSheetPage> {
     key: ValueKey(_date),
     title: 'الميزانية العمومية',
     help: balanceHelp,
+    actions:
+        (context, data) => [
+          PdfButton(
+            name: 'الميزانية العمومية',
+            build:
+                (p, s) =>
+                    p.balanceSheet(s.workspace.name, data as BalanceSheet),
+          ),
+        ],
     load: (s) => s.reports.balanceSheet(date: _date),
     build: (context, data, reload) {
       final r = data as BalanceSheet;
@@ -410,6 +430,18 @@ class _TrialBalancePageState extends State<TrialBalancePage> {
     key: ValueKey(_date),
     title: 'ميزان المراجعة',
     help: trialHelp,
+    actions:
+        (context, data) => [
+          PdfButton(
+            name: 'ميزان المراجعة',
+            build:
+                (p, s) => p.trialBalance(
+                  s.workspace.name,
+                  data as TrialBalance,
+                  _date,
+                ),
+          ),
+        ],
     load: (s) => s.reports.trialBalance(to: _date),
     build: (context, data, reload) {
       final r = data as TrialBalance;

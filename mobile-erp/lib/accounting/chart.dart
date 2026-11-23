@@ -265,6 +265,9 @@ abstract final class Roles {
   static const expSalarySwap = 'exp_salary_swap';
   static const expMemberRewards = 'exp_member_rewards';
 
+  /// Stage 4: column W of a cycle's management sheet.
+  static const revMgmtW = 'rev_mgmt_w';
+
   /// Groups whose accounts are parties (people and companies we deal with).
   static const partyGroups = [
     receivables,
@@ -340,6 +343,14 @@ const List<SeedAccount> defaultChart = [
   ('33', 'أرصدة افتتاحية', AccountType.equity, '3', false, Roles.opening),
   ('34', 'المسحوبات الشخصية', AccountType.equity, '3', false, Roles.drawings),
   ('4', 'الإيرادات', AccountType.revenue, null, true, null),
+  (
+    '401',
+    'إيرادات الإدارة (عمود W)',
+    AccountType.revenue,
+    '4',
+    false,
+    Roles.revMgmtW,
+  ),
   (
     '41',
     'أرباح خصم التحويل',

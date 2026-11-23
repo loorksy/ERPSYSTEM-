@@ -251,6 +251,30 @@ class PartyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BooksPage(
     title: 'ملف الطرف',
+    actions: (context, data) {
+      final d =
+          data
+              as ({
+                Party? party,
+                ({int opening, List<StatementLine> lines}) st,
+              });
+      final p = d.party;
+      if (p == null) return const [];
+      return [
+        PdfButton(
+          name: 'كشف ${p.name}',
+          build:
+              (pdf, s) => pdf.statement(
+                workspace: s.workspace.name,
+                account: p.account,
+                from: null,
+                to: Ledger.today(),
+                opening: d.st.opening,
+                lines: d.st.lines,
+              ),
+        ),
+      ];
+    },
     help: const [
       HelpItem(
         '',

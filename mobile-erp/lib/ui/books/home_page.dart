@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../accounting/money.dart';
 import '../../accounting/parties.dart';
 import '../../accounting/reports.dart';
+import '../../app_services.dart';
 import '../adjustments_page.dart';
 import '../backup_page.dart';
 import '../erp_theme.dart';
@@ -17,6 +18,7 @@ import '../sort_page.dart';
 import '../ui_kit.dart';
 import 'accounts_page.dart';
 import 'books_kit.dart';
+import 'cycle_posting_page.dart';
 import 'debts_page.dart';
 import 'forms.dart';
 import 'funds_page.dart';
@@ -45,6 +47,13 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) => BooksPage(
     title: 'الرئيسية',
     help: homeHelp,
+    fab:
+        (context, _) => FloatingActionButton.extended(
+          heroTag: 'quick',
+          onPressed: () => showQuickActions(context),
+          icon: const Icon(Icons.add),
+          label: const Text('صادر / وارد'),
+        ),
     load: (s) => s.reports.dashboard(),
     build: (context, data, reload) {
       final d = data as Dashboard;
@@ -348,6 +357,17 @@ class OperationsHub extends StatelessWidget {
         ],
       ),
       (
+        'الدورات',
+        [
+          HubRow(
+            icon: Icons.calendar_today_outlined,
+            title: 'ترحيل الدورات',
+            subtitle: 'رواتب الوكيل، جدول الإدارة، حصص الوكالات',
+            onTap: () => openPage(context, const CyclesPostingList()),
+          ),
+        ],
+      ),
+      (
         'القيود',
         [
           HubRow(
@@ -506,4 +526,129 @@ class MoreHub extends StatelessWidget {
       ),
     ],
   );
+}
+
+// --------------------------------------------------------- quick actions
+
+/// «صادر / وارد» (the web ERP's FAB): every operation one tap away.
+Future<void> showQuickActions(BuildContext context) async {
+  final action = await showAppSheet<VoidCallback>(
+    context,
+    (ctx) => _QuickSheet(page: context),
+  );
+  action?.call();
+}
+
+class _QuickSheet extends StatefulWidget {
+  const _QuickSheet({required this.page});
+
+  /// The page under the sheet: the chosen operation opens from it (in the
+  /// tab, above the bottom navigation).
+  final BuildContext page;
+  @override
+  State<_QuickSheet> createState() => _QuickSheetState();
+}
+
+class _QuickSheetState extends State<_QuickSheet> {
+  int _side = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final page = widget.page;
+    Future<void> party(
+      PartyOp op, {
+      Set<PartyKind>? kinds,
+      String title = 'الطرف',
+    }) async {
+      final a = await pickPartyAccount(page, title: title, kinds: kinds);
+      if (a == null || !page.mounted) return;
+      final p = await AppScope.read(page).parties.ofAccount(a.id);
+      if (p == null || !page.mounted) return;
+      await showPartyOpSheet(page, p, op);
+    }
+
+    Widget tile(IconData icon, String label, VoidCallback run) => ChoiceTile(
+      icon: icon,
+      label: label,
+      onTap: () => Navigator.pop(context, run),
+    );
+    final out = [
+      tile(
+        Icons.north_east,
+        'سند صرف',
+        () => showVoucherSheet(page, VoucherMode.payment),
+      ),
+      tile(Icons.receipt_long_outlined, 'مصروف', () => showExpenseSheet(page)),
+      tile(PartyOp.pay.icon, 'دفع لطرف', () => party(PartyOp.pay)),
+      tile(
+        PartyOp.reward.icon,
+        'مكافأة وكالة فرعية',
+        () => party(
+          PartyOp.reward,
+          kinds: {PartyKind.subAgency},
+          title: 'الوكالة',
+        ),
+      ),
+      tile(
+        Icons.task_alt,
+        'تسليم مطلوب الدفع',
+        () => openPage(page, const PaymentDuePage()),
+      ),
+      tile(
+        Icons.sell_outlined,
+        'بيع شحن',
+        () => openPage(page, const ShippingPage()),
+      ),
+      tile(
+        Icons.swap_horiz,
+        'تحويل بين الصناديق',
+        () => showTransferSheet(page),
+      ),
+    ];
+    final inn = [
+      tile(
+        Icons.south_west,
+        'سند قبض',
+        () => showVoucherSheet(page, VoucherMode.receipt),
+      ),
+      tile(PartyOp.receive.icon, 'قبض من طرف', () => party(PartyOp.receive)),
+      tile(
+        PartyOp.salary.icon,
+        'راتب من معتمد (مع وساطة)',
+        () => party(
+          PartyOp.salary,
+          kinds: {PartyKind.accreditation},
+          title: 'المعتمد',
+        ),
+      ),
+      tile(PartyOp.debtToUs.icon, 'دين لنا', () => party(PartyOp.debtToUs)),
+      tile(PartyOp.returned.icon, 'مرتجع', () => party(PartyOp.returned)),
+      tile(
+        Icons.add_shopping_cart,
+        'شراء شحن / تبديل راتب',
+        () => openPage(page, const ShippingPage()),
+      ),
+      tile(
+        Icons.currency_exchange,
+        'فرق تصريف',
+        () => openPage(page, const FxSpreadPage()),
+      ),
+    ];
+    return AppSheet(
+      title: 'صادر / وارد',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedChoice(
+            options: const ['صادر', 'وارد'],
+            icons: const [Icons.north_east, Icons.south_west],
+            selected: _side,
+            onChanged: (i) => setState(() => _side = i),
+          ),
+          const SizedBox(height: 10),
+          ...(_side == 0 ? out : inn),
+        ],
+      ),
+    );
+  }
 }

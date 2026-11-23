@@ -307,6 +307,25 @@ class _StatementPageState extends State<StatementPage> {
     key: ValueKey('${_account?.id}|$_from|$_to'),
     title: 'كشف حساب',
     help: statementHelp,
+    actions: (context, data) {
+      final d = data as (Account, ({int opening, List<StatementLine> lines})?)?;
+      final st = d?.$2;
+      if (d == null || st == null) return const [];
+      return [
+        PdfButton(
+          name: 'كشف ${d.$1.name}',
+          build:
+              (p, s) => p.statement(
+                workspace: s.workspace.name,
+                account: d.$1,
+                from: _from,
+                to: _to,
+                opening: st.opening,
+                lines: st.lines,
+              ),
+        ),
+      ];
+    },
     load: (s) async {
       final a = _account;
       if (a == null) return null;

@@ -224,8 +224,16 @@ class SearchService {
     final byId = <String, MemberSummary>{};
     final cycles = await db.listCycles();
     for (final cycle in cycles) {
-      final data = await _data(cycle);
-      if (data == null) continue;
+      var data = await _data(cycle);
+      if (data == null) {
+        // A cycle made from files keeps its sheets in the cycle itself.
+        final full = await db.getCycle(cycle.id);
+        if (full == null ||
+            (full.managementRows.isEmpty && full.agentRows.isEmpty)) {
+          continue;
+        }
+        data = (mgmt: full.managementRows, agent: full.agentRows, cache: null);
+      }
       final cols = await db.getCycleColumns(cycle.id);
       final mgmtCol = columnLetterToIndex(cols.mgmtUserIdCol) ?? 0;
       final agentCol = columnLetterToIndex(cols.agentUserIdCol) ?? 0;

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'accounting/books.dart';
+import 'accounting/cycle_posting.dart';
 import 'accounting/ledger.dart';
 import 'accounting/parties.dart';
 import 'accounting/reports.dart';
@@ -186,6 +187,7 @@ class AppServices extends ChangeNotifier {
     reports = Reports(ledger);
     parties = Parties(ledger, books);
     trading = Trading(ledger, books);
+    cyclePosting = CyclePosting(ledger, db, parties);
     backup = BackupService(db, auth);
     auth.changes.listen((_) => notifyListeners());
   }
@@ -221,6 +223,7 @@ class AppServices extends ChangeNotifier {
   late final Reports reports;
   late final Parties parties;
   late final Trading trading;
+  late final CyclePosting cyclePosting;
 
   /// Backups of this workspace (file / Google Drive).
   late final BackupService backup;

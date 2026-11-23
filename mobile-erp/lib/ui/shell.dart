@@ -303,10 +303,14 @@ class ScreenHeader extends StatelessWidget {
     required this.title,
     required this.help,
     this.helpTitle,
+    this.actions = const [],
   });
   final String title;
   final List<HelpItem> Function() help;
   final String? helpTitle;
+
+  /// Buttons before the «؟» (e.g. PDF).
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -365,6 +369,7 @@ class ScreenHeader extends StatelessWidget {
               ],
             ),
           ),
+          ...actions,
           HelpButton(title: helpTitle ?? title, items: help),
         ],
       ),

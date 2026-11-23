@@ -21,7 +21,7 @@
 - نظام جديد يبدأ بأرصدة افتتاحية، بلا نقل من الويب.
 - الكود في `mobile-erp/` داخل `loorksy/ERPSYSTEM-`.
 
-التسليم على مراحل (`docs/ACCOUNTING.md`). المرحلة 1 = 0.1.0.
+التسليم على مراحل (`docs/ACCOUNTING.md`): المرحلة 1 في 0.1.0، والمراحل الأربع في 1.0.0.
 
 ## قواعد المحاسبة (`lib/accounting/`)
 
@@ -34,12 +34,28 @@
 - **بعد أي كتابة من الواجهة** استدعِ `AppServices.booksChanged()` (أو استعمل `runPosting`) لتُحدَّث الشاشات.
 - **المخطط 6:** جداول `acc_accounts` و`acc_entries` و`acc_lines` في قاعدة مساحة العمل نفسها (`Ledger.createTables`). أي تغيير في المخطط يرفع `AppDatabase.schemaVersion` مع `onUpgrade`.
 
+## الأقسام فوق الدفتر (المراحل 2–4)
+
+- **`parties.dart`:** لكل طرف حساب جارٍ تحت مجموعة نوعه (`PartyKind.groupRole`)، وبياناته في `acc_parties`. الرصيد الموجب «لنا» والسالب «علينا». كل عملية تأخذ حسابًا مقابلًا صريحًا؛ لا تضف عملية تغيّر رصيد طرف بلا طرف آخر.
+- **`trading.dart`:**
+  - الأصناف حسابات تحت `inventory`، والكمية في `acc_stock_moves` بالأجزاء من الألف (`qtyScale`) مع `entry_id`.
+  - الكمية المتوفرة = حركات القيود غير الملغاة.
+  - القيد وحركته في `ledger.transaction` واحدة.
+  - `reverseGuards` يمنع إلغاء شراء بيع منه.
+- **`cycle_posting.dart`:** كل جزء من الدورة له `ref` = `cycle:<id>:<part>`، وإعادة الترحيل تلغي الحي ثم تسجّل. الأرقام من الكاش أو من صفوف الدورة (دورات الملفات).
+- **`services/pdf_reports.dart`:**
+  - خط Tajawal من الأصول، والتواريخ داخل النص العربي بأسماء الأشهر (`PdfReports.d`).
+  - أضف زر PDF لشاشة جديدة عبر `BooksPage.actions` و`PdfButton`.
+- **المخطط 7:** `meta` في `acc_entries` (JSON لتفاصيل العملية: نسب، أسعار، كميات). يُقرأ في `JournalEntry.meta`.
+- **الميزانية:** تنقل أرصدة الأطراف المعاكسة لجهة مجموعتها (`Reports._strip`). أي مجموعة أطراف جديدة تُضاف إلى `Roles.partyGroups`.
+
 ## الواجهة
 
 - **التبويبات** (`AppTabs` في `shell.dart`): الرئيسية، العمليات، الدورات (تدقيق الرواتب)، التقارير، المزيد.
-  - العمليات والتقارير والمزيد صفحات فهرس (`HubPage`). صفحاتها تُفتح داخل التبويب بـ`openPage`، و`ScreenHeader` يُظهر «→» عندما يمكن الرجوع.
+  - العمليات والتقارير والمزيد صفحات فهرس (`HubPage`). الرئيسية فيها «صادر / وارد» (`showQuickActions`). صفحاتها تُفتح داخل التبويب بـ`openPage`، و`ScreenHeader` يُظهر «→» عندما يمكن الرجوع.
   - `AppTabs.settings` ليس تبويبًا: يفتح الإعدادات فوق «المزيد».
-- **صفحات المحاسبة** في `lib/ui/books/`. الإطار `BooksPage`: تحميل، سحب للتحديث، وإعادة تحميل عند تغيّر `booksRevision`. المكونات في `books_kit.dart`: `Money`، `AmountField`، `PickerValue`، `DateValue`، `pickAccount`، `EntryRow`، `showEntrySheet`، `HubRow`.
+- **صفحات المحاسبة** في `lib/ui/books/`:
+  - `parties_pages`، `debts_page`، `trading_pages`، `members_page`، `cycle_posting_page`. الإطار `BooksPage`: تحميل، سحب للتحديث، وإعادة تحميل عند تغيّر `booksRevision`. المكونات في `books_kit.dart`: `Money`، `AmountField`، `PickerValue`، `DateValue`، `pickAccount`، `EntryRow`، `showEntrySheet`، `HubRow`.
 - **التصميم** نفسه تصميم «المدقق» (`docs/design/almudaqqiq-redesign.html`، `Ds`/`Tw`، `ui_kit.dart`):
   - الألوان عبر `Tw.*` فقط.
   - الشرح خلف «؟» واحدة لكل شاشة (`HelpItem`).

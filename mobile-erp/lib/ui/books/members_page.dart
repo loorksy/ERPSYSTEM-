@@ -110,10 +110,20 @@ class _MembersPageState extends State<MembersPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       d.accounts[m.id] == null
-                          ? Money(
-                            centsOf(m.lastSalary),
-                            size: 13.5,
-                            color: Tw.ink2,
+                          ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Money(
+                                centsOf(m.lastSalary),
+                                size: 13.5,
+                                color: Tw.ink2,
+                              ),
+                              Text(
+                                'آخر راتب',
+                                style: Ds.secondary.copyWith(fontSize: 12),
+                              ),
+                            ],
                           )
                           : PartyBalance(d.accounts[m.id]!.balance, size: 13.5),
                       const RowChevron(),
