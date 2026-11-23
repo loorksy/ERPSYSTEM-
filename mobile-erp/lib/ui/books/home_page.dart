@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 
 import '../../accounting/money.dart';
+import '../../accounting/parties.dart';
 import '../../accounting/reports.dart';
 import '../adjustments_page.dart';
 import '../backup_page.dart';
@@ -16,9 +17,11 @@ import '../sort_page.dart';
 import '../ui_kit.dart';
 import 'accounts_page.dart';
 import 'books_kit.dart';
+import 'debts_page.dart';
 import 'forms.dart';
 import 'funds_page.dart';
 import 'journal_page.dart';
+import 'parties_pages.dart';
 import 'reports_pages.dart';
 
 const homeHelp = [
@@ -114,16 +117,28 @@ class HomePage extends StatelessWidget {
           ],
         ),
         gap,
-        FigsRow(
-          figs: [
-            (formatCentsShort(d.receivables), 'لنا عند الآخرين', null),
-            (formatCentsShort(d.payables), 'علينا للآخرين', null),
-            (
-              formatCentsShort(d.todayNet),
-              'صافي اليوم',
-              d.todayNet < 0 ? Tw.danger : null,
-            ),
-          ],
+        InkWell(
+          borderRadius: BorderRadius.circular(Ds.radius),
+          onTap: () => openPage(context, const DebtsPage()),
+          child: FigsRow(
+            figs: [
+              (
+                formatCentsShort(d.receivables),
+                'لنا عند الآخرين',
+                Tw.accentInk,
+              ),
+              (
+                formatCentsShort(d.payables),
+                'علينا للآخرين',
+                d.payables > 0 ? Tw.danger : null,
+              ),
+              (
+                formatCentsShort(d.todayNet),
+                'صافي اليوم',
+                d.todayNet < 0 ? Tw.danger : null,
+              ),
+            ],
+          ),
         ),
         gap,
         SectionLabel(
@@ -251,6 +266,41 @@ class OperationsHub extends StatelessWidget {
             title: 'المصاريف',
             subtitle: 'تسجيل ومتابعة حسب البند',
             onTap: () => openPage(context, const ExpensesPage()),
+          ),
+        ],
+      ),
+      (
+        'الأطراف',
+        [
+          for (final k in const [
+            PartyKind.accreditation,
+            PartyKind.transferCompany,
+            PartyKind.subAgency,
+            PartyKind.carrier,
+            PartyKind.customer,
+            PartyKind.supplier,
+          ])
+            HubRow(
+              icon: partyIcon(k),
+              title: k.plural,
+              onTap: () => openPage(context, PartiesPage(kind: k)),
+            ),
+        ],
+      ),
+      (
+        'الديون',
+        [
+          HubRow(
+            icon: Icons.handshake_outlined,
+            title: 'الديون',
+            subtitle: 'لنا وعلينا لكل الأطراف',
+            onTap: () => openPage(context, const DebtsPage()),
+          ),
+          HubRow(
+            icon: Icons.task_alt,
+            title: 'مطلوب دفع',
+            subtitle: 'تسليم المعتمدين والوكالات',
+            onTap: () => openPage(context, const PaymentDuePage()),
           ),
         ],
       ),

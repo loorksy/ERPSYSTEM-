@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import 'accounting/books.dart';
 import 'accounting/ledger.dart';
+import 'accounting/parties.dart';
 import 'accounting/reports.dart';
 import 'background/audit_worker.dart';
 import 'data/app_database.dart';
@@ -181,6 +182,7 @@ class AppServices extends ChangeNotifier {
     ledger = Ledger(db.raw);
     books = Books(ledger);
     reports = Reports(ledger);
+    parties = Parties(ledger, books);
     backup = BackupService(db, auth);
     auth.changes.listen((_) => notifyListeners());
   }
@@ -214,6 +216,7 @@ class AppServices extends ChangeNotifier {
   late final Ledger ledger;
   late final Books books;
   late final Reports reports;
+  late final Parties parties;
 
   /// Backups of this workspace (file / Google Drive).
   late final BackupService backup;

@@ -54,5 +54,11 @@ String formatCentsShort(int cents) {
   return s.endsWith('.00') ? s.substring(0, s.length - 3) : s;
 }
 
+/// A percentage in basis points: 1250 → «12.5», 300 → «3».
+String formatPercent(int bp) {
+  final s = (bp / 100).toStringAsFixed(2);
+  return s.contains('.') ? s.replaceAll(RegExp(r'\.?0+$'), '') : s;
+}
+
 /// 1500.25 → 150025 (rounded half away from zero).
 int centsOf(num value) => (value * centsPerUnit).round();

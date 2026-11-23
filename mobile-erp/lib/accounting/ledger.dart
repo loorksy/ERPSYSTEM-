@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:sqflite/sqflite.dart';
 
 import 'chart.dart';
@@ -74,7 +76,8 @@ class Ledger {
       ref TEXT,
       reverses_id INTEGER REFERENCES acc_entries(id),
       reversed_by_id INTEGER REFERENCES acc_entries(id),
-      created_at TEXT NOT NULL)''');
+      created_at TEXT NOT NULL,
+      meta TEXT)''');
     await db.execute(
       '''CREATE TABLE acc_lines (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,6 +91,43 @@ class Ledger {
     await db.execute('CREATE INDEX acc_lines_account ON acc_lines(account_id)');
     await db.execute('CREATE INDEX acc_lines_entry ON acc_lines(entry_id)');
     await db.execute('CREATE INDEX acc_entries_date ON acc_entries(date)');
+    await createV7Tables(db);
+  }
+
+  /// Schema 7 (stage 2–3): parties and stock. Fresh databases get them from
+  /// [createTables] too.
+  static Future<void> createV7Tables(DatabaseExecutor db) async {
+    await db.execute('''CREATE TABLE acc_parties (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL UNIQUE REFERENCES acc_accounts(id),
+      kind TEXT NOT NULL,
+      code TEXT,
+      phone TEXT,
+      percent INTEGER NOT NULL DEFAULT 0,
+      note TEXT,
+      pinned INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL)''');
+    await db.execute('''CREATE TABLE acc_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL UNIQUE REFERENCES acc_accounts(id),
+      unit TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL)''');
+    await db.execute('''CREATE TABLE acc_stock_moves (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entry_id INTEGER NOT NULL REFERENCES acc_entries(id),
+      item_id INTEGER NOT NULL REFERENCES acc_items(id),
+      qty INTEGER NOT NULL,
+      cost INTEGER NOT NULL,
+      amount INTEGER NOT NULL DEFAULT 0,
+      party_account_id INTEGER REFERENCES acc_accounts(id))''');
+    await db.execute('CREATE INDEX acc_stock_item ON acc_stock_moves(item_id)');
+    await db.execute('CREATE INDEX acc_entries_ref ON acc_entries(ref)');
+  }
+
+  /// From schema 6: entry details ([JournalEntry.meta]) and the v7 tables.
+  static Future<void> upgradeTo7(DatabaseExecutor db) async {
+    await db.execute('ALTER TABLE acc_entries ADD COLUMN meta TEXT');
+    await createV7Tables(db);
   }
 
   static String _now() => DateTime.now().toIso8601String();
@@ -103,31 +143,51 @@ class Ledger {
   /// to run at every start, so later versions can add accounts.
   Future<void> ensureSeeded() async {
     await _db.transaction((txn) async {
-      final rows = await txn.query('acc_accounts', columns: ['id', 'code']);
+      final rows = await txn.query(
+        'acc_accounts',
+        columns: ['id', 'code', 'role'],
+      );
       final byCode = {
         for (final r in rows) r['code'] as String: r['id'] as int,
       };
+      final roles = {
+        for (final r in rows)
+          if (r['role'] != null) r['role'] as String: r['id'] as int,
+      };
+      // Default code → the account seeded for it (its children's parent).
+      final seeded = <String, int>{};
       for (final (code, name, type, parent, group, role) in defaultChart) {
-        if (byCode.containsKey(code)) continue;
-        if (role != null) {
-          final taken = await txn.query(
-            'acc_accounts',
-            columns: ['id'],
-            where: 'role = ?',
-            whereArgs: [role],
-          );
-          if (taken.isNotEmpty) continue;
+        if (role != null && roles.containsKey(role)) {
+          seeded[code] = roles[role]!;
+          continue;
         }
-        byCode[code] = await txn.insert('acc_accounts', {
-          'code': code,
+        var use = code;
+        if (byCode.containsKey(code)) {
+          // The code is the user's own account (added before this version
+          // seeded it): keep theirs, seed this one under a free code.
+          if (role == null) {
+            seeded[code] = byCode[code]!;
+            continue;
+          }
+          final prefix = code.substring(0, code.length - 1);
+          use = [
+            for (var n = 90; n < 100; n++) '$prefix$n',
+          ].firstWhere((c) => !byCode.containsKey(c), orElse: () => '${code}9');
+        }
+        final id = await txn.insert('acc_accounts', {
+          'code': use,
           'name': name,
           'type': type.name,
-          'parent_id': parent == null ? null : byCode[parent],
+          'parent_id':
+              parent == null ? null : (seeded[parent] ?? byCode[parent]),
           'is_group': group ? 1 : 0,
           'role': role,
           'system': 1,
           'created_at': _now(),
         });
+        byCode[use] = id;
+        seeded[code] = id;
+        if (role != null) roles[role] = id;
       }
     });
   }
@@ -337,6 +397,23 @@ class Ledger {
   Future<JournalEntry> post(EntryDraft draft) =>
       _db.transaction((txn) => _post(txn, draft));
 
+  /// Runs [action] in one transaction (several entries, or an entry and
+  /// its stock moves, all or nothing).
+  Future<T> transaction<T>(Future<T> Function(Transaction txn) action) =>
+      _db.transaction(action);
+
+  /// [post] inside a [transaction].
+  Future<JournalEntry> postIn(Transaction txn, EntryDraft draft) =>
+      _post(txn, draft);
+
+  /// Checks run before an entry is reversed (e.g. stock that would go below
+  /// zero); a guard throws [LedgerException] to refuse.
+  final reverseGuards =
+      <Future<void> Function(Transaction txn, JournalEntry e)>[];
+
+  /// The raw database (for the modules built on the ledger).
+  Database get db => _db;
+
   Future<JournalEntry> _post(
     Transaction txn,
     EntryDraft draft, {
@@ -397,6 +474,7 @@ class Ledger {
       'ref': draft.ref,
       'reverses_id': reverses,
       'created_at': _now(),
+      'meta': draft.meta == null ? null : jsonEncode(draft.meta),
     });
     for (final l in lines) {
       await txn.insert('acc_lines', {
@@ -434,6 +512,9 @@ class Ledger {
           throw LedgerException('هذا قيد إلغاء؛ لا يُلغى');
         }
         final lines = await _lines(txn, entryId);
+        for (final g in reverseGuards) {
+          await g(txn, JournalEntry.fromRow(rows.first, lines));
+        }
         final rev = await _post(
           txn,
           EntryDraft(

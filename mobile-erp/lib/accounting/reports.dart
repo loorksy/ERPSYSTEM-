@@ -146,13 +146,111 @@ class Reports {
     final end = date ?? Ledger.today();
     final rev = await _root(AccountType.revenue, to: end);
     final exp = await _root(AccountType.expense, to: end);
+    var assets = await _root(AccountType.asset, to: end);
+    var liabilities = await _root(AccountType.liability, to: end);
+    // A party is one current account: a credit balance in an asset group
+    // (we owe an accreditation, a transfer company…) is a liability, and a
+    // debit balance in a liability group (a supplier we paid ahead) an
+    // asset. Both are moved to the right side, so the sheet stays honest.
+    final partyGroups = {
+      for (final a in await ledger.accounts(archived: true))
+        if (Roles.partyGroups.contains(a.role)) a.id,
+    };
+    final toLiabilities = <AccountNode>[];
+    final toAssets = <AccountNode>[];
+    assets = _strip(assets, partyGroups, false, toLiabilities);
+    liabilities = _strip(liabilities, partyGroups, false, toAssets);
+    if (toLiabilities.isNotEmpty) {
+      liabilities = _append(
+        liabilities,
+        'أطراف بأرصدة دائنة (علينا)',
+        AccountType.liability,
+        toLiabilities,
+      );
+    }
+    if (toAssets.isNotEmpty) {
+      assets = _append(
+        assets,
+        'أطراف بأرصدة مدينة (لنا)',
+        AccountType.asset,
+        toAssets,
+      );
+    }
     return BalanceSheet(
-      assets: await _root(AccountType.asset, to: end),
-      liabilities: await _root(AccountType.liability, to: end),
+      assets: assets,
+      liabilities: liabilities,
       equity: await _root(AccountType.equity, to: end),
       earnings: rev.balance - exp.balance,
       date: end,
     );
+  }
+
+  /// [n] without the postable accounts under a party group whose balance
+  /// is against their side (collected in [moved], sign flipped); group
+  /// totals are recomputed.
+  static AccountNode _strip(
+    AccountNode n,
+    Set<int> partyGroups,
+    bool inParty,
+    List<AccountNode> moved,
+  ) {
+    final here = inParty || partyGroups.contains(n.account.id);
+    if (n.children.isEmpty) return n;
+    final kids = <AccountNode>[];
+    for (final c in n.children) {
+      if (here && !c.account.isGroup && c.children.isEmpty && c.balance < 0) {
+        moved.add(AccountNode(c.account, -c.balance, const []));
+      } else {
+        kids.add(_strip(c, partyGroups, here, moved));
+      }
+    }
+    final own = n.balance - n.children.fold<int>(0, (s, c) => s + c.balance);
+    return AccountNode(
+      n.account,
+      own + kids.fold<int>(0, (s, c) => s + c.balance),
+      kids,
+    );
+  }
+
+  static AccountNode _append(
+    AccountNode root,
+    String name,
+    AccountType type,
+    List<AccountNode> nodes,
+  ) {
+    final sum = nodes.fold<int>(0, (s, c) => s + c.balance);
+    final group = AccountNode(
+      Account(id: -2, code: '', name: name, type: type, isGroup: true),
+      sum,
+      nodes,
+    );
+    return AccountNode(root.account, root.balance + sum, [
+      ...root.children,
+      group,
+    ]);
+  }
+
+  /// Every party account with its balance (debit − credit: positive =
+  /// «لنا», negative = «علينا»), to [to].
+  Future<List<({Account account, String groupRole, int balance})>>
+  partyBalances({String? to}) async {
+    final all = await ledger.accounts(archived: true);
+    final b = await ledger.balances(to: to);
+    final byId = {for (final a in all) a.id: a};
+    String? groupOf(Account a) {
+      Account? cur = a;
+      while (cur != null) {
+        if (Roles.partyGroups.contains(cur.role)) return cur.role;
+        cur = cur.parentId == null ? null : byId[cur.parentId];
+      }
+      return null;
+    }
+
+    return [
+      for (final a in all)
+        if (!a.isGroup && groupOf(a) != null)
+          (account: a, groupRole: groupOf(a)!, balance: b[a.id] ?? 0),
+    ];
   }
 
   /// The numbers of the home screen.
@@ -182,10 +280,14 @@ class Reports {
 
     final month = await incomeStatement(from: monthStart, to: today);
     final day = await incomeStatement(from: today, to: today);
+    final parties = await partyBalances(to: today);
     return Dashboard(
       cash: sumRole(Roles.funds),
-      receivables: sumRole(Roles.receivables),
-      payables: sumRole(Roles.payables),
+      receivables: parties.fold(
+        0,
+        (n, p) => n + (p.balance > 0 ? p.balance : 0),
+      ),
+      payables: parties.fold(0, (n, p) => n + (p.balance < 0 ? -p.balance : 0)),
       monthRevenue: month.revenue.balance,
       monthExpenses: month.expenses.balance,
       todayRevenue: day.revenue.balance,

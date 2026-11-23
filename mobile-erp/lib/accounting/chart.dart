@@ -4,6 +4,8 @@
 /// trial balance, income statement and balance sheet always agree.
 library;
 
+import 'dart:convert';
+
 enum AccountType { asset, liability, equity, revenue, expense }
 
 extension AccountTypeX on AccountType {
@@ -102,6 +104,7 @@ class EntryDraft {
     required this.lines,
     this.kind = EntryKind.manual,
     this.ref,
+    this.meta,
   });
 
   /// `yyyy-MM-dd`.
@@ -112,6 +115,10 @@ class EntryDraft {
 
   /// The operation the entry came from (e.g. `fund_transfer`), for reports.
   final String? ref;
+
+  /// Details of the operation (rates, percentages, quantities…), stored as
+  /// JSON and shown with the entry.
+  final Map<String, Object?>? meta;
 }
 
 class JournalEntry {
@@ -126,6 +133,7 @@ class JournalEntry {
     this.reversedById,
     required this.createdAt,
     this.lines = const [],
+    this.meta = const {},
   });
 
   final int id;
@@ -138,6 +146,7 @@ class JournalEntry {
   final int? reversedById;
   final String createdAt;
   final List<JournalLine> lines;
+  final Map<String, Object?> meta;
 
   bool get reversed => reversedById != null;
   bool get isReversal => reversesId != null;
@@ -157,7 +166,17 @@ class JournalEntry {
     reversedById: r['reversed_by_id'] as int?,
     createdAt: r['created_at'] as String,
     lines: lines,
+    meta: _meta(r['meta']),
   );
+
+  static Map<String, Object?> _meta(Object? v) {
+    if (v is! String || v.isEmpty) return const {};
+    try {
+      return (jsonDecode(v) as Map).cast<String, Object?>();
+    } catch (_) {
+      return const {};
+    }
+  }
 }
 
 /// Entry kinds (stored as text).
@@ -169,6 +188,20 @@ abstract final class EntryKind {
   static const payment = 'payment';
   static const expense = 'expense';
   static const reversal = 'reversal';
+  // Stage 2–4 (parties, shipping, FX, cycles).
+  static const debtToUs = 'debt_to_us';
+  static const debtToThem = 'debt_to_them';
+  static const partyTransfer = 'party_transfer';
+  static const settlement = 'settlement';
+  static const brokerage = 'brokerage';
+  static const reward = 'reward';
+  static const share = 'share';
+  static const returned = 'return';
+  static const sale = 'sale';
+  static const purchase = 'purchase';
+  static const fx = 'fx';
+  static const salarySwap = 'salary_swap';
+  static const cycle = 'cycle';
 
   static String label(String kind) => switch (kind) {
     manual => 'قيد يدوي',
@@ -178,6 +211,19 @@ abstract final class EntryKind {
     payment => 'سند صرف',
     expense => 'مصروف',
     reversal => 'قيد عكسي',
+    debtToUs => 'دين لنا',
+    debtToThem => 'دين علينا',
+    partyTransfer => 'تحويل بين أطراف',
+    settlement => 'تسليم',
+    brokerage => 'وساطة',
+    reward => 'مكافأة',
+    share => 'حصة دورة',
+    returned => 'مرتجع',
+    sale => 'بيع',
+    purchase => 'شراء',
+    fx => 'فرق تصريف',
+    salarySwap => 'تبديل راتب',
+    cycle => 'ترحيل دورة',
     _ => kind,
   };
 }
@@ -206,6 +252,29 @@ abstract final class Roles {
   static const expSubAgency = 'exp_sub_agency';
   static const expFx = 'exp_fx';
   static const expTransferFees = 'exp_transfer_fees';
+
+  // Stage 2–3: the parties' groups (a current account per party: a debit
+  // balance is «لنا», a credit balance «علينا»).
+  static const accreditations = 'accreditations';
+  static const transferCompanies = 'transfer_companies';
+  static const subAgencies = 'sub_agencies';
+  static const carriers = 'carriers';
+  static const members = 'members';
+  static const revPayableDiscount = 'rev_payable_discount';
+  static const revAccBrokerage = 'rev_acc_brokerage';
+  static const expSalarySwap = 'exp_salary_swap';
+  static const expMemberRewards = 'exp_member_rewards';
+
+  /// Groups whose accounts are parties (people and companies we deal with).
+  static const partyGroups = [
+    receivables,
+    payables,
+    accreditations,
+    transferCompanies,
+    subAgencies,
+    carriers,
+    members,
+  ];
 }
 
 /// One account of the default tree: code, name, type, parent code, group?,
@@ -235,6 +304,18 @@ const List<SeedAccount> defaultChart = [
   ),
   ('1201', 'ذمم مدينة أخرى', AccountType.asset, '12', false, null),
   ('13', 'المخزون', AccountType.asset, '1', true, Roles.inventory),
+  ('14', 'المعتمدون', AccountType.asset, '1', true, Roles.accreditations),
+  (
+    '15',
+    'شركات التحويل',
+    AccountType.asset,
+    '1',
+    true,
+    Roles.transferCompanies,
+  ),
+  ('16', 'الوكالات الفرعية', AccountType.asset, '1', true, Roles.subAgencies),
+  ('17', 'وكالات الشحن', AccountType.asset, '1', true, Roles.carriers),
+  ('18', 'ذمم الأعضاء', AccountType.asset, '1', true, Roles.members),
   ('2', 'الخصوم', AccountType.liability, null, true, null),
   (
     '21',
@@ -286,6 +367,22 @@ const List<SeedAccount> defaultChart = [
     false,
     Roles.revSubAgency,
   ),
+  (
+    '47',
+    'أرباح خصم الديون',
+    AccountType.revenue,
+    '4',
+    false,
+    Roles.revPayableDiscount,
+  ),
+  (
+    '48',
+    'عمولات وساطة المعتمدين',
+    AccountType.revenue,
+    '4',
+    false,
+    Roles.revAccBrokerage,
+  ),
   ('49', 'إيرادات أخرى', AccountType.revenue, '4', false, Roles.revOther),
   ('5', 'المصاريف', AccountType.expense, null, true, null),
   ('51', 'مصاريف تشغيلية', AccountType.expense, '5', true, Roles.opex),
@@ -318,5 +415,21 @@ const List<SeedAccount> defaultChart = [
     '5',
     false,
     Roles.expTransferFees,
+  ),
+  (
+    '56',
+    'خصومات تبديل الرواتب',
+    AccountType.expense,
+    '5',
+    false,
+    Roles.expSalarySwap,
+  ),
+  (
+    '57',
+    'مكافآت الأعضاء',
+    AccountType.expense,
+    '5',
+    false,
+    Roles.expMemberRewards,
   ),
 ];

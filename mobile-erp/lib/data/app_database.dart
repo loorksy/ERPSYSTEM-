@@ -273,7 +273,7 @@ class AuditRun {
 class AppDatabase {
   AppDatabase._(this._db);
   final Database _db;
-  static const schemaVersion = 6;
+  static const schemaVersion = 7;
 
   /// The raw database, for the ledger (same file, same transactions).
   Database get raw => _db;
@@ -309,6 +309,7 @@ class AppDatabase {
           }
           if (oldVersion >= 3 && oldVersion < 5) await _jobsWithoutCycle(db);
           if (oldVersion < 6) await Ledger.createTables(db);
+          if (oldVersion == 6) await Ledger.upgradeTo7(db);
         },
       ),
     );
