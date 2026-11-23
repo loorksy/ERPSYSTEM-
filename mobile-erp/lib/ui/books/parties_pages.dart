@@ -169,8 +169,7 @@ class _PartiesPageState extends State<PartiesPage> {
                       [
                         if (p.pinned) 'مثبّت',
                         if (p.code.isNotEmpty) p.code,
-                        if (p.percentBp > 0)
-                          '${formatPercent(p.percentBp)}٪',
+                        if (p.percentBp > 0) '${formatPercent(p.percentBp)}٪',
                         p.account.code,
                       ].join(' · '),
                     ),

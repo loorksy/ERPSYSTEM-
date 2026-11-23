@@ -25,7 +25,11 @@ const journalHelp = [
 ];
 
 class JournalPage extends StatefulWidget {
-  const JournalPage({super.key});
+  const JournalPage({super.key, this.category = 0, this.title = 'دفتر القيود'});
+
+  /// 0 all, 1 cash (funds), 2 parties, 3 revenue and expenses.
+  final int category;
+  final String title;
   @override
   State<JournalPage> createState() => _JournalPageState();
 }
@@ -33,6 +37,14 @@ class JournalPage extends StatefulWidget {
 class _JournalPageState extends State<JournalPage> {
   String? _kind;
   int _limit = 60;
+  late int _category = widget.category;
+
+  static const _categories = [
+    'الكل',
+    'حركات نقدية',
+    'الأطراف',
+    'أرباح ومصاريف',
+  ];
 
   static const _kinds = <String?>[
     null,
@@ -47,8 +59,8 @@ class _JournalPageState extends State<JournalPage> {
 
   @override
   Widget build(BuildContext context) => BooksPage(
-    key: ValueKey('$_kind|$_limit'),
-    title: 'دفتر القيود',
+    key: ValueKey('$_kind|$_limit|$_category'),
+    title: widget.title,
     help: journalHelp,
     fab:
         (context, _) => FloatingActionButton.extended(
@@ -57,12 +69,38 @@ class _JournalPageState extends State<JournalPage> {
           icon: const Icon(Icons.add),
           label: const Text('قيد يدوي'),
         ),
-    load: (s) => s.ledger.entries(kind: _kind, limit: _limit + 1),
+    load: (s) async {
+      Set<int>? any;
+      if (_category == 1) {
+        any = {
+          for (final f in await s.books.funds(archived: true)) f.account.id,
+        };
+      } else if (_category == 2) {
+        any = {for (final p in await s.reports.partyBalances()) p.account.id};
+      } else if (_category == 3) {
+        any = {
+          for (final a in await s.ledger.accounts(archived: true))
+            if (a.type == AccountType.revenue || a.type == AccountType.expense)
+              a.id,
+        };
+      }
+      return s.ledger.entries(kind: _kind, anyAccount: any, limit: _limit + 1);
+    },
     build: (context, data, reload) {
       final list = data as List<JournalEntry>;
       final more = list.length > _limit;
       final shown = more ? list.sublist(0, _limit) : list;
       return [
+        SegmentedChoice(
+          options: _categories,
+          selected: _category,
+          onChanged:
+              (i) => setState(() {
+                _category = i;
+                _limit = 60;
+              }),
+        ),
+        const SizedBox(height: 10),
         SizedBox(
           height: 40,
           child: ListView(

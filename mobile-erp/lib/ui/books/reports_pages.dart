@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../accounting/chart.dart';
 import '../../accounting/ledger.dart';
 import '../../accounting/money.dart';
 import '../../accounting/reports.dart';
@@ -538,5 +539,167 @@ class _TrialBalancePageState extends State<TrialBalancePage> {
         color: v == 0 ? Tw.ink3 : Tw.ink,
       ),
     ),
+  );
+}
+
+// ------------------------------------------------------- profit sources
+
+const profitHelp = [
+  HelpItem(
+    '',
+    'مصادر الربح: كل حساب إيراد في الفترة ونصيبه من مجموع الإيرادات، وصافي ربح الشحن (المبيعات ناقص تكلفتها).',
+  ),
+  HelpItem('', 'اضغط مصدرًا لعرض كشفه. الأرقام نفسها في قائمة الدخل.'),
+];
+
+class ProfitSourcesPage extends StatefulWidget {
+  const ProfitSourcesPage({super.key});
+  @override
+  State<ProfitSourcesPage> createState() => _ProfitSourcesPageState();
+}
+
+class _ProfitSourcesPageState extends State<ProfitSourcesPage> {
+  int _preset = 0;
+  Period _period = Period.preset(0);
+
+  @override
+  Widget build(BuildContext context) => BooksPage(
+    key: ValueKey('${_period.from}|${_period.to}'),
+    title: 'مصادر الربح',
+    help: profitHelp,
+    load: (s) async {
+      final inc = await s.reports.incomeStatement(
+        from: _period.from,
+        to: _period.to,
+      );
+      final b = await s.ledger.balances(from: _period.from, to: _period.to);
+      final cogs = await s.ledger.byRole(Roles.cogs);
+      return (inc: inc, cogs: b[cogs.id] ?? 0);
+    },
+    build: (context, data, reload) {
+      final d = data as ({IncomeStatement inc, int cogs});
+      final sources = <AccountNode>[];
+      void walk(AccountNode n) {
+        if (n.children.isEmpty && !n.account.isGroup) {
+          if (n.balance != 0) sources.add(n);
+        } else {
+          n.children.forEach(walk);
+        }
+      }
+
+      walk(d.inc.revenue);
+      sources.sort((a, b) => b.balance.compareTo(a.balance));
+      final total = d.inc.revenue.balance;
+      final shipping = sources
+          .where((n) => n.account.role == Roles.revShipping)
+          .fold(0, (s, n) => s + n.balance);
+      return [
+        PeriodPicker(
+          preset: _preset,
+          period: _period,
+          onChanged:
+              (i, p) => setState(() {
+                _preset = i;
+                _period = p;
+              }),
+        ),
+        gap,
+        FigsRow(
+          figs: [
+            (formatCentsShort(total), 'الإيرادات', Tw.accentInk),
+            (formatCentsShort(d.inc.expenses.balance), 'المصاريف', null),
+            (
+              formatCentsShort(d.inc.net),
+              'صافي الربح',
+              d.inc.net < 0 ? Tw.danger : null,
+            ),
+          ],
+        ),
+        gap,
+        if (sources.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: Text('لا إيرادات في الفترة')),
+          )
+        else
+          Container(
+            decoration: panelDecoration(),
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              children: [
+                for (final n in sources)
+                  InkWell(
+                    onTap:
+                        () => openPage(
+                          context,
+                          StatementPage(account: n.account),
+                        ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(n.account.name, style: Ds.body),
+                              ),
+                              Text(
+                                total == 0
+                                    ? ''
+                                    : '${(n.balance * 100 / total).toStringAsFixed(0)}٪  ',
+                                style: Ds.secondary,
+                              ),
+                              Money(n.balance),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value:
+                                  total <= 0
+                                      ? 0
+                                      : (n.balance / total)
+                                          .clamp(0, 1)
+                                          .toDouble(),
+                              minHeight: 6,
+                              backgroundColor: Tw.surface2,
+                              color: Tw.accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        if (shipping != 0 || d.cogs != 0) ...[
+          gap,
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: panelDecoration(),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'صافي ربح الشحن (المبيعات − التكلفة)',
+                    style: Ds.body,
+                  ),
+                ),
+                Money(
+                  shipping - d.cogs,
+                  color: shipping - d.cogs < 0 ? Tw.danger : Tw.accentInk,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ];
+    },
   );
 }

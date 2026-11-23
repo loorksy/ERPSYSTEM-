@@ -9,6 +9,7 @@ import 'accounting/books.dart';
 import 'accounting/ledger.dart';
 import 'accounting/parties.dart';
 import 'accounting/reports.dart';
+import 'accounting/trading.dart';
 import 'background/audit_worker.dart';
 import 'data/app_database.dart';
 import 'data/workspaces.dart';
@@ -76,6 +77,7 @@ class AppHost extends ChangeNotifier {
     final db = await AppDatabase.open(path: registry.pathOf(w));
     final s = AppServices._(db, auth, sheets, w, this);
     await s.ledger.ensureSeeded();
+    await s.trading.ensureItems();
     return _open[w.id] = s;
   }
 
@@ -183,6 +185,7 @@ class AppServices extends ChangeNotifier {
     books = Books(ledger);
     reports = Reports(ledger);
     parties = Parties(ledger, books);
+    trading = Trading(ledger, books);
     backup = BackupService(db, auth);
     auth.changes.listen((_) => notifyListeners());
   }
@@ -217,6 +220,7 @@ class AppServices extends ChangeNotifier {
   late final Books books;
   late final Reports reports;
   late final Parties parties;
+  late final Trading trading;
 
   /// Backups of this workspace (file / Google Drive).
   late final BackupService backup;

@@ -35,6 +35,22 @@ class CycleSearchHit {
       (auditStatus.isEmpty || auditStatus == 'غير مدقق');
 }
 
+/// A member of «دليل الأعضاء».
+class MemberSummary {
+  const MemberSummary({
+    required this.id,
+    required this.name,
+    required this.cycles,
+    required this.lastCycle,
+    required this.lastSalary,
+  });
+  final String id;
+  final String name;
+  final int cycles;
+  final String lastCycle;
+  final double lastSalary;
+}
+
 class SearchOutcome {
   const SearchOutcome.ok(this.hits) : message = null;
   const SearchOutcome.fail(this.message) : hits = const [];
@@ -199,6 +215,67 @@ class SearchService {
       );
     }
     return SearchOutcome.ok(hits);
+  }
+
+  /// «دليل الأعضاء» (LorkERP): every member found in the cached sheets of
+  /// the cycles, newest cycle first: id, name, how many cycles, and the
+  /// agent-sheet salary (before discount) in the latest cycle.
+  Future<List<MemberSummary>> members() async {
+    final byId = <String, MemberSummary>{};
+    final cycles = await db.listCycles();
+    for (final cycle in cycles) {
+      final data = await _data(cycle);
+      if (data == null) continue;
+      final cols = await db.getCycleColumns(cycle.id);
+      final mgmtCol = columnLetterToIndex(cols.mgmtUserIdCol) ?? 0;
+      final agentCol = columnLetterToIndex(cols.agentUserIdCol) ?? 0;
+      final salaryCol = columnLetterToIndex(cols.agentSalaryCol) ?? 3;
+      final seen = <String>{};
+      final salaries = <String, List<String?>>{};
+      final names = <String, String>{};
+      void take(List<String> row, int col, {bool agent = false}) {
+        final id = normalizeUserId(cellAt(row, col));
+        if (id.isEmpty) return;
+        seen.add(id);
+        final n = cellAt(row, 1);
+        if (n != null && n.trim().isNotEmpty) {
+          names.putIfAbsent(id, () => n.trim());
+        }
+        if (agent) {
+          salaries.putIfAbsent(id, () => []).add(cellAt(row, salaryCol));
+        }
+      }
+
+      for (final row in _dataRows(data.mgmt)) {
+        take(row, mgmtCol);
+      }
+      for (final row in _dataRows(data.agent)) {
+        take(row, agentCol, agent: true);
+      }
+      final cycleName = cycle.name.isEmpty ? 'دورة #${cycle.id}' : cycle.name;
+      for (final id in seen) {
+        final old = byId[id];
+        final salary =
+            computeSalaryWithDiscount(salaries[id] ?? const [], 0).before;
+        byId[id] =
+            old == null
+                ? MemberSummary(
+                  id: id,
+                  name: names[id] ?? '',
+                  cycles: 1,
+                  lastCycle: cycleName,
+                  lastSalary: salary,
+                )
+                : MemberSummary(
+                  id: id,
+                  name: old.name.isEmpty ? (names[id] ?? '') : old.name,
+                  cycles: old.cycles + 1,
+                  lastCycle: old.lastCycle,
+                  lastSalary: old.lastSalary,
+                );
+      }
+    }
+    return byId.values.toList();
   }
 
   /// ERP `GET /cycle-sheets`: sheets of the cycle's management spreadsheet.

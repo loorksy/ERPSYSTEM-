@@ -574,6 +574,7 @@ class Ledger {
     String? to,
     String? kind,
     int? accountId,
+    Set<int>? anyAccount,
     int limit = 100,
     int offset = 0,
   }) async {
@@ -596,6 +597,13 @@ class Ledger {
         'EXISTS (SELECT 1 FROM acc_lines l WHERE l.entry_id = e.id AND l.account_id = ?)',
       );
       args.add(accountId);
+    }
+    if (anyAccount != null) {
+      if (anyAccount.isEmpty) return const [];
+      where.add(
+        'EXISTS (SELECT 1 FROM acc_lines l WHERE l.entry_id = e.id AND l.account_id IN (${List.filled(anyAccount.length, '?').join(',')}))',
+      );
+      args.addAll(anyAccount);
     }
     final rows = await _db.rawQuery(
       'SELECT e.* FROM acc_entries e ${where.isEmpty ? '' : 'WHERE ${where.join(' AND ')}'} '

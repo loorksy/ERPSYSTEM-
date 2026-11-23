@@ -21,6 +21,8 @@ import 'debts_page.dart';
 import 'forms.dart';
 import 'funds_page.dart';
 import 'journal_page.dart';
+import 'members_page.dart';
+import 'trading_pages.dart';
 import 'parties_pages.dart';
 import 'reports_pages.dart';
 
@@ -288,6 +290,27 @@ class OperationsHub extends StatelessWidget {
         ],
       ),
       (
+        'الشحن والتصريف',
+        [
+          HubRow(
+            icon: Icons.local_shipping_outlined,
+            title: 'الشحن',
+            subtitle: 'بيع وشراء الأصناف وتبديل الرواتب',
+            onTap: () => openPage(context, const ShippingPage()),
+          ),
+          HubRow(
+            icon: Icons.currency_exchange,
+            title: 'فرق التصريف',
+            onTap: () => openPage(context, const FxSpreadPage()),
+          ),
+          HubRow(
+            icon: Icons.handshake_outlined,
+            title: 'الوساطة الإدارية',
+            onTap: () => openPage(context, const AdminBrokeragePage()),
+          ),
+        ],
+      ),
+      (
         'الديون',
         [
           HubRow(
@@ -376,6 +399,11 @@ class ReportsHub extends StatelessWidget {
             onTap: () => openPage(context, const BalanceSheetPage()),
           ),
           HubRow(
+            icon: Icons.insights_outlined,
+            title: 'مصادر الربح',
+            onTap: () => openPage(context, const ProfitSourcesPage()),
+          ),
+          HubRow(
             icon: Icons.balance,
             title: 'ميزان المراجعة',
             onTap: () => openPage(context, const TrialBalancePage()),
@@ -389,6 +417,16 @@ class ReportsHub extends StatelessWidget {
             icon: Icons.account_tree_outlined,
             title: 'شجرة الحسابات',
             onTap: () => openPage(context, const AccountsPage()),
+          ),
+          HubRow(
+            icon: Icons.timeline,
+            title: 'سجل الحركات',
+            subtitle: 'نقدية، أطراف، أرباح ومصاريف',
+            onTap:
+                () => openPage(
+                  context,
+                  const JournalPage(category: 1, title: 'سجل الحركات'),
+                ),
           ),
           HubRow(
             icon: Icons.menu_book_outlined,
@@ -436,6 +474,12 @@ class MoreHub extends StatelessWidget {
             title: 'فرز',
             subtitle: 'ترتيب جدول المستخدمين وتقريب الرواتب',
             onTap: () => openPage(context, const SortPage(active: true)),
+          ),
+          HubRow(
+            icon: Icons.badge_outlined,
+            title: 'دليل الأعضاء',
+            subtitle: 'أعضاء الدورات وحساباتهم',
+            onTap: () => openPage(context, const MembersPage()),
           ),
           HubRow(
             icon: Icons.search,
