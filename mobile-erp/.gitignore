@@ -1,0 +1,19 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+*.iml
+.idea/
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/build/
+android/build/
+**/*.keystore
+**/*.jks
+android/key.properties
+
+# APKs are published under releases/ only
+*.apk
+!releases/*.apk

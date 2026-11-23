@@ -1,0 +1,42 @@
+name: lork_erp
+description: LorkERP — نظام محاسبي متكامل على الهاتف (قيد مزدوج، شجرة حسابات، صناديق، تدقيق الرواتب).
+publish_to: 'none'
+version: 0.1.0+1
+environment:
+  sdk: '>=3.7.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  crypto: ^3.0.6
+  csv: ^6.0.0
+  excel: ^4.0.6
+  file_picker: ^10.3.10
+  font_awesome_flutter: ^11.0.0
+  google_sign_in: ^6.3.0
+  http: ^1.2.2
+  path: ^1.9.0
+  sqflite: ^2.4.2
+  url_launcher: ^6.3.1
+  workmanager: ^0.10.10
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  sqflite_common_ffi: ^2.3.4+4
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/logo.png
+  fonts:
+    - family: Tajawal
+      fonts:
+        - asset: assets/fonts/Tajawal-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Tajawal-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Tajawal-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Tajawal-ExtraBold.ttf
+          weight: 800
